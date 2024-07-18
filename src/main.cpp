@@ -8,6 +8,8 @@ using namespace std;
 namespace fs = filesystem;
 
 const string path = ".";
+const string MainFile = "./main.abs";
+bool mainFileFlag = false;
 
 vector <string> files;
 
@@ -35,12 +37,22 @@ int main(int argc, char *argv[]){
 
     for(int i=0; i<SystemFiles.size(); i++){
         cout << SystemFiles[i] << '\n';
+        if(SystemFiles[i] == MainFile) mainFileFlag = true;
         string line;
         ifstream file(SystemFiles[i]); 
         while(getline(file, line)){
             cout << line << '\n';
         }
     }
+
+    cout << endl; //
+
+    if(!mainFileFlag){
+        cout << "Xəta: Main faylı tapılmadı\n";
+        return 0;
+    }
+
+    
 
     return 0;
 }
