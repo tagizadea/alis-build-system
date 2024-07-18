@@ -13,6 +13,15 @@ bool mainFileFlag = false;
 
 vector <string> files;
 
+void execute(string s){
+    if(functionMap.find(s) != functionMap.end()){
+        functionMap[s]();
+    }
+    else{
+        cout << "BELE BIR FUNKSIYA TAPILMADI!\n";
+    }
+}
+
 int main(int argc, char *argv[]){
 
     cout << "Ali's Build System ALPHA!\n";
@@ -36,13 +45,13 @@ int main(int argc, char *argv[]){
     }
 
     for(int i=0; i<SystemFiles.size(); i++){
-        cout << SystemFiles[i] << '\n';
+        //cout << SystemFiles[i] << '\n';
         if(SystemFiles[i] == MainFile) mainFileFlag = true;
-        string line;
-        ifstream file(SystemFiles[i]); 
-        while(getline(file, line)){
-            cout << line << '\n';
-        }
+        //string line;
+        //ifstream file(SystemFiles[i]); 
+        //while(getline(file, line)){
+        //    cout << line << '\n';
+        //}
     }
 
     cout << endl; //
@@ -52,7 +61,22 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    
+    string line;
+    ifstream file(MainFile); 
+    while(getline(file, line)){
+        string s;
+        for(int i=0; i<line.size(); i++){
+            if(line[i] == ' ' or i == line.size() - 1){
+                if(i == line.size() - 1) s += line[i];
+                cout << s << '\n';
+                execute(s);
+                s = "";
+            }
+            else{
+                s += line[i];
+            }
+        }
+    }
 
     return 0;
 }

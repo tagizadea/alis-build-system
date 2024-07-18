@@ -16,3 +16,14 @@ vector<string> getSystemFiles(vector<string> &files){
 
     return temp;
 }
+
+/* ---------------------- ABS OPERATIONS ----------------------*/
+
+
+void hello(){
+    cout << "HELLO\n";
+}
+
+map <string, FuncPtr> functionMap = {
+    {"hello", &hello}
+};
