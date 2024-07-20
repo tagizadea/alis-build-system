@@ -4,29 +4,9 @@
 #include <vector>
 #include <commands.hpp>
 #include <operations.hpp>
+#include <parser.hpp>
 using namespace std;
 namespace fs = filesystem;
-
-enum codeType{
-    UNDEFINED,
-    FUNCTION,
-    VARIABLE,
-    NUMBER,
-    STRING,
-    OPERATION
-};
-
-void make_ast(vector < pair <string, codeType> > *v){
-    for(int i=0; i<v->size(); i++){
-        string s = (*v)[i].first;
-        bitset <5> bt;
-        for(int j=0; j<s.size(); j++){
-            if(s[j] >= '0' && s[j] <= '9'){
-                
-            }
-        }
-    }
-}
 
 const string path = ".";
 const string MainFile = "./main.abs";
@@ -76,19 +56,36 @@ int main(int argc, char *argv[]){
     string line;
     ifstream file(MainFile); 
     while(getline(file, line)){
-        string s;
-        vector < pair <string, codeType> > tokens;
+        /*string s;
+        vector <string> words;
         for(int i=0; i<line.size(); i++){
             if(line[i] == ' ' or i == line.size() - 1){
                 if(i == line.size() - 1) s += line[i];
-                tokens.push_back(make_pair(s, codeType::UNDEFINED));
+                words.push_back(s);
                 s = "";
             }
             else{
                 s += line[i];
             }
+        }*/
+        Lexer lexer(line.c_str());
+        Token* tokens = lexer.tokenize();
+
+        // Print the tokens for demonstration purposes
+        for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
+            printf("Token: %.*s (Type: %d)\n", tokens[i].length, tokens[i].value, (int)tokens[i].type);
         }
-        make_ast(&tokens);
+
+        // Initialize the parser with the tokens
+        Parser parser(tokens);
+
+        // Parse the tokens
+        parser.parse();
+
+        // Clean up
+        delete[] tokens;
+
+
     }
 
     return 0;
