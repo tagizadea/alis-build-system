@@ -4,7 +4,7 @@
 #include <vector>
 #include <commands.hpp>
 #include <operations.hpp>
-#include <parser.hpp>
+#include <lexer.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -75,15 +75,6 @@ int main(int argc, char *argv[]){
         for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
             printf("Token: %.*s (Type: %d)\n", tokens[i].length, tokens[i].value, (int)tokens[i].type);
         }
-
-        // Initialize the parser with the tokens
-        Parser parser(tokens);
-
-        // Parse the tokens
-        parser.parse();
-
-        // Clean up
-        delete[] tokens;
 
 
     }
