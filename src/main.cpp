@@ -7,20 +7,32 @@
 using namespace std;
 namespace fs = filesystem;
 
+enum codeType{
+    UNDEFINED,
+    FUNCTION,
+    VARIABLE,
+    NUMBER,
+    STRING,
+    OPERATION
+};
+
+void make_ast(vector < pair <string, codeType> > *v){
+    for(int i=0; i<v->size(); i++){
+        string s = (*v)[i].first;
+        bitset <5> bt;
+        for(int j=0; j<s.size(); j++){
+            if(s[j] >= '0' && s[j] <= '9'){
+                
+            }
+        }
+    }
+}
+
 const string path = ".";
 const string MainFile = "./main.abs";
 bool mainFileFlag = false;
 
 vector <string> files;
-
-void execute(string s){
-    if(functionMap.find(s) != functionMap.end()){
-        functionMap[s]();
-    }
-    else{
-        cout << "BELE BIR FUNKSIYA TAPILMADI!\n";
-    }
-}
 
 int main(int argc, char *argv[]){
 
@@ -65,17 +77,18 @@ int main(int argc, char *argv[]){
     ifstream file(MainFile); 
     while(getline(file, line)){
         string s;
+        vector < pair <string, codeType> > tokens;
         for(int i=0; i<line.size(); i++){
             if(line[i] == ' ' or i == line.size() - 1){
                 if(i == line.size() - 1) s += line[i];
-                cout << s << '\n';
-                execute(s);
+                tokens.push_back(make_pair(s, codeType::UNDEFINED));
                 s = "";
             }
             else{
                 s += line[i];
             }
         }
+        make_ast(&tokens);
     }
 
     return 0;
