@@ -13,7 +13,7 @@ enum codeType{
     VARIABLE,
     NUMBER,
     STRING,
-    OPERATIONs
+    OPERATION
 };
 
 void make_ast(vector < pair <string, codeType> > *v){
