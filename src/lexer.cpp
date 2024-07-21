@@ -26,6 +26,11 @@ Token Lexer::parseIdentifier(){
         start += source[position];
         position++;
     }
+
+    for(string s : Keywords){
+        if(s == start) return {TokenType::Keyword, start};
+    }
+
     return {TokenType::Identifier, start};
 }
 

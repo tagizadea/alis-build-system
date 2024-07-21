@@ -1,9 +1,10 @@
 #ifndef LEXER
 #define LEXER
 #include <iostream>
+#include <vector>
 using namespace std;
 
-const string Keywords[] = {
+const vector <string> Keywords = {
     "if", "while", "else"
 };
 
