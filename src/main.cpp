@@ -56,27 +56,16 @@ int main(int argc, char *argv[]){
     string line;
     ifstream file(MainFile); 
     while(getline(file, line)){
-        /*string s;
-        vector <string> words;
-        for(int i=0; i<line.size(); i++){
-            if(line[i] == ' ' or i == line.size() - 1){
-                if(i == line.size() - 1) s += line[i];
-                words.push_back(s);
-                s = "";
-            }
-            else{
-                s += line[i];
-            }
-        }*/
+
         Lexer lexer(line.c_str());
         Token* tokens = lexer.tokenize();
 
         // Print the tokens for demonstration purposes
         for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
-            printf("Token: %.*s (Type: %d)\n", tokens[i].length, tokens[i].value, (int)tokens[i].type);
+            cout << "Token: " << tokens[i].value << " (Type: " <<  (int)tokens[i].type << ")\n";
         }
 
-
+        
     }
 
     return 0;

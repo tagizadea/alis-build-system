@@ -1,19 +1,24 @@
 #ifndef LEXER
 #define LEXER
+#include <iostream>
+using namespace std;
 
-enum class TokenType {
+const string Keywords[] = {
+    "if", "while", "else"
+};
+
+enum class TokenType{
     Identifier, Keyword, Number, Operator, String, EndOfFile, Invalid
 };
 
-struct Token {
+struct Token{
     TokenType type;
-    const char* value;
-    int length;
+    string value;
 };
 
-class Lexer {
+class Lexer{
 public:
-    Lexer(const char* source);
+    Lexer(string source);
 
     Token* tokenize();
 
@@ -28,7 +33,7 @@ private:
     bool isAlphaNumeric(char c);
     bool isSpace(char c);
 
-    const char* source;
+    string source;
     int position;
 };
 #endif // LEXER
