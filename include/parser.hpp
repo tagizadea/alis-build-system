@@ -5,14 +5,17 @@
 
 
 struct Rule {
-    std::string lhs;
-    std::vector<TokenType> rhs;
+    string lhs;
+    vector <string> rhs;
 };
 
 
 const std::vector<Rule> grammar = {
-    {"Expression", {TokenType::Identifier, TokenType::ASSIGN, TokenType::Identifier}},
-    {"Expression", {TokenType::Identifier}}
+    {"Program", {"Program", "Statement"}},
+    {"Program", {"Statement"}},
+    {"Expression", {"Expression", "=", "Expression"}},
+    {"Expression", {"Identifier"}},
+    {"Expression", {"Number"}}
 };
 
 // Shift-Reduce Parser
@@ -21,7 +24,7 @@ class Parser{
 
     stack <Token> st;
 
-    bool reduce(std::stack<TokenType>& stack, std::stack<std::string>& symbols);
+    bool reduce(stack<string>& stack, std::stack<std::string>& symbols);
 
     public:
 

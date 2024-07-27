@@ -2,18 +2,16 @@
 #define LEXER
 #include <iostream>
 #include <vector>
+#include <map>
 using namespace std;
 
 enum class TokenType{
     Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, 
-    MULTIPLY, DIVIDE, MOD, String, EndOfFile, Invalid
+    MULTIPLY, DIVIDE, MOD, LPAREN, RPAREN, LBRACK, RBRACK, String, EndOfFile, Invalid
 };
 
-const vector <pair <string, TokenType> > Keywords = {
-    {"if", TokenType::IF},
-    {"while", TokenType::WHILE},
-    {"else", TokenType::ELSE}
-};
+extern map <string, TokenType> Keywords;
+extern map <TokenType, string> rKeywords;
 
 struct Token{
     TokenType type;

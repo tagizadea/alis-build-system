@@ -61,7 +61,8 @@ int main(int argc, char *argv[]){
     Token* tokens = lexer.tokenize();
 
     for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
-        cout << "Token: " << tokens[i].value << " (Type: " <<  (int)tokens[i].type << ")\n";
+        cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
+        << (int)tokens[i].type << ")\n";
     }
     //Parser parser;
     //parser.parse(tokens);

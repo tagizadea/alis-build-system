@@ -1,5 +1,27 @@
 #include <lexer.hpp>
 
+map <string, TokenType> Keywords = {
+    {"if", TokenType::IF},
+    {"while", TokenType::WHILE},
+    {"else", TokenType::ELSE},
+    {"Identifier", TokenType::Identifier},
+    {"=", TokenType::ASSIGN},
+    {"Number", TokenType::Number},
+    {"+", TokenType::PLUS},
+    {"-", TokenType::MINUS},
+    {"*", TokenType::MULTIPLY},
+    {"/", TokenType::DIVIDE},
+    {"%", TokenType::MOD},
+    {"(", TokenType::LPAREN},
+    {")", TokenType::RPAREN},
+    {"{", TokenType::LBRACK},
+    {"}", TokenType::RBRACK},
+    {"String", TokenType::String},
+    {"Invalid", TokenType::Invalid}
+};
+
+map <TokenType, string> rKeywords;
+
 Lexer::Lexer(string source) : source(source), position(0) {}
 
 Token* Lexer::tokenize(){
@@ -15,6 +37,10 @@ Token* Lexer::tokenize(){
         else tokens[tokenIndex++] = parseOperator();
     }
     tokens[tokenIndex++] = {TokenType::EndOfFile, ""};
+
+    for(pair <string, TokenType> token : Keywords)
+        rKeywords[token.second] = token.first;
+
     return tokens;
 }
 
@@ -26,9 +52,11 @@ Token Lexer::parseIdentifier(){
         position++;
     }
 
-    for(pair <string, TokenType> s : Keywords){
+    /*for(pair <string, TokenType> s : Keywords){
         if(s.first == start) return {s.second, start};
-    }
+    }*/
+    if(Keywords.find(start) != Keywords.end())
+        return {Keywords.find(start)->second, start};
 
     return {TokenType::Identifier, start};
 }
@@ -51,22 +79,14 @@ Token Lexer::parseString(){
         start += source[position];
         position++;
     }
-    if(source[position] == '\"'){
-        start += source[position];
-        position++;
-    } // Skip the closing quote
+    position++; // Skip the closing quote
     return {TokenType::String, start};
 }
 
 Token Lexer::parseOperator(){
     string start = "";
     start += source[position++];
-    if(start == "=") return {TokenType::ASSIGN, start};
-    else if(start == "+") return {TokenType::PLUS, start};
-    else if(start == "-") return {TokenType::MINUS, start};
-    else if(start == "/") return {TokenType::DIVIDE, start};
-    else if(start == "*") return {TokenType::MULTIPLY, start};
-    else if(start == "%") return {TokenType::MOD, start};
+    if(Keywords.find(start) != Keywords.end()) return {Keywords[start], start};
     else return {TokenType::Invalid, start};
 }
 
