@@ -4,12 +4,15 @@
 #include <vector>
 using namespace std;
 
-const vector <string> Keywords = {
-    "if", "while", "else"
+enum class TokenType{
+    Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, 
+    MULTIPLY, DIVIDE, MOD, String, EndOfFile, Invalid
 };
 
-enum class TokenType{
-    Identifier, Keyword, Number, Operator, String, EndOfFile, Invalid
+const vector <pair <string, TokenType> > Keywords = {
+    {"if", TokenType::IF},
+    {"while", TokenType::WHILE},
+    {"else", TokenType::ELSE}
 };
 
 struct Token{

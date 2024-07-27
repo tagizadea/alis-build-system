@@ -27,8 +27,8 @@ Token Lexer::parseIdentifier(){
         position++;
     }
 
-    for(string s : Keywords){
-        if(s == start) return {TokenType::Keyword, start};
+    for(pair <string, TokenType> s : Keywords){
+        if(s.first == start) return {s.second, start};
     }
 
     return {TokenType::Identifier, start};
@@ -62,7 +62,13 @@ Token Lexer::parseString(){
 Token Lexer::parseOperator(){
     string start = "";
     start += source[position++];
-    return {TokenType::Operator, start};
+    if(start == "=") return {TokenType::ASSIGN, start};
+    else if(start == "+") return {TokenType::PLUS, start};
+    else if(start == "-") return {TokenType::MINUS, start};
+    else if(start == "/") return {TokenType::DIVIDE, start};
+    else if(start == "*") return {TokenType::MULTIPLY, start};
+    else if(start == "%") return {TokenType::MOD, start};
+    else return {TokenType::Invalid, start};
 }
 
 bool Lexer::isAlpha(char c){

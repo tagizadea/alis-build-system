@@ -5,6 +5,7 @@
 #include <commands.hpp>
 #include <operations.hpp>
 #include <lexer.hpp>
+#include <parser.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -53,20 +54,17 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    string line;
-    ifstream file(MainFile); 
-    while(getline(file, line)){
+    ifstream file(MainFile);
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 
-        Lexer lexer(line.c_str());
-        Token* tokens = lexer.tokenize();
+    Lexer lexer(content.c_str());
+    Token* tokens = lexer.tokenize();
 
-        // Print the tokens for demonstration purposes
-        for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
-            cout << "Token: " << tokens[i].value << " (Type: " <<  (int)tokens[i].type << ")\n";
-        }
-
-        
+    for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
+        cout << "Token: " << tokens[i].value << " (Type: " <<  (int)tokens[i].type << ")\n";
     }
+    //Parser parser;
+    //parser.parse(tokens);
 
     return 0;
 }
