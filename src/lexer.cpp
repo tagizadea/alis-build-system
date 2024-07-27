@@ -1,10 +1,9 @@
 #include <lexer.hpp>
 
-// Lexer implementation
 Lexer::Lexer(string source) : source(source), position(0) {}
 
 Token* Lexer::tokenize(){
-    int maxTokens = 1000; // Arbitrary large number for simplicity
+    int maxTokens = 1000;
     Token* tokens = new Token[maxTokens];
     int tokenIndex = 0;
 
