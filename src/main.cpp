@@ -5,7 +5,6 @@
 #include <commands.hpp>
 #include <operations.hpp>
 #include <lexer.hpp>
-#include <parser.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -60,12 +59,10 @@ int main(int argc, char *argv[]){
     Lexer lexer(content.c_str());
     Token* tokens = lexer.tokenize();
 
-    for (int i = 0; tokens[i].type != TokenType::EndOfFile; ++i) {
+    for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
         cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
         << (int)tokens[i].type << ")\n";
     }
-    //Parser parser;
-    //parser.parse(tokens);
 
     return 0;
 }

@@ -1,34 +1,35 @@
 #ifndef PARSER
 #define PARSER
+
+#include <ast.hpp>
 #include <lexer.hpp>
-#include <stack>
+#include <iostream>
 
-
-struct Rule {
-    string lhs;
-    vector <string> rhs;
-};
-
-
-const std::vector<Rule> grammar = {
-    {"Program", {"Program", "Statement"}},
-    {"Program", {"Statement"}},
-    {"Expression", {"Expression", "=", "Expression"}},
-    {"Expression", {"Identifier"}},
-    {"Expression", {"Number"}}
-};
-
-// Shift-Reduce Parser
 class Parser{
     private:
 
-    stack <Token> st;
+    Token* tokens;
 
-    bool reduce(stack<string>& stack, std::stack<std::string>& symbols);
+    int i = 0; // iterator in tokens;
+
+    Token at();
+    void next();
+    Token eat();
+
+    Stmt parse_stmt();
+    Expr parse_expr();
+    Expr parse_primary_expr();
 
     public:
 
-    bool parse(Token *tokens);
+    Parser(Token* tokens){
+        this->i = 0;
+        this->tokens = tokens;
+    }
+
+    Program produceAST();
+
+
 };
 
-#endif // PARSER
+#endif
