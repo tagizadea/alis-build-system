@@ -2,6 +2,9 @@
 #define AST
 
 #include <vector>
+#include <string>
+
+#include <iostream> // temp
 
 enum class NodeType{
     NONE,
@@ -13,42 +16,61 @@ enum class NodeType{
 
 class Stmt{
     NodeType kind = NodeType::NONE;
+    public:
+    virtual NodeType getKind() const{
+        return kind;
+    }
+    virtual ~Stmt() = default;
 };
 
 class Program : public Stmt{
-    public:
     NodeType kind = NodeType::PROGRAM;
-    std::vector <Stmt> body;
+    public:
+    std::vector <Stmt*> body;
+    NodeType getKind() const override{
+        return kind;
+    }
+    Program();
 };
 
 class Expr : public Stmt{
-
+    public:
 };
 
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;
-    Expr left;
-    Expr right;
+    public:
+    Expr* left;
+    Expr* right;
     std::string op = "";
+
+    NodeType getKind() const override{
+        return kind;
+    }
 };
 
 class Identifier : public Expr{
     NodeType kind = NodeType::IDENTIFIER;
+    public:
     std::string symbol = "";
 
-    public:
     Identifier(std::string val){
         NodeType kind = NodeType::IDENTIFIER;
         this->symbol = val;
+    }
+    NodeType getKind() const override{
+        return kind;
     }
 };
 
 class NumericLiteral : public Expr{
     NodeType kind = NodeType::NUMERIC_L;
-    long double val;
     public:
-    NumericLiteral(std::string val){
-        this->val = std::stold(val);
+    long double val;
+    NumericLiteral(std::string val);
+
+    NodeType getKind() const override{
+        return kind;
     }
 };
 

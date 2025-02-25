@@ -5,6 +5,7 @@
 #include <commands.hpp>
 #include <operations.hpp>
 #include <lexer.hpp>
+#include <parser.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -13,6 +14,42 @@ const string MainFile = "./main.abs";
 bool mainFileFlag = false;
 
 vector <string> files;
+
+
+void print_stmt(Stmt* stmt){
+    //NodeType kind = stmt->kind;
+    NodeType kind = stmt->getKind();
+    if(NodeType::PROGRAM == kind){
+        cout << "Type: Program\n";
+        Program* childObj = dynamic_cast<Program*>(stmt);
+        for(int i = 0; i < childObj->body.size();++i){
+            print_stmt(childObj->body[i]);
+        }
+
+    }
+    else if(NodeType::BINARYEXPR == kind){
+        cout << "Type: BinaryExpr\n";
+        BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);
+        print_stmt(childObj->left);
+        cout << '\n';
+        cout << childObj->op << '\n';
+        print_stmt(childObj->right);
+        cout << '\n';
+    }
+    else if(NodeType::NUMERIC_L == kind){
+        cout << "Type: NumbericLiteral\n";
+        NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
+        cout << "Value: " << childObj->val << '\n';
+    }
+    else if(NodeType::IDENTIFIER == kind){
+        cout << "Type: Identifier\n";
+        Identifier* childObj = dynamic_cast<Identifier*>(stmt);
+        cout << childObj->symbol << '\n';
+    }
+    else{
+        cout << "Unknown Statement!\n"; // !!! assert ile deyisdir
+    }
+}
 
 int main(int argc, char *argv[]){
 
@@ -63,6 +100,15 @@ int main(int argc, char *argv[]){
         cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
         << (int)tokens[i].type << ")\n";
     }
+
+    cout << '\n';
+
+    Parser* parser = new Parser(tokens);
+
+    Program* program = parser->produceAST();
+
+
+    print_stmt(program);
 
     return 0;
 }

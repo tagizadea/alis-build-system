@@ -16,9 +16,9 @@ class Parser{
     void next();
     Token eat();
 
-    Stmt parse_stmt();
-    Expr parse_expr();
-    Expr parse_primary_expr();
+    Stmt* parse_stmt();
+    Expr* parse_expr();
+    Expr* parse_primary_expr();
 
     public:
 
@@ -27,7 +27,7 @@ class Parser{
         this->tokens = tokens;
     }
 
-    Program produceAST();
+    Program* produceAST();
 
 
 };
