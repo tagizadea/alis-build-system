@@ -15,10 +15,13 @@ class Parser{
     Token at();
     void next();
     Token eat();
+    Token expect(TokenType t, string err);
 
     Stmt* parse_stmt();
     Expr* parse_expr();
     Expr* parse_primary_expr();
+    Expr* parse_additive_expr();
+    Expr* parse_mult_expr();
 
     public:
 
