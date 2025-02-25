@@ -10,6 +10,7 @@ enum class NodeType{
     NONE,
     PROGRAM,
     NUMERIC_L,
+    NULL_L,
     IDENTIFIER,
     BINARYEXPR
 };
@@ -68,6 +69,16 @@ class NumericLiteral : public Expr{
     public:
     long double val;
     NumericLiteral(std::string val);
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class NullLiteral : public Expr{
+    NodeType kind = NodeType::NULL_L;
+    public:
+    std::string val = "Null";
 
     NodeType getKind() const override{
         return kind;

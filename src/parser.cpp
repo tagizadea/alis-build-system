@@ -68,6 +68,10 @@ Expr* Parser::parse_primary_expr(){
         //temp->kind = NodeType::IDENTIFIER;
         return temp;
     }
+    else if(tk == TokenType::Null){
+        eat();
+        return new NullLiteral;
+    }
     else if(tk == TokenType::Number){
         Expr* temp = new NumericLiteral(eat().value);
         //temp->kind = NodeType::NUMERIC_L;

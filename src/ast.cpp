@@ -14,4 +14,3 @@ NumericLiteral::NumericLiteral(std::string val){
 Program::Program(){
     kind = NodeType::PROGRAM;
 }
-

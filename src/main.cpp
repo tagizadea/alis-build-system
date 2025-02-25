@@ -6,6 +6,7 @@
 #include <operations.hpp>
 #include <lexer.hpp>
 #include <parser.hpp>
+#include <eval.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -17,7 +18,6 @@ vector <string> files;
 
 
 void print_stmt(Stmt* stmt, int tab){
-    //NodeType kind = stmt->kind;
     NodeType kind = stmt->getKind();
     string tab_s = "";
     for(int i = 0; i < tab; ++i) tab_s += "    ";
@@ -43,6 +43,10 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s  << "Type: NumbericLiteral\n";
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
+    }
+    else if(NodeType::NULL_L == kind){
+        cout << tab_s  << "Type: NullLiteral\n";
+        cout << tab_s  << "Value: " << "Null" << '\n';
     }
     else if(NodeType::IDENTIFIER == kind){
         cout << tab_s  << "Type: Identifier\n";
@@ -99,6 +103,7 @@ int main(int argc, char *argv[]){
     Lexer lexer(content.c_str());
     Token* tokens = lexer.tokenize();
 
+    // Printing Lexer for debug
     cout << "Lexer:\n";
     for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
         cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
@@ -109,8 +114,20 @@ int main(int argc, char *argv[]){
     Parser* parser = new Parser(tokens);
     Program* program = parser->produceAST();
 
+    // Printing AST for debug
     cout << "AST:\n";
     print_stmt(program, 0);
 
+    // Printing Evalutation for debug
+    cout << "\nEVALUATION:\n";
+    Value* eval = evaluate(program);
+    if(eval->getType() == ValueType::Number){
+        cout << "Type: Number\n";
+        NumberVal* temp = (NumberVal*)eval;
+        cout << "Value: " << temp->val << '\n';
+    }
+    else{
+        cout << "Type: Null\nValue: Null\n";
+    }
     return 0;
 }

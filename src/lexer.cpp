@@ -1,6 +1,7 @@
 #include <lexer.hpp>
 
 map <string, TokenType> Keywords = {
+    {"Null", TokenType::Null},
     {"if", TokenType::IF},
     {"while", TokenType::WHILE},
     {"else", TokenType::ELSE},
