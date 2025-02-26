@@ -32,3 +32,6 @@
 *.app
 *.abs
 main
+
+# Debug Folder LLDB
+main.dSYM
