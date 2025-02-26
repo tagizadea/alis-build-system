@@ -54,7 +54,7 @@ shared_ptr <NullVal> Make_Null(){
     return make_shared<NullVal>();
 }
 
-void InitNatives(Env* env){
+void InitNatives(shared_ptr<Env> env){
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
     env->declareVar("ZERO", make_shared <NumberVal> (), true);

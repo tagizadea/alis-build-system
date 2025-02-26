@@ -26,6 +26,6 @@ shared_ptr <NumberVal> Make_Number(long double val);
 shared_ptr <BoolValue> Make_Bool(bool b);
 shared_ptr <NullVal> Make_Null();
 
-void InitNatives(Env* env);
+void InitNatives(shared_ptr<Env> env);
 
 #endif
