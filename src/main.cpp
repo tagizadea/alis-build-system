@@ -187,7 +187,7 @@ int main(int argc, char *argv[]){
     cout << "\nEVALUATION:\n";
     shared_ptr<Env> env = make_shared<Env>();
     InitNatives(env.get());
-    shared_ptr<Value> eval = evaluate(make_shared<Program>(program), env);
+    shared_ptr<Value> eval = evaluate(shared_ptr<Program>(program), env);
     print_eval(eval.get(), 0);
     return 0;
 }
