@@ -107,6 +107,7 @@ Expr* Parser::parse_object_expr(){
         temp->key = key;
         temp->val = value;
         v.push_back(temp);
+        if(at().type == TokenType::RBRACK) continue;
         expect(TokenType::COMMA, "ObjectLiteral comma is missing");
     }
 
@@ -135,7 +136,7 @@ Expr* Parser::parse_additive_expr(){
 Expr *Parser::parse_mult_expr(){
     Expr* left = parse_primary_expr();
     
-    while(at().value == "*" || at().value == "/"){
+    while(at().value == "*" || at().value == "/" || at().value == "%"){
         string op = eat().value;
         Expr* right = parse_primary_expr();
         BinaryExpr* binop = new BinaryExpr;

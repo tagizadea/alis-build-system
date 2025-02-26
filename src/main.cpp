@@ -45,9 +45,9 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
     else if(NodeType::OBJECT_L == kind){
-        cout << tab_s << "Type: ObjectLiteral\n";
+        cout << tab_s << "Type: ObjectLiteral";
         ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
-        cout << tab_s << "{\n";
+        cout << "{\n";
         for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
         cout << tab_s << "}\n";
     }
@@ -56,7 +56,8 @@ void print_stmt(Stmt* stmt, int tab){
         PropertyLiteral* childObj = dynamic_cast<PropertyLiteral*>(stmt);
         cout << tab_s << "Key: "<<childObj->key << '\n';
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->val, tab + 1);
+        if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
+        else print_stmt(childObj->val, tab + 1);
         cout << '\n';
     }
     else if(NodeType::VAR_D == kind){
@@ -83,6 +84,36 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else{
         cout << tab_s  << "Unknown Statement!\n"; // !!! assert ile deyisdir
+    }
+}
+
+// Printing Evaluation
+void print_eval(Value* eval, int tab){
+    string tab_s = "";
+    for(int i = 0; i < tab; ++i) tab_s += "    ";
+    if(eval->getType() == ValueType::Number){
+        cout << tab_s << "Type: Number\n";
+        NumberVal* temp = (NumberVal*)eval;
+        cout << tab_s << "Value: " << temp->val << '\n';
+    }
+    else if(eval->getType() == ValueType::Bool){
+        cout << tab_s << "Type: Bool\n";
+        BoolValue* temp = (BoolValue*)eval;
+        cout << tab_s << "Value: " << (int)temp->val << '\n'; 
+    }
+    else if(eval->getType() == ValueType::Object){
+        cout << tab_s << "Type: Object\n";
+        ObjectValue* temp = (ObjectValue*)eval;
+        for(pair <string, Value*> i : temp->properties){
+            cout << tab_s << "Key: " << i.first << '\n';
+            cout << tab_s << "Value:\n";
+            if(i.second == nullptr) cout << tab_s << "Unknown value!";
+            else print_eval(i.second, tab + 1);
+            cout << '\n';
+        }
+    }
+    else{
+        cout << tab_s << "Type: Null\nValue: Null\n";
     }
 }
 
@@ -151,21 +182,6 @@ int main(int argc, char *argv[]){
     Env* env = new Env;
     InitNatives(env);
     Value* eval = evaluate(program, env);
-    if(eval->getType() == ValueType::Number){
-        cout << "Type: Number\n";
-        NumberVal* temp = (NumberVal*)eval;
-        cout << "Value: " << temp->val << '\n';
-    }
-    else if(eval->getType() == ValueType::Bool){
-        cout << "Type: Bool\n";
-        BoolValue* temp = (BoolValue*)eval;
-        cout << "Value: " << (int)temp->val << '\n'; 
-    }
-    else{
-        cout << "Type: Null\nValue: Null\n";
-    }
-
-
-
+    print_eval(eval, 0);
     return 0;
 }

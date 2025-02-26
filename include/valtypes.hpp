@@ -1,14 +1,15 @@
 #ifndef VALUE_TYPES
 #define VALUE_TYPES
 
-// !!! tam ve kesr eded ferqini implement ele
 #include <string>
+#include <unordered_map>
 
 enum class ValueType{
     None,
     Null,
     Number,
-    Bool
+    Bool,
+    Object
 };
 
 class Value{
@@ -54,6 +55,19 @@ class BoolValue : public Value{
     ValueType type = ValueType::Bool;
     public:
     bool val;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class ObjectValue : public Value{
+    private:
+    
+    ValueType type = ValueType::Object;
+    public:
+
+    std::unordered_map <std::string, Value*> properties;
 
     ValueType getType() const override{
         return this->type;

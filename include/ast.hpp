@@ -112,7 +112,7 @@ class PropertyLiteral : public Expr{
     public:
 
     std::string key;
-    Expr* val;
+    Expr* val = nullptr;
 
     NodeType getKind() const override{
         return kind;

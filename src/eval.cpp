@@ -1,4 +1,5 @@
 #include <eval.hpp>
+#include <cmath>
 
 Value* eval_program(Program* program, Env* env){
     Value* last = new NullVal;
@@ -7,6 +8,10 @@ Value* eval_program(Program* program, Env* env){
         last = evaluate(program->body[i], env);
 
     return last;
+}
+
+bool isInteger(long double num) {
+    return num == std::floor(num);
 }
 
 Value* eval_bin_expr(BinaryExpr* binop, Env* env){
@@ -42,9 +47,33 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             temp->val = nl->val / nr->val;
             return temp;
         }
+        if(binop->op == "%"){
+            NumberVal* temp = new NumberVal;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            if(!isInteger(nl->val) || !isInteger(nr->val)){
+                cout << "Evaluation Error: Kesr ededlerin MOD-u tapilmir!";
+                exit(0); // !!! Debug systemi ile deyis
+            }
+            long long left = nl->val;
+            long long right = nr->val;
+            temp->val = left % right;
+            return temp;
+        }
     }
 
     return new NullVal;
+}
+
+Value* eval_object_expr(ObjectLiteral* obj, Env* env){
+    ObjectValue* object = new ObjectValue;
+
+    for(const PropertyLiteral* i : obj->properties){
+        Value* val = (i->val == nullptr) ? (env->lookUpVar(i->key)) : (evaluate(i->val, env));
+        object->properties[i->key] = val;
+    }
+
+    return object;
 }
 
 Value* eval_ident(Identifier* idn, Env* env){
@@ -76,6 +105,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::IDENTIFIER){
         Identifier* childObj = (Identifier*)astNode;
         return eval_ident(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::OBJECT_L){
+        ObjectLiteral* childObj = (ObjectLiteral*)astNode;
+        return eval_object_expr(childObj, env);
     }
     else if(astNode->getKind() == NodeType::ASSIGNEXPR){
         AssignExpr* childObj = (AssignExpr*)astNode;
