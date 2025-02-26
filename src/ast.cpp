@@ -10,7 +10,3 @@ NumericLiteral::NumericLiteral(std::string val){
         std::cerr << "Error: " << e.what() << '\n';
     }
 }
-
-Program::Program(){
-    kind = NodeType::PROGRAM;
-}

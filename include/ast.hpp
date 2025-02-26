@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 
 #include <iostream> // temp
@@ -31,11 +32,10 @@ class Stmt{
 class Program : public Stmt{
     NodeType kind = NodeType::PROGRAM;
     public:
-    std::vector <Stmt*> body;
+    std::vector <std::shared_ptr<Stmt>> body;
     NodeType getKind() const override{
         return kind;
     }
-    Program();
 };
 
 
@@ -49,7 +49,7 @@ class VarDeclaration : public Stmt{
 
     bool constant = false;
     std::string identifier;
-    Expr* val;
+    std::shared_ptr<Expr> val;
 
     NodeType getKind() const override{
         return kind;
@@ -61,8 +61,8 @@ class AssignExpr : public Expr{
     NodeType kind = NodeType::ASSIGNEXPR;
     
     public:
-    Expr* assignexpr;
-    Expr* value;
+    std::shared_ptr<Expr> assignexpr;
+    std::shared_ptr<Expr> value;
 
     NodeType getKind() const override{
         return kind;
@@ -73,8 +73,8 @@ class AssignExpr : public Expr{
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;
     public:
-    Expr* left;
-    Expr* right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
     std::string op = "";
 
     NodeType getKind() const override{
@@ -112,7 +112,7 @@ class PropertyLiteral : public Expr{
     public:
 
     std::string key;
-    Expr* val = nullptr;
+    std::shared_ptr<Expr> val = nullptr;
 
     NodeType getKind() const override{
         return kind;
@@ -124,7 +124,7 @@ class ObjectLiteral : public Expr{
     NodeType kind = NodeType::OBJECT_L;
     public:
 
-    std::vector <PropertyLiteral*> properties;
+    std::vector <std::shared_ptr<PropertyLiteral>> properties;
 
     NodeType getKind() const override{
         return kind;

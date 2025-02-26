@@ -3,6 +3,8 @@
 
 #include <string>
 #include <unordered_map>
+#include <memory>
+using namespace std;
 
 enum class ValueType{
     None,
@@ -67,7 +69,7 @@ class ObjectValue : public Value{
     ValueType type = ValueType::Object;
     public:
 
-    std::unordered_map <std::string, Value*> properties;
+    std::unordered_map <std::string, shared_ptr<Value>> properties;
 
     ValueType getType() const override{
         return this->type;

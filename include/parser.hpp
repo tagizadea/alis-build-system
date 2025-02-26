@@ -4,6 +4,7 @@
 #include <ast.hpp>
 #include <lexer.hpp>
 #include <iostream>
+#include <memory>
 
 class Parser{
     private:
@@ -17,14 +18,14 @@ class Parser{
     Token eat();
     Token expect(TokenType t, string err);
 
-    Stmt* parse_stmt();
-    Stmt* parse_var_declaration();
-    Expr* parse_expr();
-    Expr* parse_primary_expr();
-    Expr* parse_additive_expr();
-    Expr* parse_mult_expr();
-    Expr* parse_assignment_expr();
-    Expr* parse_object_expr();
+    shared_ptr<Stmt> parse_stmt();
+    shared_ptr<Stmt> parse_var_declaration();
+    shared_ptr<Expr> parse_expr();
+    shared_ptr<Expr> parse_primary_expr();
+    shared_ptr<Expr> parse_additive_expr();
+    shared_ptr<Expr> parse_mult_expr();
+    shared_ptr<Expr> parse_assignment_expr();
+    shared_ptr<Expr> parse_object_expr();
 
     public:
 

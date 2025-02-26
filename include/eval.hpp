@@ -7,6 +7,6 @@
 #include <iostream>
 #include <env.hpp>
 
-Value* evaluate(Stmt* astNode, Env* env_instance);
+std::shared_ptr <Value> evaluate(std::shared_ptr<Stmt> astNode, std::shared_ptr <Env> env_instance);
 
 #endif

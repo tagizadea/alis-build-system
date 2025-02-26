@@ -16,6 +16,15 @@ bool mainFileFlag = false;
 
 vector <string> files;
 
+// Printing Tokens
+void print_tokens(Token* tokens){
+    for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
+        cout << "Token: " << tokens[i].value << " (Type: " 
+        << rKeywords[tokens[i].type] << ' '
+        << (int)tokens[i].type << ")\n";
+    }
+}
+
 // Printing Abstact Syntax Tree using Statements
 void print_stmt(Stmt* stmt, int tab){
     NodeType kind = stmt->getKind();
@@ -26,7 +35,7 @@ void print_stmt(Stmt* stmt, int tab){
         Program* childObj = dynamic_cast<Program*>(stmt);
         cout << tab_s << "{\n";
         for(int i = 0; i < childObj->body.size();++i){
-            print_stmt(childObj->body[i], tab + 1);
+            print_stmt((childObj->body[i]).get(), tab + 1);
             cout << '\n';
         }
         cout << tab_s << "}\n";
@@ -34,9 +43,9 @@ void print_stmt(Stmt* stmt, int tab){
     else if(NodeType::BINARYEXPR == kind){
         cout << tab_s << "Type: BinaryExpr\n";
         BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);
-        print_stmt(childObj->left, tab + 1);
+        print_stmt((childObj->left).get(), tab + 1);
         cout << tab_s << "Operator: " << childObj->op << '\n';
-        print_stmt(childObj->right, tab + 1);
+        print_stmt((childObj->right).get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::NUMERIC_L == kind){
@@ -48,7 +57,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: ObjectLiteral";
         ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
         cout << "{\n";
-        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
+        for(int i=0;i<childObj->properties.size();++i) print_stmt((childObj->properties[i]).get(), tab + 1);
         cout << tab_s << "}\n";
     }
     else if(NodeType::PROPERTY_L == kind){
@@ -57,7 +66,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Key: "<<childObj->key << '\n';
         cout << tab_s << "Value:\n";
         if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
-        else print_stmt(childObj->val, tab + 1);
+        else print_stmt((childObj->val).get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::VAR_D == kind){
@@ -66,15 +75,15 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
         cout << tab_s << "Variable_Name: " << childObj->identifier << '\n';
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->val, tab + 1);
+        print_stmt((childObj->val).get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::ASSIGNEXPR == kind){
         cout << tab_s << "Type: AssignmentExpr\n";
         AssignExpr* childObj = dynamic_cast<AssignExpr*>(stmt);
-        print_stmt(childObj->assignexpr, tab + 1);
+        print_stmt((childObj->assignexpr).get(), tab + 1);
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->value, tab + 1);
+        print_stmt((childObj->value).get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::IDENTIFIER == kind){
@@ -104,11 +113,11 @@ void print_eval(Value* eval, int tab){
     else if(eval->getType() == ValueType::Object){
         cout << tab_s << "Type: Object\n";
         ObjectValue* temp = (ObjectValue*)eval;
-        for(pair <string, Value*> i : temp->properties){
+        for(pair <string, shared_ptr<Value>> i : temp->properties){
             cout << tab_s << "Key: " << i.first << '\n';
             cout << tab_s << "Value:\n";
             if(i.second == nullptr) cout << tab_s << "Unknown value!";
-            else print_eval(i.second, tab + 1);
+            else print_eval(i.second.get(), tab + 1);
             cout << '\n';
         }
     }
@@ -164,10 +173,7 @@ int main(int argc, char *argv[]){
 
     // Printing Lexer for debug
     cout << "Lexer:\n";
-    for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
-        cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
-        << (int)tokens[i].type << ")\n";
-    }
+    print_tokens(tokens);
     cout << '\n';
     
     Parser* parser = new Parser(tokens);
@@ -179,9 +185,9 @@ int main(int argc, char *argv[]){
 
     // Printing Evalutation for debug
     cout << "\nEVALUATION:\n";
-    Env* env = new Env;
-    InitNatives(env);
-    Value* eval = evaluate(program, env);
-    print_eval(eval, 0);
+    shared_ptr<Env> env = make_shared<Env>();
+    InitNatives(env.get());
+    shared_ptr<Value> eval = evaluate(make_shared<Program>(program), env);
+    print_eval(eval.get(), 0);
     return 0;
 }
