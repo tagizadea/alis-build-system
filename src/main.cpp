@@ -95,6 +95,18 @@ void print_stmt(Stmt* stmt, int tab){
         else print_stmt(childObj->property, tab + 1);
         cout << '\n';
     }
+    else if(NodeType::CALLEXPR == kind){
+        cout << tab_s << "Type: CallExpr\n";
+        CallExpr* childObj = dynamic_cast<CallExpr*>(stmt);
+        cout << tab_s << "Args:{\n";
+        for(int i=0; i < childObj->args.size();++i){
+            print_stmt(childObj->args[i], tab + 1);
+        }
+        cout << tab_s << "}\n";
+        cout << tab_s << "CallEr:\n";
+        print_stmt(childObj->callexpr, tab + 1);
+        cout << '\n';
+    }
     else{
         cout << tab_s  << "Unknown Statement!\n"; // !!! assert ile deyisdir
     }
