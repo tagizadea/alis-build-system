@@ -55,7 +55,65 @@ Stmt* Parser::parse_var_declaration(){
 
 Expr* Parser::parse_expr(){
     //return parse_primary_expr();
-    return parse_additive_expr();
+    //return parse_additive_expr();
+    return parse_assignment_expr();
+}
+
+Expr* Parser::parse_assignment_expr(){
+    //Expr* left = parse_additive_expr();
+    Expr* left = parse_object_expr();
+
+    if(at().type == TokenType::ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        temp->assignexpr = left;
+        temp->value = val;
+        return temp;
+    }
+
+    return left;
+}
+
+Expr* Parser::parse_object_expr(){
+    if(at().type != TokenType::LBRACK) return parse_additive_expr();
+    
+    eat();
+    vector <PropertyLiteral*> v;
+    
+    while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
+        string key = expect(TokenType::Identifier, "ObjectLiteral key is not found").value;
+        
+        if(at().type == TokenType::COMMA){
+            eat();
+            PropertyLiteral* temp = new PropertyLiteral;
+            temp->key = key;
+            temp->val = nullptr;
+            v.push_back(temp);
+            continue;
+        }
+        else if(at().type == TokenType::RBRACK){
+            PropertyLiteral* temp = new PropertyLiteral;
+            temp->key = key;
+            temp->val = nullptr;
+            v.push_back(temp);
+            continue;
+        }
+
+        expect(TokenType::COLON, "ObjectLiteral colon is missing");
+        Expr* value = parse_expr();
+
+        PropertyLiteral* temp = new PropertyLiteral;
+        temp->key = key;
+        temp->val = value;
+        v.push_back(temp);
+        expect(TokenType::COMMA, "ObjectLiteral comma is missing");
+    }
+
+    expect(TokenType::RBRACK, "Bracket bağlanmayıb");
+    ObjectLiteral* temp = new ObjectLiteral;
+    temp->properties = v;
+    return temp;
 }
 
 Expr* Parser::parse_additive_expr(){

@@ -19,6 +19,8 @@ map <string, TokenType> Keywords = {
     {"{", TokenType::LBRACK},
     {"}", TokenType::RBRACK},
     {";", TokenType::SEMICOLON},
+    {":", TokenType::COLON},
+    {",", TokenType::COMMA},
     {"String", TokenType::String},
     {"Invalid", TokenType::Invalid}
 };

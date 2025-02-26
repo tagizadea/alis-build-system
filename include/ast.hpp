@@ -11,7 +11,10 @@ enum class NodeType{
     NONE,
     PROGRAM,
     VAR_D,
+    ASSIGNEXPR,
     NUMERIC_L,
+    PROPERTY_L,
+    OBJECT_L,
     IDENTIFIER,
     BINARYEXPR
 };
@@ -53,6 +56,20 @@ class VarDeclaration : public Stmt{
     }
 };
 
+class AssignExpr : public Expr{
+    private:
+    NodeType kind = NodeType::ASSIGNEXPR;
+    
+    public:
+    Expr* assignexpr;
+    Expr* value;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
+
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;
     public:
@@ -84,6 +101,30 @@ class NumericLiteral : public Expr{
     public:
     long double val;
     NumericLiteral(std::string val);
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class PropertyLiteral : public Expr{
+    NodeType kind = NodeType::PROPERTY_L;
+    public:
+
+    std::string key;
+    Expr* val;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+
+class ObjectLiteral : public Expr{
+    NodeType kind = NodeType::OBJECT_L;
+    public:
+
+    std::vector <PropertyLiteral*> properties;
 
     NodeType getKind() const override{
         return kind;

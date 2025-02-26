@@ -54,7 +54,16 @@ Value* eval_ident(Identifier* idn, Env* env){
 
 Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
     Value* value = var_d->val ? (evaluate(var_d->val, env)) : (Make_Null());
-    return env->declareVar(var_d->identifier, value);
+    return env->declareVar(var_d->identifier, value, var_d->constant);
+}
+
+Value* eval_var_assignment(AssignExpr* as, Env* env){
+    if(as->assignexpr->getKind() != NodeType::IDENTIFIER){
+        cout << "Evaluation Error: Assignmentdə sol identifier işlənməyib!";
+        exit(0); // !!! Debug ile deyis
+    }
+    string varname = ((Identifier*)(as->assignexpr))->symbol;
+    return env->assignVar(varname, evaluate(as->value, env));
 }
 
 Value* evaluate(Stmt* astNode, Env* env){
@@ -67,6 +76,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::IDENTIFIER){
         Identifier* childObj = (Identifier*)astNode;
         return eval_ident(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::ASSIGNEXPR){
+        AssignExpr* childObj = (AssignExpr*)astNode;
+        return eval_var_assignment(childObj, env);
     }
     else if(astNode->getKind() == NodeType::BINARYEXPR){
         BinaryExpr* childObj = (BinaryExpr*)astNode;

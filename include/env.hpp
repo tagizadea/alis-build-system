@@ -5,15 +5,17 @@
 #include <parser.hpp>
 #include <valtypes.hpp>
 #include <unordered_map>
+#include <unordered_set>
 
 class Env{
     private:
     Env* parent = nullptr;
     vector <Env*> children;
     unordered_map <string, Value*> variables;
+    unordered_set <string> constants;
     
     public:
-    Value* declareVar(string name, Value* val);
+    Value* declareVar(string name, Value* val, bool isConst);
     Value* assignVar(string name, Value* val);
     Env* resolve(string name);
     Value* lookUpVar(string name);

@@ -44,6 +44,21 @@ void print_stmt(Stmt* stmt, int tab){
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
+    else if(NodeType::OBJECT_L == kind){
+        cout << tab_s << "Type: ObjectLiteral\n";
+        ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
+        cout << tab_s << "{\n";
+        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
+        cout << tab_s << "}\n";
+    }
+    else if(NodeType::PROPERTY_L == kind){
+        cout << tab_s << "Type: ProperyLiteral\n";
+        PropertyLiteral* childObj = dynamic_cast<PropertyLiteral*>(stmt);
+        cout << tab_s << "Key: "<<childObj->key << '\n';
+        cout << tab_s << "Value:\n";
+        print_stmt(childObj->val, tab + 1);
+        cout << '\n';
+    }
     else if(NodeType::VAR_D == kind){
         cout << tab_s << "Type: VariableDeclaration\n";
         VarDeclaration* childObj = dynamic_cast<VarDeclaration*>(stmt);
@@ -51,6 +66,14 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Variable_Name: " << childObj->identifier << '\n';
         cout << tab_s << "Value:\n";
         print_stmt(childObj->val, tab + 1);
+        cout << '\n';
+    }
+    else if(NodeType::ASSIGNEXPR == kind){
+        cout << tab_s << "Type: AssignmentExpr\n";
+        AssignExpr* childObj = dynamic_cast<AssignExpr*>(stmt);
+        print_stmt(childObj->assignexpr, tab + 1);
+        cout << tab_s << "Value:\n";
+        print_stmt(childObj->value, tab + 1);
         cout << '\n';
     }
     else if(NodeType::IDENTIFIER == kind){
@@ -132,6 +155,11 @@ int main(int argc, char *argv[]){
         cout << "Type: Number\n";
         NumberVal* temp = (NumberVal*)eval;
         cout << "Value: " << temp->val << '\n';
+    }
+    else if(eval->getType() == ValueType::Bool){
+        cout << "Type: Bool\n";
+        BoolValue* temp = (BoolValue*)eval;
+        cout << "Value: " << (int)temp->val << '\n'; 
     }
     else{
         cout << "Type: Null\nValue: Null\n";

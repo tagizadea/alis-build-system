@@ -1,17 +1,23 @@
 #include <env.hpp>
 
-Value* Env::declareVar(string name, Value *val){
+Value* Env::declareVar(string name, Value *val, bool isConst){
     if(variables.find(name) != variables.end()){
         cout << "Declare Error: There is already variable " << name;
         exit(0);
     }
 
     variables[name] = val;
+
+    if(isConst) constants.insert(name);
     return val;
 }
 
 Value* Env::assignVar(string name, Value *val){
     Env* en = this->resolve(name);
+    if(en->constants.find(name) != en->constants.end()){
+        cout << "Assign Error: Constant deyer assign olanmaz! - " << name;
+        exit(0); // !!! Debug systemi ile deyis
+    }
     en->variables[name] = val;
     return val;
 }
@@ -50,13 +56,13 @@ NullVal* Make_Null(){
 
 void InitNatives(Env* env){
     // Numbers
-    env->declareVar("SALAM", Make_Number(10));
-    env->declareVar("ZERO", new NumberVal);
+    env->declareVar("SALAM", Make_Number(10), true);
+    env->declareVar("ZERO", new NumberVal, true);
 
     // Bools
-    env->declareVar("true", Make_Bool(true));
-    env->declareVar("false", Make_Bool(false));
+    env->declareVar("true", Make_Bool(true), true);
+    env->declareVar("false", Make_Bool(false), true);
 
     // Null
-    env->declareVar("Null", Make_Null());
+    env->declareVar("Null", Make_Null(), true);
 }
