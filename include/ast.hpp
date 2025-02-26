@@ -4,13 +4,14 @@
 #include <vector>
 #include <string>
 
+
 #include <iostream> // temp
 
 enum class NodeType{
     NONE,
     PROGRAM,
+    VAR_D,
     NUMERIC_L,
-    NULL_L,
     IDENTIFIER,
     BINARYEXPR
 };
@@ -34,8 +35,22 @@ class Program : public Stmt{
     Program();
 };
 
+
 class Expr : public Stmt{
     public:
+};
+
+class VarDeclaration : public Stmt{
+    NodeType kind = NodeType::VAR_D;
+    public:
+
+    bool constant = false;
+    std::string identifier;
+    Expr* val;
+
+    NodeType getKind() const override{
+        return kind;
+    }
 };
 
 class BinaryExpr : public Expr{
@@ -69,16 +84,6 @@ class NumericLiteral : public Expr{
     public:
     long double val;
     NumericLiteral(std::string val);
-
-    NodeType getKind() const override{
-        return kind;
-    }
-};
-
-class NullLiteral : public Expr{
-    NodeType kind = NodeType::NULL_L;
-    public:
-    std::string val = "Null";
 
     NodeType getKind() const override{
         return kind;

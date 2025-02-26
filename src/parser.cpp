@@ -20,7 +20,37 @@ Token Parser::expect(TokenType t, string err){
 }
 
 Stmt* Parser::parse_stmt(){
+    if(at().type == TokenType::Let || at().type == TokenType::Const){
+        return parse_var_declaration();
+    }
     return parse_expr();
+}
+
+Stmt* Parser::parse_var_declaration(){
+    bool const isConst = eat().type == TokenType::Const;
+    string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
+    
+    if(at().type == TokenType::SEMICOLON){
+        eat();
+        if(isConst){
+            cout << "Parser Error: Constant dəyər yoxdur!\n";
+            exit(0); // !!! Debug sistemi ile deyis
+        }
+
+        VarDeclaration* temp = new VarDeclaration;
+        temp->constant = false;
+        temp->identifier = identifier;
+        temp->val = 0;
+        return temp;
+    }
+
+    expect(TokenType::ASSIGN, "Let or Const declared without assign or semicolon");
+    VarDeclaration* temp = new VarDeclaration;
+    temp->constant = isConst;
+    temp->identifier = identifier;
+    temp->val = parse_expr();
+    expect(TokenType::SEMICOLON, "Let or Const declared without semicolon");
+    return temp;
 }
 
 Expr* Parser::parse_expr(){
@@ -65,12 +95,7 @@ Expr* Parser::parse_primary_expr(){
 
     if(tk == TokenType::Identifier){
         Expr* temp = new Identifier(eat().value);
-        //temp->kind = NodeType::IDENTIFIER;
         return temp;
-    }
-    else if(tk == TokenType::Null){
-        eat();
-        return new NullLiteral;
     }
     else if(tk == TokenType::Number){
         Expr* temp = new NumericLiteral(eat().value);

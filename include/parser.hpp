@@ -18,6 +18,7 @@ class Parser{
     Token expect(TokenType t, string err);
 
     Stmt* parse_stmt();
+    Stmt* parse_var_declaration();
     Expr* parse_expr();
     Expr* parse_primary_expr();
     Expr* parse_additive_expr();

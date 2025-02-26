@@ -16,7 +16,7 @@ bool mainFileFlag = false;
 
 vector <string> files;
 
-
+// Printing Abstact Syntax Tree using Statements
 void print_stmt(Stmt* stmt, int tab){
     NodeType kind = stmt->getKind();
     string tab_s = "";
@@ -44,9 +44,14 @@ void print_stmt(Stmt* stmt, int tab){
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
-    else if(NodeType::NULL_L == kind){
-        cout << tab_s  << "Type: NullLiteral\n";
-        cout << tab_s  << "Value: " << "Null" << '\n';
+    else if(NodeType::VAR_D == kind){
+        cout << tab_s << "Type: VariableDeclaration\n";
+        VarDeclaration* childObj = dynamic_cast<VarDeclaration*>(stmt);
+        cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
+        cout << tab_s << "Variable_Name: " << childObj->identifier << '\n';
+        cout << tab_s << "Value:\n";
+        print_stmt(childObj->val, tab + 1);
+        cout << '\n';
     }
     else if(NodeType::IDENTIFIER == kind){
         cout << tab_s  << "Type: Identifier\n";
@@ -110,7 +115,7 @@ int main(int argc, char *argv[]){
         << (int)tokens[i].type << ")\n";
     }
     cout << '\n';
-
+    
     Parser* parser = new Parser(tokens);
     Program* program = parser->produceAST();
 
@@ -120,7 +125,9 @@ int main(int argc, char *argv[]){
 
     // Printing Evalutation for debug
     cout << "\nEVALUATION:\n";
-    Value* eval = evaluate(program);
+    Env* env = new Env;
+    InitNatives(env);
+    Value* eval = evaluate(program, env);
     if(eval->getType() == ValueType::Number){
         cout << "Type: Number\n";
         NumberVal* temp = (NumberVal*)eval;
@@ -129,5 +136,8 @@ int main(int argc, char *argv[]){
     else{
         cout << "Type: Null\nValue: Null\n";
     }
+
+
+
     return 0;
 }

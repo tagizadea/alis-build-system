@@ -1,11 +1,12 @@
 #include <lexer.hpp>
 
 map <string, TokenType> Keywords = {
-    {"Null", TokenType::Null},
     {"if", TokenType::IF},
     {"while", TokenType::WHILE},
     {"else", TokenType::ELSE},
     {"Identifier", TokenType::Identifier},
+    {"let", TokenType::Let},
+    {"const", TokenType::Const},
     {"=", TokenType::ASSIGN},
     {"Number", TokenType::Number},
     {"+", TokenType::PLUS},
@@ -17,6 +18,7 @@ map <string, TokenType> Keywords = {
     {")", TokenType::RPAREN},
     {"{", TokenType::LBRACK},
     {"}", TokenType::RBRACK},
+    {";", TokenType::SEMICOLON},
     {"String", TokenType::String},
     {"Invalid", TokenType::Invalid}
 };
@@ -26,7 +28,7 @@ map <TokenType, string> rKeywords;
 Lexer::Lexer(string source) : source(source), position(0) {}
 
 Token* Lexer::tokenize(){
-    int maxTokens = 1000;
+    int maxTokens = 2000000;
     Token* tokens = new Token[maxTokens];
     int tokenIndex = 0;
 
@@ -96,7 +98,7 @@ bool Lexer::isAlpha(char c){
 }
 
 bool Lexer::isDigit(char c){
-    return c >= '0' && c <= '9';
+    return (c >= '0' && c <= '9') || (c == '.');
 }
 
 bool Lexer::isAlphaNumeric(char c){

@@ -7,7 +7,8 @@
 enum class ValueType{
     None,
     Null,
-    Number
+    Number,
+    Bool
 };
 
 class Value{
@@ -41,6 +42,18 @@ class NumberVal : public Value{
     ValueType type = ValueType::Number;
     public:
     long double val = 0.0;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class BoolValue : public Value{
+    private:
+    
+    ValueType type = ValueType::Bool;
+    public:
+    bool val;
 
     ValueType getType() const override{
         return this->type;
