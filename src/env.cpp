@@ -18,6 +18,7 @@ Value* Env::assignVar(string name, Value *val){
         cout << "Assign Error: Constant deyer assign olanmaz! - " << name;
         exit(0); // !!! Debug systemi ile deyis
     }
+    if(en->variables.find(name) != en->variables.end()) delete en->variables[name];
     en->variables[name] = val;
     return val;
 }

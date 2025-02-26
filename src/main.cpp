@@ -66,7 +66,8 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
         cout << tab_s << "Variable_Name: " << childObj->identifier << '\n';
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->val, tab + 1);
+        if(childObj->val == nullptr) cout << tab_s << "Undefined value";
+        else print_stmt(childObj->val, tab + 1);
         cout << '\n';
     }
     else if(NodeType::ASSIGNEXPR == kind){
