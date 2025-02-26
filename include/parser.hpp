@@ -25,6 +25,11 @@ class Parser{
     Expr* parse_mult_expr();
     Expr* parse_assignment_expr();
     Expr* parse_object_expr();
+    Expr* parse_call_member_expr();
+    Expr* parse_member_expr();
+    Expr* parse_call_expr(Expr* call);
+    vector <Expr*> parse_args();
+    vector <Expr*> parse_args_list();
 
     public:
 

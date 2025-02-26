@@ -16,11 +16,14 @@ map <string, TokenType> Keywords = {
     {"%", TokenType::MOD},
     {"(", TokenType::LPAREN},
     {")", TokenType::RPAREN},
+    {"[", TokenType::LBRACE},
+    {"]", TokenType::RBRACE},
     {"{", TokenType::LBRACK},
     {"}", TokenType::RBRACK},
     {";", TokenType::SEMICOLON},
     {":", TokenType::COLON},
     {",", TokenType::COMMA},
+    {".", TokenType::DOT},
     {"String", TokenType::String},
     {"Invalid", TokenType::Invalid}
 };
@@ -69,7 +72,7 @@ Token Lexer::parseIdentifier(){
 Token Lexer::parseNumber(){
     string start = "";
     start += source[position++];
-    while(isDigit(source[position])){
+    while(isDigit(source[position]) || source[position] == '.'){
         start += source[position];
         position++;
     }
@@ -100,7 +103,7 @@ bool Lexer::isAlpha(char c){
 }
 
 bool Lexer::isDigit(char c){
-    return (c >= '0' && c <= '9') || (c == '.');
+    return c >= '0' && c <= '9';
 }
 
 bool Lexer::isAlphaNumeric(char c){

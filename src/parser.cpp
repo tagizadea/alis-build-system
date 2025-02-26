@@ -133,12 +133,13 @@ Expr* Parser::parse_additive_expr(){
     return left;
 }
 
-Expr *Parser::parse_mult_expr(){
-    Expr* left = parse_primary_expr();
+Expr* Parser::parse_mult_expr(){
+    // Expr* left = parse_primary_expr();
+    Expr* left = parse_call_member_expr();
     
     while(at().value == "*" || at().value == "/" || at().value == "%"){
         string op = eat().value;
-        Expr* right = parse_primary_expr();
+        Expr* right = parse_call_member_expr();
         BinaryExpr* binop = new BinaryExpr;
         binop->left = left;
         binop->op = op;
@@ -147,6 +148,79 @@ Expr *Parser::parse_mult_expr(){
     }
 
     return left;
+}
+
+Expr* Parser::parse_call_member_expr(){
+    Expr* member = parse_member_expr();
+    
+    if(at().type == TokenType::LPAREN) return parse_call_expr(member);
+    
+    return member;
+}
+
+Expr* Parser::parse_member_expr(){
+    Expr* object = parse_primary_expr();
+
+    while(at().type == TokenType::DOT || at().type == TokenType::LBRACE){
+        Token op = eat();
+        Expr* property;
+        bool isComputed;
+
+        if(op.type == TokenType::DOT){
+            isComputed = false;
+            property = parse_primary_expr();
+
+            if(property->getKind() != NodeType::IDENTIFIER){
+                cout << "Parse Error: Noqte identifier olmadan islenenmez";
+                exit(0); // !!! Debug systemi ile deyis
+            }
+        }
+        else{
+            isComputed = true;
+            property = parse_expr();
+            expect(TokenType::RBRACE, "Kvadrat mötərizə bağlanmayıb");
+        }
+
+        MemberExpr* temp = new MemberExpr;
+        temp->computed = isComputed;
+        temp->property = property;
+        temp->object = object;
+        delete object; //
+        object = temp;
+    }
+
+    return object;
+}
+
+Expr* Parser::parse_call_expr(Expr* call){
+    CallExpr* call_expr = new CallExpr;
+    call_expr->callexpr = call;
+    call_expr->args = parse_args();
+    
+    if(at().type == TokenType::LPAREN)
+        call_expr = (CallExpr*)parse_call_expr(call_expr);
+
+    return call_expr;
+}
+
+vector<Expr*> Parser::parse_args(){
+    expect(TokenType::LPAREN, "Mötərizə açılmalı idi :')");
+    vector <Expr*> v;
+    if(at().type != TokenType::RPAREN) v = parse_args_list();
+    expect(TokenType::RPAREN, "Mötərizə bağlanmalı idi :')");
+    return v;
+}
+
+vector<Expr*> Parser::parse_args_list(){
+    vector <Expr*> v;
+    v.push_back(parse_assignment_expr());
+
+    while(at().type != TokenType::EndOfFile && at().type == TokenType::COMMA){
+        eat();
+        v.push_back(parse_assignment_expr());
+    }
+
+    return v;
 }
 
 Expr* Parser::parse_primary_expr(){

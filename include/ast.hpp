@@ -12,6 +12,8 @@ enum class NodeType{
     PROGRAM,
     VAR_D,
     ASSIGNEXPR,
+    MEMBEREXPR,
+    CALLEXPR,
     NUMERIC_L,
     PROPERTY_L,
     OBJECT_L,
@@ -125,6 +127,31 @@ class ObjectLiteral : public Expr{
     public:
 
     std::vector <PropertyLiteral*> properties;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class MemberExpr : public Expr{
+    NodeType kind = NodeType::MEMBEREXPR;
+    public:
+
+    Expr* object = nullptr;
+    Expr* property = nullptr;
+    bool computed;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class CallExpr : public Expr{
+    NodeType kind = NodeType::CALLEXPR;
+    public:
+
+    std::vector <Expr*> args;
+    Expr* callexpr = nullptr;
 
     NodeType getKind() const override{
         return kind;

@@ -6,8 +6,8 @@
 using namespace std;
 
 enum class TokenType{
-    Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, Let, Const, SEMICOLON, COLON, COMMA,
-    MULTIPLY, DIVIDE, MOD, LPAREN, RPAREN, LBRACK, RBRACK, String, EndOfFile, Invalid
+    Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, Let, Const, SEMICOLON, COLON, COMMA, DOT,
+    MULTIPLY, DIVIDE, MOD, LPAREN, RPAREN, LBRACK, RBRACK, LBRACE, RBRACE, String, EndOfFile, Invalid
 };
 
 extern map <string, TokenType> Keywords;

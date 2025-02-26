@@ -83,6 +83,18 @@ void print_stmt(Stmt* stmt, int tab){
         Identifier* childObj = dynamic_cast<Identifier*>(stmt);
         cout << tab_s << "Name: " << childObj->symbol << '\n';
     }
+    else if(NodeType::MEMBEREXPR == kind){
+        cout << tab_s << "Type: MemberExpr\n";
+        MemberExpr* childObj = dynamic_cast<MemberExpr*>(stmt);
+        cout << tab_s << "IsComputed: " << (int)childObj->computed << '\n';
+        //cout << "Object:\n";
+        //if(childObj->object == nullptr) cout << tab_s << "Undefined value";
+        //else print_stmt(childObj->object, tab + 1);
+        cout << tab_s << "Property:\n";
+        if(childObj->property == nullptr) cout << tab_s << "Undefined value";
+        else print_stmt(childObj->property, tab + 1);
+        cout << '\n';
+    }
     else{
         cout << tab_s  << "Unknown Statement!\n"; // !!! assert ile deyisdir
     }
