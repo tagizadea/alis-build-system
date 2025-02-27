@@ -23,12 +23,18 @@ vector<string> getSystemFiles(vector<string> &files){
 
 
 
-Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun
+Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | string ve endl duzelt
     for(int i=0;i<args.size();++i){
         if(args[i]->getType() == ValueType::Object){
             ObjectValue* temp = (ObjectValue*)args[i];
-            // !!! implement ele
-            cout << "Object\n";
+            cout << "Object{\n";
+
+            for(pair <string, Value*> i : temp->properties){
+                cout << "Key: \"" <<i.first << "\" Value: ";
+                print({i.second}, env);
+                cout << '\n';
+            }
+            cout << "}\n";
         } 
         else if(args[i]->getType() == ValueType::Number){
             NumberVal* temp = (NumberVal*)args[i];

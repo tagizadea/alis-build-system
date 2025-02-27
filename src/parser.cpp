@@ -78,12 +78,18 @@ Expr* Parser::parse_assignment_expr(){
 Expr* Parser::parse_object_expr(){
     if(at().type != TokenType::LBRACK) return parse_additive_expr();
     
-    eat();
+    eat().value;
     vector <PropertyLiteral*> v;
     
     while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
         string key = expect(TokenType::Identifier, "ObjectLiteral key is not found").value;
-        
+        int j;
+        for(j = i;tokens[j].value != "=";--j); // Daha yaxsi check sistemi lazimdi
+        string varname = tokens[j-1].value;
+        if(key == varname){
+            cout << "Parser Error: name of key cannot be same as parent object";
+            exit(0); // debug systemi ile deyis
+        }
         if(at().type == TokenType::COMMA){
             eat();
             PropertyLiteral* temp = new PropertyLiteral;

@@ -69,7 +69,9 @@ Value* eval_object_expr(ObjectLiteral* obj, Env* env){
     ObjectValue* object = new ObjectValue;
 
     for(const PropertyLiteral* i : obj->properties){
+
         Value* val = (i->val == nullptr) ? (env->lookUpVar(i->key)) : (evaluate(i->val, env));
+
         object->properties[i->key] = val;
     }
 

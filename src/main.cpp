@@ -141,8 +141,11 @@ void print_eval(Value* eval, int tab){
         cout << tab_s << "Type: NativeFunc\n";
         //NativeFuncVal* temp = (NativeFuncVal*)eval;
     }
+    else if(eval->getType() == ValueType::Null){
+        cout << tab_s << "Type: Null\n"<< tab_s <<"Value: Null\n";
+    }
     else{
-        cout << tab_s << "Type: Null\nValue: Null\n";
+        cout << tab_s << "Type: None\n";
     }
 }
 
@@ -192,25 +195,25 @@ int main(int argc, char *argv[]){
     Token* tokens = lexer.tokenize();
 
     // Printing Lexer for debug
-    cout << "Lexer:\n";
+    /*cout << "Lexer:\n";
     for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
         cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
         << (int)tokens[i].type << ")\n";
     }
-    cout << '\n';
+    cout << '\n';*/
     
     Parser* parser = new Parser(tokens);
     Program* program = parser->produceAST();
 
     // Printing AST for debug
-    cout << "AST:\n";
-    print_stmt(program, 0);
+    //cout << "AST:\n";
+    //print_stmt(program, 0);
 
     // Printing Evalutation for debug
-    cout << "\nEVALUATION:\n";
+    //cout << "\nEVALUATION:\n";
     Env* env = new Env;
     InitNatives(env);
     Value* eval = evaluate(program, env);
-    print_eval(eval, 0);
+    //print_eval(eval, 0);
     return 0;
 }
