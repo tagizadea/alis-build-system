@@ -82,4 +82,6 @@ void InitNatives(Env* env){
     env->declareVar("timeNow", Make_NFunc(temp), true);
     temp.funAddr = n_funs::floor;
     env->declareVar("floor", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::system;
+    env->declareVar("system", Make_NFunc(temp), true);
 }

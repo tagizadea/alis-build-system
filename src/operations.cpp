@@ -57,7 +57,7 @@ Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | strin
     return Make_Null();
 }
 
-Value *n_funs::timeNow(vector<Value*> args, Env *env){
+Value *n_funs::timeNow(vector<Value*> args, Env* env){
     auto now = std::chrono::system_clock::now();
     std::time_t now_c = std::chrono::system_clock::to_time_t(now);
     std::tm* local_time = std::localtime(&now_c);
@@ -68,7 +68,7 @@ Value *n_funs::timeNow(vector<Value*> args, Env *env){
     return Make_Number(hour * 60 + minute);
 }
 
-Value* n_funs::floor(vector<Value*> args, Env *env){
+Value* n_funs::floor(vector<Value*> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::Number){
         cout << "Floor Function: Wrong args";
         exit(0); // !!! debug systemi ile deyis
@@ -76,4 +76,15 @@ Value* n_funs::floor(vector<Value*> args, Env *env){
     NumberVal* temp = (NumberVal*)args[0];
     long long res = temp->val;
     return Make_Number(res);
+}
+
+Value* n_funs::system(vector<Value*> args, Env* env){
+    if(args.size() > 1 || args[0]->getType() != ValueType::String){
+        cout << "System Function: Wrong args. Use platform specific commans";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    
+    StringVal* temp = (StringVal*)args[0];
+    std::system(temp->val.c_str());
+    return Make_Null();
 }
