@@ -32,24 +32,24 @@ Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | strin
             for(pair <string, Value*> i : temp->properties){
                 cout << "Key: \"" <<i.first << "\" Value: ";
                 print({i.second}, env);
-                cout << '\n';
             }
-            cout << "}\n";
+            cout << "}";
         } 
         else if(args[i]->getType() == ValueType::Number){
             NumberVal* temp = (NumberVal*)args[i];
-            cout << temp->val << '\n';
+            cout << temp->val << ' ';
         }
         else if(args[i]->getType() == ValueType::Bool){
             BoolValue* temp = (BoolValue*)args[i];
-            if(temp->val) cout << "True\n";
-            else cout << "False\n";
+            if(temp->val) cout << "True ";
+            else cout << "False ";
         }
         else if(args[i]->getType() == ValueType::Null){
             NullVal* temp = (NullVal*)args[i];
-            cout << temp->val << '\n';
+            cout << temp->val << ' ';
         }
     }
+    cout << '\n';
     return Make_Null();
 }
 
@@ -62,4 +62,14 @@ Value *n_funs::timeNow(vector<Value*> args, Env *env){
     int hour = local_time->tm_hour;
     int minute = local_time->tm_min;
     return Make_Number(hour * 60 + minute);
+}
+
+Value* n_funs::floor(vector<Value*> args, Env *env){
+    if(args.size() > 1 || args[0]->getType() != ValueType::Number){
+        cout << "Floor Function: Wrong args";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    NumberVal* temp = (NumberVal*)args[0];
+    long long res = temp->val;
+    return Make_Number(res);
 }
