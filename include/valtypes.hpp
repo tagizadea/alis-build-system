@@ -10,6 +10,7 @@ enum class ValueType{
     Null,
     Number,
     Bool,
+    String,
     NFUNC,
     Object
 };
@@ -45,6 +46,18 @@ class NumberVal : public Value{
     ValueType type = ValueType::Number;
     public:
     long double val = 0.0;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class StringVal : public Value{
+    private:
+    
+    ValueType type = ValueType::String;
+    public:
+    std::string val = "";
 
     ValueType getType() const override{
         return this->type;

@@ -121,6 +121,12 @@ Value* evaluate(Stmt* astNode, Env* env){
         temp->val = childObj->val;
         return temp;
     }
+    else if(astNode->getKind() == NodeType::STRING_L){
+        StringLiteral* childObj = (StringLiteral*)astNode;
+        StringVal* temp = new StringVal;
+        temp->val = childObj->val;
+        return temp;
+    }
     else if(astNode->getKind() == NodeType::IDENTIFIER){
         Identifier* childObj = (Identifier*)astNode;
         return eval_ident(childObj, env);

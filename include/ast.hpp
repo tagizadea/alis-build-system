@@ -15,6 +15,7 @@ enum class NodeType{
     MEMBEREXPR,
     CALLEXPR,
     NUMERIC_L,
+    STRING_L,
     PROPERTY_L,
     OBJECT_L,
     IDENTIFIER,
@@ -103,6 +104,19 @@ class NumericLiteral : public Expr{
     public:
     long double val;
     NumericLiteral(std::string val);
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class StringLiteral : public Expr{
+    NodeType kind = NodeType::STRING_L;
+    public:
+
+    std::string val;
+
+    StringLiteral(std::string val);
 
     NodeType getKind() const override{
         return kind;

@@ -44,6 +44,11 @@ void print_stmt(Stmt* stmt, int tab){
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
+    else if(NodeType::STRING_L == kind){
+        cout << tab_s << "Type: StringLiteral\n";
+        StringLiteral* childObj = dynamic_cast<StringLiteral*>(stmt);
+        cout << tab_s << "Value: " << childObj->val << '\n';
+    }
     else if(NodeType::OBJECT_L == kind){
         cout << tab_s << "Type: ObjectLiteral";
         ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
@@ -119,6 +124,11 @@ void print_eval(Value* eval, int tab){
     if(eval->getType() == ValueType::Number){
         cout << tab_s << "Type: Number\n";
         NumberVal* temp = (NumberVal*)eval;
+        cout << tab_s << "Value: " << temp->val << '\n';
+    }
+    else if(eval->getType() == ValueType::String){
+        cout << tab_s << "Type: String\n";
+        StringVal* temp = (StringVal*)eval;
         cout << tab_s << "Value: " << temp->val << '\n';
     }
     else if(eval->getType() == ValueType::Bool){

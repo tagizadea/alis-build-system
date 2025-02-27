@@ -242,6 +242,10 @@ Expr* Parser::parse_primary_expr(){
         //cout << (int)temp->kind << '\n'; DEBUG CODE
         return temp;
     }
+    else if(tk == TokenType::String){
+        Expr* temp = new StringLiteral(eat().value);
+        return temp;
+    }
     else if(tk == TokenType::LPAREN){
         eat();
         Expr* temp = parse_expr();
