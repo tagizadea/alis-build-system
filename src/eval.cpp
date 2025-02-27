@@ -18,6 +18,37 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
     Value* lhs = evaluate(binop->left, env);
     Value* rhs = evaluate(binop->right, env);
 
+    if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::String){
+        if(binop->op == "+"){
+            StringVal* temp = new StringVal;
+            StringVal* nl = (StringVal*)lhs;
+            StringVal* nr = (StringVal*)rhs;
+            temp->val = nl->val + nr->val;
+            return temp;
+        }
+    }
+
+    if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
+        StringVal* temp = new StringVal;
+        StringVal* nl = (StringVal*)lhs;
+        NumberVal* nr = (NumberVal*)rhs;
+        //temp->val = nl->val + nr->val;
+        string s = "";
+        for(int i=0;i<nr->val;++i) s += nl->val;
+        temp->val = s;
+        return temp;
+    }
+    else if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
+        StringVal* temp = new StringVal;
+        NumberVal* nl = (NumberVal*)lhs;
+        StringVal* nr = (StringVal*)rhs;
+        //temp->val = nl->val + nr->val;
+        string s = "";
+        for(int i=0;i<nl->val;++i) s += nr->val;
+        temp->val = s;
+        return temp;
+    }
+
     if(lhs->getType() == ValueType::Number && rhs->getType() == ValueType::Number){
         if(binop->op == "+"){
             NumberVal* temp = new NumberVal;
