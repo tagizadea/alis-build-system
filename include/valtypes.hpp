@@ -3,12 +3,14 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 enum class ValueType{
     None,
     Null,
     Number,
     Bool,
+    NFUNC,
     Object
 };
 

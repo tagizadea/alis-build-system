@@ -137,6 +137,10 @@ void print_eval(Value* eval, int tab){
             cout << '\n';
         }
     }
+    else if(eval->getType() == ValueType::NFUNC){
+        cout << tab_s << "Type: NativeFunc\n";
+        //NativeFuncVal* temp = (NativeFuncVal*)eval;
+    }
     else{
         cout << tab_s << "Type: Null\nValue: Null\n";
     }

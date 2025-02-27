@@ -76,6 +76,23 @@ Value* eval_object_expr(ObjectLiteral* obj, Env* env){
     return object;
 }
 
+Value* eval_call_expr(CallExpr* expr, Env* env){
+    vector <Value*> args;
+    
+    for(Expr* i : expr->args) args.push_back(evaluate(i, env));
+
+    Value* fn = evaluate(expr->callexpr, env);
+
+    if(fn->getType() != ValueType::NFUNC){
+        cout << "Evaluation Error: Cannot call value that is not a function";
+        exit(0); // !!! Debug systemi ile deyis
+    }
+    
+
+    Value* result = ((NativeFuncVal*)fn)->call.funAddr(args, env);
+    return result;
+}
+
 Value* eval_ident(Identifier* idn, Env* env){
     Value* val = env->lookUpVar(idn->symbol);
     return val;
@@ -109,6 +126,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::OBJECT_L){
         ObjectLiteral* childObj = (ObjectLiteral*)astNode;
         return eval_object_expr(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::CALLEXPR){
+        CallExpr* childObj = (CallExpr*)astNode;
+        return eval_call_expr(childObj, env);
     }
     else if(astNode->getKind() == NodeType::ASSIGNEXPR){
         AssignExpr* childObj = (AssignExpr*)astNode;

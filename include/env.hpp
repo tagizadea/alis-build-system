@@ -6,6 +6,7 @@
 #include <valtypes.hpp>
 #include <unordered_map>
 #include <unordered_set>
+#include <operations.hpp>
 
 class Env{
     private:
@@ -21,9 +22,30 @@ class Env{
     Value* lookUpVar(string name);
 };
 
+struct FunctionCall{
+    std::vector <Value*> args;
+    Env* env;
+    Value* (*funAddr)(vector<Value*>, Env*);
+};
+
+
+class NativeFuncVal : public Value{
+    private:
+
+    ValueType type = ValueType::NFUNC;
+    public:
+
+    FunctionCall call;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
 NumberVal* Make_Number(long double val);
 BoolValue* Make_Bool(bool b);
 NullVal* Make_Null();
+NativeFuncVal* Make_NFunc(FunctionCall call);
 
 void InitNatives(Env* env);
 

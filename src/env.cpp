@@ -1,4 +1,5 @@
 #include <env.hpp>
+#include <operations.hpp>
 
 Value* Env::declareVar(string name, Value *val, bool isConst){
     if(variables.find(name) != variables.end()){
@@ -55,6 +56,12 @@ NullVal* Make_Null(){
     return new NullVal;
 }
 
+NativeFuncVal* Make_NFunc(FunctionCall call){ // !!! logic issue
+    NativeFuncVal* fun = new NativeFuncVal;
+    fun->call = call;
+    return fun;
+}
+
 void InitNatives(Env* env){
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
@@ -66,4 +73,11 @@ void InitNatives(Env* env){
 
     // Null
     env->declareVar("Null", Make_Null(), true);
+
+    // Native Functions
+    FunctionCall temp;
+    temp.funAddr = n_funs::print;
+    env->declareVar("print", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::timeNow;
+    env->declareVar("timeNow", Make_NFunc(temp), true);
 }

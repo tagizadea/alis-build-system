@@ -1,15 +1,21 @@
 #ifndef OPERATIONS
 #define OPERATIONS
+
 #include <iostream>
 #include <vector>
 #include <map>
+#include <valtypes.hpp>
+#include <functional>
+#include <env.hpp>
 using namespace std;
 
 vector <string> getSystemFiles(vector <string> &files);
 
-void hello();
+class Env;
 
-typedef void (*FuncPtr)();
-extern std::map<std::string, FuncPtr> functionMap;
+namespace n_funs{
+    Value* print(vector <Value*> args, Env* env);
+    Value* timeNow(vector <Value*> args, Env* env);
+}
 
 #endif
