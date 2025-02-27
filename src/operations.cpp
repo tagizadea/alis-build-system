@@ -44,6 +44,10 @@ Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | strin
             if(temp->val) cout << "True ";
             else cout << "False ";
         }
+        else if(args[i]->getType() == ValueType::String){
+            StringVal* temp = (StringVal*)args[i];
+            cout << temp->val << ' ';
+        }
         else if(args[i]->getType() == ValueType::Null){
             NullVal* temp = (NullVal*)args[i];
             cout << temp->val << ' ';
