@@ -215,6 +215,24 @@ Value* eval_var_assignment(AssignExpr* as, Env* env){
     string varname = ((Identifier*)(as->assignexpr))->symbol;
     return env->assignVar(varname, evaluate(as->value, env));
 }
+
+Value* eval_condition(CondExpr* cond, Env* env){
+    Value* condition = evaluate(cond->condition, env);
+    
+    if(condition->getType() != ValueType::Bool){
+        cout << "Evaluation Error: IF condition must be boolean value";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    BoolValue* temp = (BoolValue*)condition;
+    Value* result;
+
+    if(temp->val) result = evaluate(cond->ThenBranch, env);
+    else result = evaluate(cond->ElseBranch, env);
+
+    return result;
+}
+
 // Burda memory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
 Value* evaluate(Stmt* astNode, Env* env){
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
@@ -267,6 +285,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::VAR_D){
         VarDeclaration* childObj = (VarDeclaration*)astNode;
         return eval_var_declaration(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::CONDEXPR){
+        CondExpr* childObj = (CondExpr*)astNode;
+        return eval_condition(childObj, env);
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle
