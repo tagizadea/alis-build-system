@@ -76,7 +76,7 @@ Expr* Parser::parse_assignment_expr(){
 }
 
 Expr* Parser::parse_object_expr(){
-    if(at().type != TokenType::LBRACK) return parse_additive_expr();
+    if(at().type != TokenType::LBRACK) return parse_boolean_expr();
     
     eat().value;
     vector <PropertyLiteral*> v;
@@ -129,6 +129,23 @@ Expr* Parser::parse_additive_expr(){
     while(at().value == "+" || at().value == "-"){
         string op = eat().value;
         Expr* right = parse_mult_expr();
+        BinaryExpr* binop = new BinaryExpr;
+        binop->left = left;
+        binop->op = op;
+        binop->right = right;
+        left = binop;
+    }
+
+    return left;
+}
+
+Expr* Parser::parse_boolean_expr(){
+    Expr* left = parse_additive_expr();
+    
+    while(at().value == ">" || at().value == "<" || at().value == ">=" || at().value == "<=" || 
+          at().value == "==" || at().value == "!="){
+        string op = eat().value;
+        Expr* right = parse_additive_expr();
         BinaryExpr* binop = new BinaryExpr;
         binop->left = left;
         binop->op = op;

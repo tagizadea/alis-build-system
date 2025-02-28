@@ -14,6 +14,16 @@ map <string, TokenType> Keywords = {
     {"*", TokenType::MULTIPLY},
     {"/", TokenType::DIVIDE},
     {"%", TokenType::MOD},
+    {"&&", TokenType::AND},
+    {"||", TokenType::OR},
+    {"==", TokenType::EQUAL},
+    {"!", TokenType::NOT},
+    {"!=", TokenType::NEQUAL},
+    {"^", TokenType::XOR},
+    {"<", TokenType::KICIK},
+    {">", TokenType::BOYUK},
+    {"<=", TokenType::B_KICIK},
+    {">=", TokenType::B_BOYUK},
     {"(", TokenType::LPAREN},
     {")", TokenType::RPAREN},
     {"[", TokenType::LBRACE},
@@ -94,6 +104,11 @@ Token Lexer::parseString(){
 Token Lexer::parseOperator(){
     string start = "";
     start += source[position++];
+
+    while(source[position] == '&' || source[position] == '|' || 
+          source[position] == '=' || source[position] == '!' ||
+          source[position] == '>' || source[position] == '<') start += source[position++];
+    
     if(Keywords.find(start) != Keywords.end()) return {Keywords[start], start};
     else return {TokenType::Invalid, start};
 }

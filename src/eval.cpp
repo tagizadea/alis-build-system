@@ -32,7 +32,6 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         StringVal* temp = new StringVal;
         StringVal* nl = (StringVal*)lhs;
         NumberVal* nr = (NumberVal*)rhs;
-        //temp->val = nl->val + nr->val;
         string s = "";
         for(int i=0;i<nr->val;++i) s += nl->val;
         temp->val = s;
@@ -42,7 +41,6 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         StringVal* temp = new StringVal;
         NumberVal* nl = (NumberVal*)lhs;
         StringVal* nr = (StringVal*)rhs;
-        //temp->val = nl->val + nr->val;
         string s = "";
         for(int i=0;i<nl->val;++i) s += nr->val;
         temp->val = s;
@@ -89,6 +87,48 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             long long left = nl->val;
             long long right = nr->val;
             temp->val = left % right;
+            return temp;
+        }
+        if(binop->op == ">"){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val > nr->val;
+            return temp;
+        }
+        if(binop->op == "<"){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val < nr->val;
+            return temp;
+        }
+        if(binop->op == ">="){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val >= nr->val;
+            return temp;
+        }
+        if(binop->op == "<="){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val <= nr->val;
+            return temp;
+        }
+        if(binop->op == "=="){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val == nr->val;
+            return temp;
+        }
+        if(binop->op == "!="){
+            BoolValue* temp = new BoolValue;
+            NumberVal* nl = (NumberVal*)lhs;
+            NumberVal* nr = (NumberVal*)rhs;
+            temp->val = nl->val != nr->val;
             return temp;
         }
     }
