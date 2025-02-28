@@ -19,6 +19,7 @@ class Parser{
 
     Stmt* parse_stmt();
     Stmt* parse_var_declaration();
+    Stmt* parse_condition_expr();
     Expr* parse_expr();
     Expr* parse_primary_expr();
     Expr* parse_additive_expr();

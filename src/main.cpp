@@ -31,6 +31,18 @@ void print_stmt(Stmt* stmt, int tab){
         }
         cout << tab_s << "}\n";
     }
+    else if(NodeType::CONDEXPR == kind){
+        cout << tab_s << "Type: ConditionExpr\n";
+        CondExpr* childObj = dynamic_cast<CondExpr*>(stmt);
+        cout << tab_s << "Condition:\n";
+        print_stmt(childObj->condition, tab + 1);
+        cout << tab_s << "Then{\n";
+        print_stmt(childObj->ThenBranch, tab + 1);
+        cout << tab_s << "}\n" << tab_s << "Else{\n";
+        if(childObj->ElseBranch == nullptr) cout << tab_s << "No ElseBranch\n";
+        else print_stmt(childObj->ElseBranch, tab + 1);
+        cout << tab_s << "}\n";
+    }
     else if(NodeType::BINARYEXPR == kind){
         cout << tab_s << "Type: BinaryExpr\n";
         BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);

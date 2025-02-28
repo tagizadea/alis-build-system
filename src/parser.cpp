@@ -5,6 +5,10 @@ Token Parser::at(){
 }
 
 Token Parser::eat(){
+    if(tokens[i].type == TokenType::EndOfFile){
+        cout << "Tokenin sonuna geldin! Daha eat olmur!";
+        exit(0); // !!! debug systemi ile deyis
+    }
     return tokens[i++];
 }
 
@@ -23,6 +27,7 @@ Stmt* Parser::parse_stmt(){
     if(at().type == TokenType::Let || at().type == TokenType::Const){
         return parse_var_declaration();
     }
+    if(at().type == TokenType::IF) return parse_condition_expr();
     return parse_expr();
 }
 
@@ -60,6 +65,33 @@ Expr* Parser::parse_expr(){
     return parse_assignment_expr();
 }
 
+Stmt* Parser::parse_condition_expr(){
+    eat();
+    expect(TokenType::LPAREN, "IF left parenthesis is missing");
+    Expr* condition = parse_expr();
+    expect(TokenType::RPAREN, "IF right parenthesis is missing");
+    expect(TokenType::LBRACK, "IF left bracket is missing");
+    Stmt* ThenBranch = parse_stmt();
+    expect(TokenType::RBRACK, "IF right bracket is missing");
+    Stmt* ElseBranch = nullptr;
+    if(at().type == TokenType::ELSE){
+        eat();
+        bool f = false;
+        if(at().type == TokenType::LBRACK){
+            eat();
+            f = true;
+        }
+        ElseBranch = parse_stmt();
+        if(f) expect(TokenType::RBRACK, "Else ucun bracket baglanmalidir");
+    }
+
+    CondExpr* temp = new CondExpr;
+    temp->condition = condition;
+    temp->ElseBranch = ElseBranch;
+    temp->ThenBranch = ThenBranch;
+    return temp;
+}
+
 Expr* Parser::parse_assignment_expr(){
     //Expr* left = parse_additive_expr();
     Expr* left = parse_object_expr();
@@ -79,7 +111,7 @@ Expr* Parser::parse_assignment_expr(){
 Expr* Parser::parse_object_expr(){
     if(at().type != TokenType::LBRACK) return parse_logical_expr();
     
-    eat().value;
+    eat();
     vector <PropertyLiteral*> v;
     
     while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
@@ -275,7 +307,7 @@ Expr* Parser::parse_primary_expr(){
         eat();
         NotExpr* temp = new NotExpr;
         //temp->val = parse_expr();
-        temp->val = new Identifier(eat().value);
+        temp->val = new Identifier(expect(TokenType::Identifier, "not identifiersiz yazilanmaz").value);
         return temp;
     }
     else if(tk == TokenType::Number){

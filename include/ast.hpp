@@ -15,6 +15,7 @@ enum class NodeType{
     MEMBEREXPR,
     CALLEXPR,
     NOTEXPR,
+    CONDEXPR,
     NUMERIC_L,
     STRING_L,
     PROPERTY_L,
@@ -67,6 +68,22 @@ class AssignExpr : public Expr{
     public:
     Expr* assignexpr;
     Expr* value;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
+
+class CondExpr : public Stmt{
+    private:
+    NodeType kind = NodeType::CONDEXPR;
+    
+    public:
+
+    Expr* condition;
+    Stmt* ThenBranch;
+    Stmt* ElseBranch = nullptr;
 
     NodeType getKind() const override{
         return kind;
