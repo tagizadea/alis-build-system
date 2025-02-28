@@ -170,14 +170,6 @@ Expr* Parser::parse_logical_expr(){
         binop->right = right;
         left = binop;
     }
-/*
-    if(at().value == "!"){
-        eat();
-        NotExpr* temp = new NotExpr;
-        temp->val = parse_logical_expr();
-        left = temp;
-    }
-*/
 
     return left;
 }
@@ -279,6 +271,13 @@ Expr* Parser::parse_primary_expr(){
         Expr* temp = new Identifier(eat().value);
         return temp;
     }
+    else if(tk == TokenType::NOT){
+        eat();
+        NotExpr* temp = new NotExpr;
+        //temp->val = parse_expr();
+        temp->val = new Identifier(eat().value);
+        return temp;
+    }
     else if(tk == TokenType::Number){
         Expr* temp = new NumericLiteral(eat().value);
         //temp->kind = NodeType::NUMERIC_L;
@@ -295,12 +294,6 @@ Expr* Parser::parse_primary_expr(){
         expect(TokenType::RPAREN, "Mötərizə bağlanmayıb!");
         return temp;
     }
-    /*else if(tk == TokenType::NOT){
-        eat();
-        NotExpr* temp = new NotExpr;
-        temp->val = parse_expr();
-        return temp;
-    }*/
     else{
         std::cout << "Bilinmeyen xeta! : parse_pr_expr - " << at().value; // !!! asert ile deyis
         exit(0);

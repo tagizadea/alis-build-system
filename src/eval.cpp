@@ -215,12 +215,23 @@ Value* eval_var_assignment(AssignExpr* as, Env* env){
     string varname = ((Identifier*)(as->assignexpr))->symbol;
     return env->assignVar(varname, evaluate(as->value, env));
 }
-
+// Burda memory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
 Value* evaluate(Stmt* astNode, Env* env){
-    if(astNode->getKind() == NodeType::NUMERIC_L){
+    if(astNode->getKind() == NodeType::NUMERIC_L){ //
         NumericLiteral* childObj = (NumericLiteral*)astNode;
         NumberVal* temp = new NumberVal;
         temp->val = childObj->val;
+        return temp;
+    }
+    else if(astNode->getKind() == NodeType::NOTEXPR){ //
+        NotExpr* childObj = (NotExpr*)astNode;
+        Value* val = evaluate(childObj->val, env);
+        if(val->getType() != ValueType::Bool){
+            cout << "Evaluation Error: Not operation yalnız bool dəyərlər ilə işlənir";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        BoolValue* temp = new BoolValue;
+        temp->val = !((BoolValue*)val)->val;
         return temp;
     }
     else if(astNode->getKind() == NodeType::STRING_L){

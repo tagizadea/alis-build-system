@@ -227,10 +227,10 @@ int main(int argc, char *argv[]){
     print_stmt(program, 0);
 
     // Printing Evalutation for debug
-    //cout << "\nEVALUATION:\n";
+    cout << "\nEVALUATION:\n";
     Env* env = new Env;
     InitNatives(env);
     Value* eval = evaluate(program, env);
-    //print_eval(eval, 0);
+    print_eval(eval, 0);
     return 0;
 }
