@@ -16,6 +16,7 @@ enum class NodeType{
     CALLEXPR,
     NOTEXPR,
     CONDEXPR,
+    WHILE_LOOP,
     NUMERIC_L,
     STRING_L,
     PROPERTY_L,
@@ -82,7 +83,7 @@ class CondExpr : public Stmt{
     public:
 
     Expr* condition;
-    Stmt* ThenBranch;
+    std::vector <Stmt*> ThenBranch;
     Stmt* ElseBranch = nullptr;
 
     NodeType getKind() const override{
@@ -90,6 +91,22 @@ class CondExpr : public Stmt{
     }
 
 };
+
+class WhileStmt : public Stmt{
+    private:
+    NodeType kind = NodeType::WHILE_LOOP;
+    
+    public:
+
+    Expr* condition;
+    std::vector <Stmt*> ThenBranch;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
+
 
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;

@@ -227,9 +227,36 @@ Value* eval_condition(CondExpr* cond, Env* env){
     BoolValue* temp = (BoolValue*)condition;
     Value* result;
 
-    if(temp->val) result = evaluate(cond->ThenBranch, env);
+    if(temp->val){
+        //result = evaluate(cond->ThenBranch, env);
+        for(Stmt* i : cond->ThenBranch){
+            result = evaluate(i, env);
+        }
+    }
     else result = evaluate(cond->ElseBranch, env);
 
+    return result;
+}
+
+Value* eval_while(WhileStmt* wh, Env* env){
+    Value* condition = evaluate(wh->condition, env);
+    
+    if(condition->getType() != ValueType::Bool){
+        cout << "Evaluation Error: WHILE condition must be boolean value";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    BoolValue* temp = (BoolValue*)condition;
+    Value* result;
+
+    while(temp->val){
+        //result = evaluate(cond->ThenBranch, env);
+        for(Stmt* i : wh->ThenBranch){
+            result = evaluate(i, env);
+        }
+        condition = evaluate(wh->condition, env);
+        temp->val = (BoolValue*)condition;
+    }
     return result;
 }
 
@@ -289,6 +316,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::CONDEXPR){
         CondExpr* childObj = (CondExpr*)astNode;
         return eval_condition(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::WHILE_LOOP){
+        WhileStmt* childObj = (WhileStmt*)astNode;
+        return eval_while(childObj, env);
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle

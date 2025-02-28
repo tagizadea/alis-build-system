@@ -28,6 +28,7 @@ Stmt* Parser::parse_stmt(){
         return parse_var_declaration();
     }
     if(at().type == TokenType::IF) return parse_condition_expr();
+    if(at().type == TokenType::WHILE) return parse_while();
     return parse_expr();
 }
 
@@ -65,13 +66,16 @@ Expr* Parser::parse_expr(){
     return parse_assignment_expr();
 }
 
-Stmt* Parser::parse_condition_expr(){
+Stmt* Parser::parse_condition_expr(){ // bir dene code gotururmus :'(
     eat();
     expect(TokenType::LPAREN, "IF left parenthesis is missing");
     Expr* condition = parse_expr();
     expect(TokenType::RPAREN, "IF right parenthesis is missing");
     expect(TokenType::LBRACK, "IF left bracket is missing");
-    Stmt* ThenBranch = parse_stmt();
+    vector <Stmt*> ThenBranch;
+    while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
+        ThenBranch.push_back(parse_stmt());
+    }
     expect(TokenType::RBRACK, "IF right bracket is missing");
     Stmt* ElseBranch = nullptr;
     if(at().type == TokenType::ELSE){
@@ -88,6 +92,23 @@ Stmt* Parser::parse_condition_expr(){
     CondExpr* temp = new CondExpr;
     temp->condition = condition;
     temp->ElseBranch = ElseBranch;
+    temp->ThenBranch = ThenBranch;
+    return temp;
+}
+
+Stmt *Parser::parse_while(){
+    eat();
+    expect(TokenType::LPAREN, "WHILE left parenthesis is missing");
+    Expr* condition = parse_expr();
+    expect(TokenType::RPAREN, "WHILE right parenthesis is missing");
+    expect(TokenType::LBRACK, "WHILE left bracket is missing");
+    vector <Stmt*> ThenBranch;
+    while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
+        ThenBranch.push_back(parse_stmt());
+    }
+    expect(TokenType::RBRACK, "WHILE right bracket is missing");
+    WhileStmt* temp = new WhileStmt;
+    temp->condition = condition;
     temp->ThenBranch = ThenBranch;
     return temp;
 }

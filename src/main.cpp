@@ -37,10 +37,23 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Condition:\n";
         print_stmt(childObj->condition, tab + 1);
         cout << tab_s << "Then{\n";
-        print_stmt(childObj->ThenBranch, tab + 1);
+        for(Stmt* i : childObj->ThenBranch){
+            print_stmt(i, tab + 1);
+        }
         cout << tab_s << "}\n" << tab_s << "Else{\n";
         if(childObj->ElseBranch == nullptr) cout << tab_s << "No ElseBranch\n";
         else print_stmt(childObj->ElseBranch, tab + 1);
+        cout << tab_s << "}\n";
+    }
+    else if(NodeType::WHILE_LOOP == kind){
+        cout << tab_s << "Type: WHILE\n";
+        WhileStmt* childObj = dynamic_cast<WhileStmt*>(stmt);
+        cout << tab_s << "Condition:\n";
+        print_stmt(childObj->condition, tab + 1);
+        cout << tab_s << "Then{\n";
+        for(Stmt* i : childObj->ThenBranch){
+            print_stmt(i, tab + 1);
+        }
         cout << tab_s << "}\n";
     }
     else if(NodeType::BINARYEXPR == kind){
@@ -239,10 +252,10 @@ int main(int argc, char *argv[]){
     print_stmt(program, 0);
 
     // Printing Evalutation for debug
-    cout << "\nEVALUATION:\n";
     Env* env = new Env;
     InitNatives(env);
     Value* eval = evaluate(program, env);
-    print_eval(eval, 0);
+    //cout << "\nEVALUATION:\n";
+    //print_eval(eval, 0);
     return 0;
 }
