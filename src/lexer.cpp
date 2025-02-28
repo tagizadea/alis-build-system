@@ -107,7 +107,10 @@ Token Lexer::parseOperator(){
 
     while(source[position] == '&' || source[position] == '|' || 
           source[position] == '=' || source[position] == '!' ||
-          source[position] == '>' || source[position] == '<') start += source[position++];
+          source[position] == '>' || source[position] == '<'){
+            if(source[position - 1] == '(' || source[position - 1] == ')') break;
+            start += source[position++];
+          }
     
     if(Keywords.find(start) != Keywords.end()) return {Keywords[start], start};
     else return {TokenType::Invalid, start};

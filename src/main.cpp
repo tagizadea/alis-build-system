@@ -39,6 +39,13 @@ void print_stmt(Stmt* stmt, int tab){
         print_stmt(childObj->right, tab + 1);
         cout << '\n';
     }
+    else if(NodeType::NOTEXPR == kind){
+        cout << tab_s << "Type: NotExpr\n";
+        NotExpr* childObj = dynamic_cast<NotExpr*>(stmt);
+        cout << tab_s << "Value:\n";
+        print_stmt(childObj->val, tab + 1);
+        cout << '\n';
+    }
     else if(NodeType::NUMERIC_L == kind){
         cout << tab_s  << "Type: NumbericLiteral\n";
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
@@ -205,19 +212,19 @@ int main(int argc, char *argv[]){
     Token* tokens = lexer.tokenize();
 
     // Printing Lexer for debug
-    /*cout << "Lexer:\n";
+    cout << "Lexer:\n";
     for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
         cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
         << (int)tokens[i].type << ")\n";
     }
-    cout << '\n';*/
+    cout << '\n';
     
     Parser* parser = new Parser(tokens);
     Program* program = parser->produceAST();
 
     // Printing AST for debug
-    //cout << "AST:\n";
-    //print_stmt(program, 0);
+    cout << "AST:\n";
+    print_stmt(program, 0);
 
     // Printing Evalutation for debug
     //cout << "\nEVALUATION:\n";

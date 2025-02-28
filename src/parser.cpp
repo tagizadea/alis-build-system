@@ -40,7 +40,8 @@ Stmt* Parser::parse_var_declaration(){
         VarDeclaration* temp = new VarDeclaration;
         temp->constant = false;
         temp->identifier = identifier;
-        temp->val = 0;
+        NumericLiteral* zero = new NumericLiteral("0");
+        temp->val = zero;
         return temp;
     }
 
@@ -76,7 +77,7 @@ Expr* Parser::parse_assignment_expr(){
 }
 
 Expr* Parser::parse_object_expr(){
-    if(at().type != TokenType::LBRACK) return parse_boolean_expr();
+    if(at().type != TokenType::LBRACK) return parse_logical_expr();
     
     eat().value;
     vector <PropertyLiteral*> v;
@@ -152,6 +153,31 @@ Expr* Parser::parse_boolean_expr(){
         binop->right = right;
         left = binop;
     }
+
+
+    return left;
+}
+
+Expr* Parser::parse_logical_expr(){
+    Expr* left = parse_boolean_expr();
+    
+    while(at().value == "&&" || at().value == "||"){
+        string op = eat().value;
+        Expr* right = parse_boolean_expr();
+        BinaryExpr* binop = new BinaryExpr;
+        binop->left = left;
+        binop->op = op;
+        binop->right = right;
+        left = binop;
+    }
+/*
+    if(at().value == "!"){
+        eat();
+        NotExpr* temp = new NotExpr;
+        temp->val = parse_logical_expr();
+        left = temp;
+    }
+*/
 
     return left;
 }
@@ -269,8 +295,14 @@ Expr* Parser::parse_primary_expr(){
         expect(TokenType::RPAREN, "Mötərizə bağlanmayıb!");
         return temp;
     }
+    /*else if(tk == TokenType::NOT){
+        eat();
+        NotExpr* temp = new NotExpr;
+        temp->val = parse_expr();
+        return temp;
+    }*/
     else{
-        std::cout << "Bilinmeyen xeta! : parse_pr_expr"; // !!! asert ile deyis
+        std::cout << "Bilinmeyen xeta! : parse_pr_expr - " << at().value; // !!! asert ile deyis
         exit(0);
         return new Expr();
     }

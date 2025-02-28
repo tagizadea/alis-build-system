@@ -47,6 +47,37 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         return temp;
     }
 
+    if(lhs->getType() == ValueType::Bool && rhs->getType() == ValueType::Bool){
+        if(binop->op == "&&"){
+            BoolValue* temp = new BoolValue;
+            BoolValue* nl = (BoolValue*)lhs;
+            BoolValue* nr = (BoolValue*)rhs;
+            temp->val = nl->val && nr->val;
+            return temp;
+        }
+        if(binop->op == "||"){
+            BoolValue* temp = new BoolValue;
+            BoolValue* nl = (BoolValue*)lhs;
+            BoolValue* nr = (BoolValue*)rhs;
+            temp->val = nl->val || nr->val;
+            return temp;
+        }
+        if(binop->op == "=="){
+            BoolValue* temp = new BoolValue;
+            BoolValue* nl = (BoolValue*)lhs;
+            BoolValue* nr = (BoolValue*)rhs;
+            temp->val = nl->val == nr->val;
+            return temp;
+        }
+        if(binop->op == "!="){
+            BoolValue* temp = new BoolValue;
+            BoolValue* nl = (BoolValue*)lhs;
+            BoolValue* nr = (BoolValue*)rhs;
+            temp->val = nl->val != nr->val;
+            return temp;
+        }
+    }
+
     if(lhs->getType() == ValueType::Number && rhs->getType() == ValueType::Number){
         if(binop->op == "+"){
             NumberVal* temp = new NumberVal;

@@ -14,6 +14,7 @@ enum class NodeType{
     ASSIGNEXPR,
     MEMBEREXPR,
     CALLEXPR,
+    NOTEXPR,
     NUMERIC_L,
     STRING_L,
     PROPERTY_L,
@@ -79,6 +80,16 @@ class BinaryExpr : public Expr{
     Expr* left;
     Expr* right;
     std::string op = "";
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class NotExpr : public Expr{
+    NodeType kind = NodeType::NOTEXPR;
+    public:
+    Expr* val;
 
     NodeType getKind() const override{
         return kind;
