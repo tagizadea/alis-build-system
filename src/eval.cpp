@@ -250,12 +250,11 @@ Value* eval_while(WhileStmt* wh, Env* env){
     Value* result;
 
     while(temp->val){
-        //result = evaluate(cond->ThenBranch, env);
         for(Stmt* i : wh->ThenBranch){
             result = evaluate(i, env);
         }
         condition = evaluate(wh->condition, env);
-        temp->val = (BoolValue*)condition;
+        temp = (BoolValue*)condition;
     }
     return result;
 }
