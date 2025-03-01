@@ -1,6 +1,7 @@
 #include <operations.hpp>
 #include <chrono>
 #include <ctime>
+#include <queue>
 
 vector<string> getSystemFiles(vector<string> &files){
     vector <string> temp;
@@ -24,34 +25,45 @@ vector<string> getSystemFiles(vector<string> &files){
 
 
 Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | string ve endl duzelt
-    for(int i=0;i<args.size();++i){
-        if(args[i]->getType() == ValueType::Object){
-            ObjectValue* temp = (ObjectValue*)args[i];
-            cout << "Object{\n";
+    queue <pair <vector <Value*> , string> > q;
+    q.push({args, ""});
+    while(!q.empty()){
+        vector <Value*> v = q.front().first;
+        string tab_s = q.front().second;
 
-            for(pair <string, Value*> i : temp->properties){
-                cout << "Key: \"" <<i.first << "\" Value: ";
-                print({i.second}, env);
+        for(int i=0;i<v.size();++i){
+            if(v[i]->getType() == ValueType::Object){
+                ObjectValue* temp = (ObjectValue*)v[i];
+                cout << tab_s << "Object\n";
+    
+                for(pair <string, Value*> i : temp->properties){
+                    cout << tab_s + "    "<< "Key: \"" <<i.first << "\" Value: ";
+                    //print({i.second}, env);
+                    q.push({{i.second}, tab_s + "    "});
+                }
+                //cout << tab_s << "}\n";
+                cout << '\n';
+            } 
+            else if(v[i]->getType() == ValueType::Number){
+                NumberVal* temp = (NumberVal*)v[i];
+                cout << tab_s << temp->val << ' ';
             }
-            cout << "}";
-        } 
-        else if(args[i]->getType() == ValueType::Number){
-            NumberVal* temp = (NumberVal*)args[i];
-            cout << temp->val << ' ';
+            else if(v[i]->getType() == ValueType::Bool){
+                BoolValue* temp = (BoolValue*)v[i];
+                if(temp->val) cout << tab_s << "True ";
+                else cout << tab_s << "False ";
+            }
+            else if(v[i]->getType() == ValueType::String){
+                StringVal* temp = (StringVal*)v[i];
+                cout << tab_s << temp->val << ' ';
+            }
+            else if(v[i]->getType() == ValueType::Null){
+                NullVal* temp = (NullVal*)v[i];
+                cout << tab_s << temp->val << ' ';
+            }
         }
-        else if(args[i]->getType() == ValueType::Bool){
-            BoolValue* temp = (BoolValue*)args[i];
-            if(temp->val) cout << "True ";
-            else cout << "False ";
-        }
-        else if(args[i]->getType() == ValueType::String){
-            StringVal* temp = (StringVal*)args[i];
-            cout << temp->val << ' ';
-        }
-        else if(args[i]->getType() == ValueType::Null){
-            NullVal* temp = (NullVal*)args[i];
-            cout << temp->val << ' ';
-        }
+
+        q.pop();
     }
     cout << '\n';
     return Make_Null();
