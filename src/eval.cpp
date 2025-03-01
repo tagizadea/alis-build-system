@@ -259,6 +259,11 @@ Value* eval_while(WhileStmt* wh, Env* env){
     return result;
 }
 
+Value* eval_member_expr(MemberExpr* me, Env* env){
+    if(me->property == nullptr) return Make_Null();
+    return evaluate(me->property, env);
+}
+
 // Burda memory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
 Value* evaluate(Stmt* astNode, Env* env){
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
@@ -319,6 +324,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::WHILE_LOOP){
         WhileStmt* childObj = (WhileStmt*)astNode;
         return eval_while(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::MEMBEREXPR){
+        MemberExpr* childObj = (MemberExpr*)astNode;
+        return eval_member_expr(childObj, env);
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle

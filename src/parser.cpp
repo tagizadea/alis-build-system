@@ -347,6 +347,26 @@ Expr* Parser::parse_primary_expr(){
         expect(TokenType::RPAREN, "Mötərizə bağlanmayıb!");
         return temp;
     }
+    else if(tk == TokenType::MINUS){
+        eat();
+        Expr* temp = parse_expr();
+        if(temp->getKind() != NodeType::NUMERIC_L){
+            cout << "Parser Error: Minus operator without number";
+            exit(0); // debug sistemi ile deyis
+        }
+        NumericLiteral* num = (NumericLiteral*)temp;
+        num->val = -(num->val);
+        return num;
+    }
+    else if(tk == TokenType::PLUS){
+        eat();
+        Expr* temp = parse_expr();
+        if(temp->getKind() != NodeType::NUMERIC_L){
+            cout << "Parser Error: Minus operator without number";
+            exit(0); // debug sistemi ile deyis
+        }
+        return temp;
+    }
     else{
         std::cout << "Bilinmeyen xeta! : parse_pr_expr - " << at().value; // !!! asert ile deyis
         exit(0);

@@ -72,7 +72,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << '\n';
     }
     else if(NodeType::NUMERIC_L == kind){
-        cout << tab_s  << "Type: NumbericLiteral\n";
+        cout << tab_s  << "Type: NumericLiteral\n";
         NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
