@@ -24,7 +24,7 @@ vector<string> getSystemFiles(vector<string> &files){
 
 
 
-Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | string ve endl duzelt
+Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun
     queue <pair <vector <Value*> , string> > q;
     q.push({args, ""});
     while(!q.empty()){
@@ -46,26 +46,26 @@ Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun | strin
             } 
             else if(v[i]->getType() == ValueType::Number){
                 NumberVal* temp = (NumberVal*)v[i];
-                cout << tab_s << temp->val << ' ';
+                cout << tab_s << temp->val;
             }
             else if(v[i]->getType() == ValueType::Bool){
                 BoolValue* temp = (BoolValue*)v[i];
-                if(temp->val) cout << tab_s << "True ";
-                else cout << tab_s << "False ";
+                if(temp->val) cout << tab_s << "True";
+                else cout << tab_s << "False";
             }
             else if(v[i]->getType() == ValueType::String){
                 StringVal* temp = (StringVal*)v[i];
-                cout << tab_s << temp->val << ' ';
+                cout << tab_s << temp->val;
             }
             else if(v[i]->getType() == ValueType::Null){
                 NullVal* temp = (NullVal*)v[i];
-                cout << tab_s << temp->val << ' ';
+                cout << tab_s << temp->val;
             }
         }
 
         q.pop();
     }
-    cout << '\n';
+    //cout << '\n';
     return Make_Null();
 }
 

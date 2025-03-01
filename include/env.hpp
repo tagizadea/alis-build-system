@@ -43,6 +43,7 @@ class NativeFuncVal : public Value{
 };
 
 NumberVal* Make_Number(long double val);
+StringVal* Make_String(std::string val);
 BoolValue* Make_Bool(bool b);
 NullVal* Make_Null();
 NativeFuncVal* Make_NFunc(FunctionCall call);

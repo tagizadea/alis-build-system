@@ -46,6 +46,12 @@ NumberVal* Make_Number(long double val){
     return num;
 }
 
+StringVal* Make_String(std::string val){
+    StringVal* st = new StringVal;
+    st->val = val;
+    return st;
+}
+
 BoolValue* Make_Bool(bool b){
     BoolValue* val = new BoolValue;
     val->val = b;
@@ -63,6 +69,9 @@ NativeFuncVal* Make_NFunc(FunctionCall call){ // !!! logic issue
 }
 
 void InitNatives(Env* env){
+    // Strings
+    env->declareVar("endl", Make_String("\n"), true);
+
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
     env->declareVar("ZERO", new NumberVal, true);
@@ -84,4 +93,5 @@ void InitNatives(Env* env){
     env->declareVar("floor", Make_NFunc(temp), true);
     temp.funAddr = n_funs::system;
     env->declareVar("system", Make_NFunc(temp), true);
+
 }
