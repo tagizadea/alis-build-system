@@ -89,7 +89,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "}\n";
     }
     else if(NodeType::PROPERTY_L == kind){
-        cout << tab_s << "Type: ProperyLiteral\n";
+        cout << tab_s << "Type: PropertyLiteral\n";
         PropertyLiteral* childObj = dynamic_cast<PropertyLiteral*>(stmt);
         cout << tab_s << "Key: "<<childObj->key << '\n';
         cout << tab_s << "Value:\n";
@@ -124,9 +124,10 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: MemberExpr\n";
         MemberExpr* childObj = dynamic_cast<MemberExpr*>(stmt);
         cout << tab_s << "IsComputed: " << (int)childObj->computed << '\n';
-        //cout << "Object:\n";
-        //if(childObj->object == nullptr) cout << tab_s << "Undefined value";
-        //else print_stmt(childObj->object, tab + 1);
+        //cout << tab_s << "ObjectType: " << (int)childObj->object->getKind() << '\n';
+        cout << tab_s << "ObjectValue:\n";
+        if(childObj->object == nullptr) cout << tab_s << "Undefined value";
+        else print_stmt(childObj->object, tab + 1);
         cout << tab_s << "Property:\n";
         if(childObj->property == nullptr) cout << tab_s << "Undefined value";
         else print_stmt(childObj->property, tab + 1);

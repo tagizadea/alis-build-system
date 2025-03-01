@@ -261,6 +261,14 @@ Value* eval_while(WhileStmt* wh, Env* env){
 
 Value* eval_member_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return Make_Null();
+
+    if(me->property->getKind() == NodeType::IDENTIFIER){
+        Value* obj_v = evaluate(me->object, env);
+        Identifier* key = (Identifier*)me->property;
+        ObjectValue* obj = (ObjectValue*)obj_v;
+        return obj->properties[key->symbol];
+    }
+
     return evaluate(me->property, env);
 }
 
