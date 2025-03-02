@@ -29,6 +29,7 @@ Stmt* Parser::parse_stmt(){
     }
     if(at().type == TokenType::IF) return parse_condition_expr();
     if(at().type == TokenType::WHILE) return parse_while();
+    if(at().type == TokenType::FN) return parse_func_declaration();
     return parse_expr();
 }
 
@@ -57,6 +58,34 @@ Stmt* Parser::parse_var_declaration(){
     temp->identifier = identifier;
     temp->val = parse_expr();
     expect(TokenType::SEMICOLON, "Let or Const declared without semicolon");
+    return temp;
+}
+
+Stmt* Parser::parse_func_declaration(){
+    eat();
+    string name = expect(TokenType::Identifier, "Function name is missing").value;
+    vector <Expr*> args = parse_args();
+    vector <string> params;
+
+    for(Expr* arg : args){
+        if(arg->getKind() != NodeType::IDENTIFIER){
+            cout << "Parameterlər identifier tipində olmalıdır";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        params.push_back(((Identifier*)arg)->symbol);
+    }
+
+    expect(TokenType::LBRACK, "Funksiya təyini üçün qarışıq mötərizə açılmayıb");
+    vector <Stmt*> body;
+
+    while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
+        body.push_back(parse_stmt());
+    }
+    expect(TokenType::RBRACK, "Funksiya təyini üçün qarışıq mötərizə bağlanmayıb");
+    FunDeclaration* temp = new FunDeclaration;
+    temp->body = body;
+    temp->name = name;
+    temp->parameters = params;
     return temp;
 }
 

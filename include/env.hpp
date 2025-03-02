@@ -10,36 +10,16 @@
 
 class Env{
     private:
-    Env* parent = nullptr;
     vector <Env*> children;
     unordered_map <string, Value*> variables;
     unordered_set <string> constants;
     
     public:
+    Env* parent = nullptr;
     Value* declareVar(string name, Value* val, bool isConst);
     Value* assignVar(string name, Value* val);
     Env* resolve(string name);
     Value* lookUpVar(string name);
-};
-
-struct FunctionCall{
-    std::vector <Value*> args;
-    Env* env;
-    Value* (*funAddr)(vector<Value*>, Env*);
-};
-
-
-class NativeFuncVal : public Value{
-    private:
-
-    ValueType type = ValueType::NFUNC;
-    public:
-
-    FunctionCall call;
-
-    ValueType getType() const override{
-        return this->type;
-    } 
 };
 
 NumberVal* Make_Number(long double val);

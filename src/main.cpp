@@ -31,6 +31,18 @@ void print_stmt(Stmt* stmt, int tab){
         }
         cout << tab_s << "}\n";
     }
+    else if(NodeType::FUN_D == kind){
+        cout << tab_s << "Type: FunctionDeclaration\n";
+        FunDeclaration* childObj = dynamic_cast<FunDeclaration*>(stmt);
+        cout << tab_s << "Name: " << childObj->name << '\n';
+        cout << tab_s << "Params: ";
+        for(string &s : childObj->parameters) cout << s << ' ';
+        cout << '\n' << tab_s << "Body:\n";
+        for(Stmt* i : childObj->body){
+            print_stmt(i, tab + 1);
+        }
+        cout << '\n';
+    }
     else if(NodeType::CONDEXPR == kind){
         cout << tab_s << "Type: ConditionExpr\n";
         CondExpr* childObj = dynamic_cast<CondExpr*>(stmt);
@@ -183,6 +195,14 @@ void print_eval(Value* eval, int tab){
     else if(eval->getType() == ValueType::NFUNC){
         cout << tab_s << "Type: NativeFunc\n";
         //NativeFuncVal* temp = (NativeFuncVal*)eval;
+    }
+    else if(eval->getType() == ValueType::FUNC){
+        cout << tab_s << "Type: Function\n";
+        FunctionVal* temp = (FunctionVal*)eval;
+        cout << tab_s << "Name: " << temp->name << '\n';
+        cout << tab_s << "Params: ";
+        for(string &s : temp->params) cout << s << ' ';
+        cout << '\n';
     }
     else if(eval->getType() == ValueType::Null){
         cout << tab_s << "Type: Null\n"<< tab_s <<"Value: Null\n";

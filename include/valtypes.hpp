@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
+class Stmt;
+class Env;
+
 enum class ValueType{
     None,
     Null,
@@ -12,6 +15,7 @@ enum class ValueType{
     Bool,
     String,
     NFUNC,
+    FUNC,
     Object
 };
 
@@ -83,6 +87,42 @@ class ObjectValue : public Value{
     public:
 
     std::unordered_map <std::string, Value*> properties;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+struct FunctionCall{
+    std::vector <Value*> args;
+    Env* env;
+    Value* (*funAddr)(std::vector<Value*>, Env*);
+};
+
+
+class NativeFuncVal : public Value{
+    private:
+
+    ValueType type = ValueType::NFUNC;
+    public:
+
+    FunctionCall call;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class FunctionVal : public Value{
+    private:
+
+    ValueType type = ValueType::FUNC;
+    public:
+
+    std::string name;
+    std::vector <std::string> params;
+    Env* decEnv;
+    std::vector <Stmt*> body;
 
     ValueType getType() const override{
         return this->type;

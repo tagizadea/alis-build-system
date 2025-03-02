@@ -11,6 +11,7 @@ enum class NodeType{
     NONE,
     PROGRAM,
     VAR_D,
+    FUN_D,
     ASSIGNEXPR,
     MEMBEREXPR,
     CALLEXPR,
@@ -56,6 +57,19 @@ class VarDeclaration : public Stmt{
     bool constant = false;
     std::string identifier;
     Expr* val;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class FunDeclaration : public Stmt{
+    NodeType kind = NodeType::FUN_D;
+    public:
+
+    std::vector <std::string> parameters;
+    std::string name;
+    std::vector <Stmt*> body;
 
     NodeType getKind() const override{
         return kind;

@@ -62,7 +62,7 @@ NullVal* Make_Null(){
     return new NullVal;
 }
 
-NativeFuncVal* Make_NFunc(FunctionCall call){ // !!! logic issue
+NativeFuncVal* Make_NFunc(FunctionCall call){
     NativeFuncVal* fun = new NativeFuncVal;
     fun->call = call;
     return fun;

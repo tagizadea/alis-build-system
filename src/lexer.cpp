@@ -7,6 +7,7 @@ map <string, TokenType> Keywords = {
     {"Identifier", TokenType::Identifier},
     {"let", TokenType::Let},
     {"const", TokenType::Const},
+    {"fn", TokenType::FN},
     {"=", TokenType::ASSIGN},
     {"Number", TokenType::Number},
     {"+", TokenType::PLUS},

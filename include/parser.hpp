@@ -19,6 +19,7 @@ class Parser{
 
     Stmt* parse_stmt();
     Stmt* parse_var_declaration();
+    Stmt* parse_func_declaration();
     Stmt* parse_condition_expr();
     Stmt* parse_while();
     Expr* parse_expr();

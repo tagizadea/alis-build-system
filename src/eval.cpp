@@ -187,14 +187,31 @@ Value* eval_call_expr(CallExpr* expr, Env* env){
 
     Value* fn = evaluate(expr->callexpr, env);
 
-    if(fn->getType() != ValueType::NFUNC){
-        cout << "Evaluation Error: Cannot call value that is not a function";
-        exit(0); // !!! Debug systemi ile deyis
+    if(fn->getType() == ValueType::NFUNC){
+        Value* result = ((NativeFuncVal*)fn)->call.funAddr(args, env);
+        return result;
     }
-    
-
-    Value* result = ((NativeFuncVal*)fn)->call.funAddr(args, env);
-    return result;
+    else if(fn->getType() == ValueType::FUNC){
+        FunctionVal* func = (FunctionVal*)fn;
+        Env* scope = new Env;
+        scope->parent = func->decEnv;
+        if(args.size() != func->params.size()){
+            cout << "Evaluation Error: Some arguments are missing for function named \"" << func->name << '\"';
+            exit(0); // !!! debug systemi ile deyis
+        }
+        for(int i = 0; i < func->params.size(); ++i){
+            scope->declareVar(func->params[i], args[i], false);
+        }
+        if(func->body.empty()) return Make_Null();
+        Value* ret;
+        for(Stmt* i : func->body){
+            ret = evaluate(i, scope);
+        }
+        return ret;
+    }
+    cout << "Evaluation Error: Cannot call value that is not a function";
+    exit(0); // !!! Debug systemi ile deyis
+    return nullptr;
 }
 
 Value* eval_ident(Identifier* idn, Env* env){
@@ -262,14 +279,28 @@ Value* eval_while(WhileStmt* wh, Env* env){
 Value* eval_member_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return Make_Null();
 
+    //cout << "NODETYPE: " << (int)me->property->getKind(); //
     if(me->property->getKind() == NodeType::IDENTIFIER){
         Value* obj_v = evaluate(me->object, env);
         Identifier* key = (Identifier*)me->property;
         ObjectValue* obj = (ObjectValue*)obj_v;
         return obj->properties[key->symbol];
     }
+    if(me->property->getKind() == NodeType::CALLEXPR){ // parserde ele bunu
+        cout << "Evaluation Error: CallExpr objectdə çağırıla bilməz";
+        exit(0);
+    }
 
     return evaluate(me->property, env);
+}
+
+Value* eval_func_declaration(FunDeclaration* fn, Env* env){
+    FunctionVal* fn_val = new FunctionVal;
+    fn_val->name = fn->name;
+    fn_val->params = fn->parameters;
+    fn_val->decEnv = env;
+    fn_val->body = fn->body;
+    return env->declareVar(fn->name, fn_val, true);
 }
 
 // Burda memory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
@@ -324,6 +355,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::VAR_D){
         VarDeclaration* childObj = (VarDeclaration*)astNode;
         return eval_var_declaration(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::FUN_D){
+        FunDeclaration* childObj = (FunDeclaration*)astNode;
+        return eval_func_declaration(childObj, env);
     }
     else if(astNode->getKind() == NodeType::CONDEXPR){
         CondExpr* childObj = (CondExpr*)astNode;
