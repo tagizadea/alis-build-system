@@ -53,6 +53,7 @@ Token* Lexer::tokenize(){
         else if(isAlpha(source[position])) tokens[tokenIndex++] = parseIdentifier();
         else if(isDigit(source[position])) tokens[tokenIndex++] = parseNumber();
         else if(source[position] == '\"') tokens[tokenIndex++] = parseString();
+        else if(source[position] == '#') while(source[position++] != '\n');
         else tokens[tokenIndex++] = parseOperator();
     }
     tokens[tokenIndex++] = {TokenType::EndOfFile, ""};
