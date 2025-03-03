@@ -10,6 +10,12 @@
 using namespace std;
 
 vector <string> getSystemFiles(vector <string> &files);
+// Printing Abstact Syntax Tree using Statements
+void print_stmt(Stmt* stmt, int tab);
+// Printing Evaluation
+void print_eval(Value* eval, int tab);
+// Printing Env
+void print_env(Env* env, int tab);
 
 class Env;
 
