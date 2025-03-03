@@ -2,10 +2,15 @@
 #include <cmath>
 
 Value* eval_program(Program* program, Env* env){
-    Value* last = new NullVal;
-
-    for(int i=0;i<program->body.size();++i)
-        last = evaluate(program->body[i], env);
+    if(program->body.empty()) return env->lookUpVar("Null");
+    
+    Value* last;
+    
+    for(int i=0;i<program->body.size();++i){
+        NodeType kind = program->body[i]->getKind();
+        if(kind != NodeType::NUMERIC_L && kind != NodeType::STRING_L) 
+            last = evaluate(program->body[i], env);
+    }
 
     return last;
 }
@@ -18,12 +23,17 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
     Value* lhs = evaluate(binop->left, env);
     Value* rhs = evaluate(binop->right, env);
 
+    bool id_l = binop->left->getKind() != NodeType::IDENTIFIER;
+    bool id_r = binop->right->getKind() != NodeType::IDENTIFIER;
+
     if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::String){
         if(binop->op == "+"){
             StringVal* temp = new StringVal;
             StringVal* nl = (StringVal*)lhs;
             StringVal* nr = (StringVal*)rhs;
             temp->val = nl->val + nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
     }
@@ -35,6 +45,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         string s = "";
         for(int i=0;i<nr->val;++i) s += nl->val;
         temp->val = s;
+        if(id_l) delete lhs;
+        if(id_r) delete rhs;
         return temp;
     }
     else if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
@@ -44,6 +56,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         string s = "";
         for(int i=0;i<nl->val;++i) s += nr->val;
         temp->val = s;
+        if(id_l) delete lhs;
+        if(id_r) delete rhs;
         return temp;
     }
 
@@ -53,6 +67,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val && nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "||"){
@@ -60,6 +76,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val || nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
@@ -67,6 +85,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val == nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
@@ -74,6 +94,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val != nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
     }
@@ -84,6 +106,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val + nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "-"){
@@ -91,6 +115,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val - nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "*"){
@@ -98,6 +124,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val * nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "/"){
@@ -105,6 +133,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val / nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "%"){
@@ -118,6 +148,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             long long left = nl->val;
             long long right = nr->val;
             temp->val = left % right;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">"){
@@ -125,6 +157,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val > nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<"){
@@ -132,6 +166,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val < nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">="){
@@ -139,6 +175,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val >= nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<="){
@@ -146,6 +184,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val <= nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
@@ -153,6 +193,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val == nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
@@ -160,11 +202,13 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val != nr->val;
+            if(id_l) delete lhs;
+            if(id_r) delete rhs;
             return temp;
         }
     }
 
-    return new NullVal;
+    return env->lookUpVar("Null");
 }
 
 Value* eval_object_expr(ObjectLiteral* obj, Env* env){
@@ -176,14 +220,16 @@ Value* eval_object_expr(ObjectLiteral* obj, Env* env){
 
         object->properties[i->key] = val;
     }
-
     return object;
 }
 
 Value* eval_call_expr(CallExpr* expr, Env* env){
     vector <Value*> args;
     
-    for(Expr* i : expr->args) args.push_back(evaluate(i, env));
+    for(Expr* i : expr->args){
+        args.push_back(evaluate(i, env));
+        if(i->getKind() != NodeType::IDENTIFIER) delete i;
+    }
 
     Value* fn = evaluate(expr->callexpr, env);
 
@@ -202,11 +248,12 @@ Value* eval_call_expr(CallExpr* expr, Env* env){
         for(int i = 0; i < func->params.size(); ++i){
             scope->declareVar(func->params[i], args[i], false);
         }
-        if(func->body.empty()) return Make_Null();
+        if(func->body.empty()) return env->lookUpVar("Null");
         Value* ret;
         for(Stmt* i : func->body){
             ret = evaluate(i, scope);
         }
+        delete scope;
         return ret;
     }
     cout << "Evaluation Error: Cannot call value that is not a function";
@@ -220,7 +267,7 @@ Value* eval_ident(Identifier* idn, Env* env){
 }
 
 Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
-    Value* value = var_d->val ? (evaluate(var_d->val, env)) : (Make_Null());
+    Value* value = var_d->val ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
     return env->declareVar(var_d->identifier, value, var_d->constant);
 }
 
@@ -276,8 +323,8 @@ Value* eval_while(WhileStmt* wh, Env* env){
     return result;
 }
 
-Value* eval_member_expr(MemberExpr* me, Env* env){
-    if(me->property == nullptr) return Make_Null();
+Value* eval_member_val_expr(MemberExpr* me, Env* env){
+    if(me->property == nullptr) return env->lookUpVar("Null");
 
     //cout << "NODETYPE: " << (int)me->property->getKind(); //
     if(me->property->getKind() == NodeType::IDENTIFIER){
@@ -303,7 +350,7 @@ Value* eval_func_declaration(FunDeclaration* fn, Env* env){
     return env->declareVar(fn->name, fn_val, true);
 }
 
-// Burda memory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
+// Burda mem_valsory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
 Value* evaluate(Stmt* astNode, Env* env){
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
         NumericLiteral* childObj = (NumericLiteral*)astNode;
@@ -328,7 +375,7 @@ Value* evaluate(Stmt* astNode, Env* env){
         temp->val = childObj->val;
         return temp;
     }
-    else if(astNode->getKind() == NodeType::IDENTIFIER){
+    else if(astNode->getKind() == NodeType::IDENTIFIER){ // SAFE
         Identifier* childObj = (Identifier*)astNode;
         return eval_ident(childObj, env);
     }
@@ -336,41 +383,41 @@ Value* evaluate(Stmt* astNode, Env* env){
         ObjectLiteral* childObj = (ObjectLiteral*)astNode;
         return eval_object_expr(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::CALLEXPR){
+    else if(astNode->getKind() == NodeType::CALLEXPR){ // SAFE
         CallExpr* childObj = (CallExpr*)astNode;
         return eval_call_expr(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::ASSIGNEXPR){
+    else if(astNode->getKind() == NodeType::ASSIGNEXPR){ // SAFE
         AssignExpr* childObj = (AssignExpr*)astNode;
         return eval_var_assignment(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::BINARYEXPR){
+    else if(astNode->getKind() == NodeType::BINARYEXPR){ // SAFE
         BinaryExpr* childObj = (BinaryExpr*)astNode;
         return eval_bin_expr(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::PROGRAM){
+    else if(astNode->getKind() == NodeType::PROGRAM){ // PARTIAL
         Program* childObj = (Program*)astNode;
         return eval_program(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::VAR_D){
+    else if(astNode->getKind() == NodeType::VAR_D){ // SAFE
         VarDeclaration* childObj = (VarDeclaration*)astNode;
         return eval_var_declaration(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::FUN_D){
+    else if(astNode->getKind() == NodeType::FUN_D){ // SAFFE
         FunDeclaration* childObj = (FunDeclaration*)astNode;
         return eval_func_declaration(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::CONDEXPR){
+    else if(astNode->getKind() == NodeType::CONDEXPR){ // SAFE
         CondExpr* childObj = (CondExpr*)astNode;
         return eval_condition(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::WHILE_LOOP){
+    else if(astNode->getKind() == NodeType::WHILE_LOOP){ // SAFE
         WhileStmt* childObj = (WhileStmt*)astNode;
         return eval_while(childObj, env);
     }
-    else if(astNode->getKind() == NodeType::MEMBEREXPR){
+    else if(astNode->getKind() == NodeType::MEMBEREXPR){ // SAFE
         MemberExpr* childObj = (MemberExpr*)astNode;
-        return eval_member_expr(childObj, env);
+        return eval_member_val_expr(childObj, env);
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle

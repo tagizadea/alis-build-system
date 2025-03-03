@@ -73,8 +73,8 @@ int main(int argc, char *argv[]){
     Program* program = parser->produceAST();
 
     // Printing AST for debug
-    //cout << "AST:\n";
-    //print_stmt(program, 0);
+    cout << "AST:\n";
+    print_stmt(program, 0);
 
     // Printing Evalutation for debug
     Env* env = new Env;
@@ -82,5 +82,6 @@ int main(int argc, char *argv[]){
     Value* eval = evaluate(program, env);
     //cout << "\nEVALUATION:\n";
     //print_eval(eval, 0);
+
     return 0;
 }

@@ -171,6 +171,10 @@ void print_stmt(Stmt* stmt, int tab){
 void print_eval(Value* eval, int tab){
     string tab_s = "";
     for(int i = 0; i < tab; ++i) tab_s += "    ";
+    if(eval == nullptr){
+        cout << tab_s << "NullPTR!\n";
+        return;
+    }
     if(eval->getType() == ValueType::Number){
         cout << tab_s << "Type: Number\n";
         NumberVal* temp = (NumberVal*)eval;

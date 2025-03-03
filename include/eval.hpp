@@ -6,6 +6,7 @@
 #include <parser.hpp>
 #include <iostream>
 #include <env.hpp>
+#include <set>
 
 Value* evaluate(Stmt* astNode, Env* env_instance);
 
