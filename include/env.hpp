@@ -11,10 +11,10 @@
 class Env{
     private:
     vector <Env*> children;
-    unordered_map <string, Value*> variables;
-    unordered_set <string> constants;
     
     public:
+    unordered_map <string, Value*> variables;
+    unordered_set <string> constants;
     Env* parent = nullptr;
     Value* declareVar(string name, Value* val, bool isConst);
     Value* assignVar(string name, Value* val);
