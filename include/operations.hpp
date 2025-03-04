@@ -26,6 +26,7 @@ namespace n_funs{
     Value* max(vector <Value*> args, Env* env);
     Value* min(vector <Value*> args, Env* env);
     Value* system(vector <Value*> args, Env* env);
+    Value* compile(vector <Value*> args, Env* env);
 }
 
 #endif

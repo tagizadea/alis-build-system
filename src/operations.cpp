@@ -284,7 +284,7 @@ Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun
         q.pop();
     }
     //cout << '\n';
-    return Make_Null();
+    return env->lookUpVar("Null");
 }
 
 Value *n_funs::timeNow(vector<Value*> args, Env* env){
@@ -310,11 +310,20 @@ Value* n_funs::floor(vector<Value*> args, Env* env){
 
 Value* n_funs::system(vector<Value*> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::String){
-        cout << "System Function: Wrong args. Use platform specific commans";
+        cout << "System Function: Wrong args. Use platform specific commands";
         exit(0); // !!! debug systemi ile deyis
     }
     
     StringVal* temp = (StringVal*)args[0];
     std::system(temp->val.c_str());
-    return Make_Null();
+    return env->lookUpVar("Null");
+}
+
+Value *n_funs::compile(vector<Value *> args, Env *env){
+    if(args.size() != 2){
+        cout << "Compile Function: Number of args must be 2 (compiler and source files)";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+
+    return nullptr; // Not implemented yet
 }
