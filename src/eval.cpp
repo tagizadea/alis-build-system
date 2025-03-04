@@ -239,12 +239,12 @@ Value* eval_call_expr(CallExpr* expr, Env* env){
     }
     else if(fn->getType() == ValueType::FUNC){
         FunctionVal* func = (FunctionVal*)fn;
-        Env* scope = new Env;
-        scope->parent = func->decEnv;
         if(args.size() != func->params.size()){
             cout << "Evaluation Error: Some arguments are missing for function named \"" << func->name << '\"';
             exit(0); // !!! debug systemi ile deyis
         }
+        Env* scope = new Env;
+        scope->parent = func->decEnv;
         for(int i = 0; i < func->params.size(); ++i){
             scope->declareVar(func->params[i], args[i], false);
         }
@@ -253,7 +253,7 @@ Value* eval_call_expr(CallExpr* expr, Env* env){
         for(Stmt* i : func->body){
             ret = evaluate(i, scope);
         }
-        delete scope;
+        if(ret->getType() != ValueType::FUNC) delete scope; /// funksiyaVal return eleyende problem olur
         return ret;
     }
     cout << "Evaluation Error: Cannot call value that is not a function";
@@ -290,15 +290,16 @@ Value* eval_condition(CondExpr* cond, Env* env){
 
     BoolValue* temp = (BoolValue*)condition;
     Value* result;
-
+    Env* scope = new Env;
+    scope->parent = env;
     if(temp->val){
         //result = evaluate(cond->ThenBranch, env);
         for(Stmt* i : cond->ThenBranch){
-            result = evaluate(i, env);
+            result = evaluate(i, scope);
         }
     }
-    else result = evaluate(cond->ElseBranch, env);
-
+    else result = evaluate(cond->ElseBranch, scope);
+    delete scope;
     return result;
 }
 
@@ -312,14 +313,16 @@ Value* eval_while(WhileStmt* wh, Env* env){
 
     BoolValue* temp = (BoolValue*)condition;
     Value* result;
-
+    Env* scope = new Env;
+    scope->parent = env;
     while(temp->val){
         for(Stmt* i : wh->ThenBranch){
-            result = evaluate(i, env);
+            result = evaluate(i, scope);
         }
         condition = evaluate(wh->condition, env);
         temp = (BoolValue*)condition;
     }
+    delete scope;
     return result;
 }
 
