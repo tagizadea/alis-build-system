@@ -223,12 +223,11 @@ Value* eval_object_expr(ObjectLiteral* obj, Env* env){
     return object;
 }
 
-Value* eval_call_expr(CallExpr* expr, Env* env){
+Value* eval_call_expr(CallExpr* expr, Env* env){ // memory leak
     vector <Value*> args;
     
     for(Expr* i : expr->args){
         args.push_back(evaluate(i, env));
-        if(i->getKind() != NodeType::IDENTIFIER) delete i;
     }
 
     Value* fn = evaluate(expr->callexpr, env);
@@ -289,18 +288,17 @@ Value* eval_condition(CondExpr* cond, Env* env){
     }
 
     BoolValue* temp = (BoolValue*)condition;
-    Value* result;
     Env* scope = new Env;
     scope->parent = env;
     if(temp->val){
         //result = evaluate(cond->ThenBranch, env);
         for(Stmt* i : cond->ThenBranch){
-            result = evaluate(i, scope);
+            evaluate(i, scope);
         }
     }
-    else result = evaluate(cond->ElseBranch, scope);
+    else evaluate(cond->ElseBranch, scope);
     delete scope;
-    return result;
+    return env->lookUpVar("Null");
 }
 
 Value* eval_while(WhileStmt* wh, Env* env){
@@ -312,18 +310,17 @@ Value* eval_while(WhileStmt* wh, Env* env){
     }
 
     BoolValue* temp = (BoolValue*)condition;
-    Value* result;
     Env* scope = new Env;
     scope->parent = env;
     while(temp->val){
         for(Stmt* i : wh->ThenBranch){
-            result = evaluate(i, scope);
+            evaluate(i, scope);
         }
         condition = evaluate(wh->condition, env);
         temp = (BoolValue*)condition;
     }
     delete scope;
-    return result;
+    return env->lookUpVar("Null");
 }
 
 Value* eval_member_val_expr(MemberExpr* me, Env* env){
