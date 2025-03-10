@@ -21,7 +21,9 @@ enum class NodeType{
     NUMERIC_L,
     STRING_L,
     PROPERTY_L,
+    ELEMENT_L,
     OBJECT_L,
+    LIST_L,
     IDENTIFIER,
     BINARYEXPR
 };
@@ -200,6 +202,29 @@ class ObjectLiteral : public Expr{
     public:
 
     std::vector <PropertyLiteral*> properties;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class ElementLiteral : public Expr{
+    NodeType kind = NodeType::ELEMENT_L;
+    public:
+
+    unsigned long long key;
+    Expr* val = nullptr;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class ListLiteral : public Expr{
+    NodeType kind = NodeType::LIST_L;
+    public:
+
+    std::vector <ElementLiteral*> properties;
 
     NodeType getKind() const override{
         return kind;

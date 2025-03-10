@@ -104,6 +104,20 @@ void print_stmt(Stmt* stmt, int tab){
         for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
         cout << tab_s << "}\n";
     }
+    else if(NodeType::LIST_L == kind){
+        cout << tab_s << "Type: ListLiteral{\n";
+        ListLiteral* childObj = dynamic_cast<ListLiteral*>(stmt);
+        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
+    }
+    else if(NodeType::ELEMENT_L == kind){
+        cout << tab_s << "Type: ElementLiteral\n";
+        ElementLiteral* childObj = dynamic_cast<ElementLiteral*>(stmt);
+        cout << tab_s << "Index: " << childObj->key << '\n';
+        cout << tab_s << "Value:\n";
+        if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
+        else print_stmt(childObj->val, tab + 1);
+        cout << '\n';
+    }
     else if(NodeType::PROPERTY_L == kind){
         cout << tab_s << "Type: PropertyLiteral\n";
         PropertyLiteral* childObj = dynamic_cast<PropertyLiteral*>(stmt);

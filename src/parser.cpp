@@ -158,8 +158,42 @@ Expr* Parser::parse_assignment_expr(){
     return left;
 }
 
+Expr *Parser::parse_list_expr(){
+    if(at().type != TokenType::LBRACE) return parse_logical_expr();
+
+    eat();
+    vector <ElementLiteral*> v;
+
+    unsigned int key = 0;
+    while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACE){
+        ///cout << "BURA GELDI\n";///
+        //string key = expect(TokenType::Identifier, "ObjectLiteral key is not found").value;
+        Expr* val = parse_expr();
+        if(at().type == TokenType::COMMA){
+            eat();
+            ElementLiteral* temp = new ElementLiteral;
+            temp->key = key++;
+            temp->val = val;
+            v.push_back(temp);
+            continue;
+        }
+        else if(at().type == TokenType::RBRACE){
+            ElementLiteral* temp = new ElementLiteral;
+            temp->key = key++;
+            temp->val = val;
+            v.push_back(temp);
+            continue;
+        }
+    }
+
+    expect(TokenType::RBRACE, "Brace bağlanmayıb");
+    ListLiteral* temp = new ListLiteral;
+    temp->properties = v;
+    return temp;
+}
+
 Expr* Parser::parse_object_expr(){
-    if(at().type != TokenType::LBRACK) return parse_logical_expr();
+    if(at().type != TokenType::LBRACK) return parse_list_expr();
     
     eat();
     vector <PropertyLiteral*> v;

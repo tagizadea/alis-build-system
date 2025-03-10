@@ -29,6 +29,7 @@ class Parser{
     Expr* parse_logical_expr();
     Expr* parse_mult_expr();
     Expr* parse_assignment_expr();
+    Expr* parse_list_expr();
     Expr* parse_object_expr();
     Expr* parse_call_member_expr();
     Expr* parse_member_expr();
