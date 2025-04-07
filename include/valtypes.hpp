@@ -16,7 +16,8 @@ enum class ValueType{
     String,
     NFUNC,
     FUNC,
-    Object
+    Object,
+    List
 };
 
 class Value{
@@ -87,6 +88,19 @@ class ObjectValue : public Value{
     public:
 
     std::unordered_map <std::string, Value*> properties;
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class ListValue : public Value{
+    private:
+    
+    ValueType type = ValueType::List;
+    public:
+
+    std::vector <Value*> v;
 
     ValueType getType() const override{
         return this->type;
