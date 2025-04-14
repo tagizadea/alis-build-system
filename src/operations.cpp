@@ -254,15 +254,9 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-Value *n_funs::vector_returns(vector<Value *> args, Env *env){
-    if(args.size() > 2){
-        return env->lookUpVar("Null");
-    }
-    
-}
 
-Value *n_funs::print(vector<Value *> args, Env *env)
-{ // naive print fun
+
+Value* n_funs::print(vector <Value*> args, Env* env){ // naive print fun
     queue <pair <vector <Value*> , string> > q;
     q.push({args, ""});
     while(!q.empty()){
