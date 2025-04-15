@@ -326,9 +326,39 @@ Value* eval_while(WhileStmt* wh, Env* env){
 Value* eval_member_val_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return env->lookUpVar("Null");
 
+    
+    Value* obj_v = evaluate(me->object, env);
+
+    if(obj_v->getType() == ValueType::List){
+        ListValue* list = (ListValue*)obj_v;
+        if(me->computed){
+            NumericLiteral* i = (NumericLiteral*)me->property;
+            try{
+                return list->v.at(i->val);
+            }
+            catch(const std::exception& e){
+                std::cerr << e.what() << '\n'; 
+                exit(0); // !!! debug systemi ile deyis
+            }
+        }
+        else{
+            // if(me->property->getKind() != NodeType::CALLEXPR){
+            //     cout << "List only have functions as not-computed members";
+            //     exit(0); // !!! debug systemi ile deyis
+            // }
+            string name = ((Identifier*)me->property)->symbol;
+            FunctionCall temp;
+            temp.env = env;
+            temp.funAddr = n_funs::vector_returns;
+            temp.args = {list, Make_String(name)};
+            return Make_NFunc(temp);
+            // cout << "Unknown list function";
+            // exit(0); // !!! debug systemi ile deyis
+        }
+    }
+
     //cout << "NODETYPE: " << (int)me->property->getKind(); //
     if(me->property->getKind() == NodeType::IDENTIFIER){
-        Value* obj_v = evaluate(me->object, env);
         Identifier* key = (Identifier*)me->property;
         ObjectValue* obj = (ObjectValue*)obj_v;
         return obj->properties[key->symbol];
@@ -348,6 +378,17 @@ Value* eval_func_declaration(FunDeclaration* fn, Env* env){
     fn_val->decEnv = env;
     fn_val->body = fn->body;
     return env->declareVar(fn->name, fn_val, true);
+}
+
+Value* eval_list_expr(ListLiteral* l, Env* env){
+    ListValue* list_val = new ListValue;
+    vector <Value*> v(l->properties.size());
+    for(int i=0;i<l->properties.size();++i){
+        ElementLiteral* el = l->properties[i];
+        v[el->key] = evaluate(el->val, env);
+    }
+    list_val->v = v;
+    return list_val;
 }
 
 // Burda mem_valsory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
@@ -382,6 +423,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::OBJECT_L){
         ObjectLiteral* childObj = (ObjectLiteral*)astNode;
         return eval_object_expr(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::LIST_L){
+        ListLiteral* childObj = (ListLiteral*)astNode;
+        return eval_list_expr(childObj, env);
     }
     else if(astNode->getKind() == NodeType::CALLEXPR){ // SAFE
         CallExpr* childObj = (CallExpr*)astNode;
