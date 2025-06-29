@@ -233,7 +233,12 @@ Value* eval_call_expr(CallExpr* expr, Env* env){ // memory leak
     Value* fn = evaluate(expr->callexpr, env);
 
     if(fn->getType() == ValueType::NFUNC){
-        Value* result = ((NativeFuncVal*)fn)->call.funAddr(args, env);
+        Value* result;
+        NativeFuncVal* nfn = (NativeFuncVal*)fn;
+        if(nfn->list){
+            for(Value* i : nfn->call.args) args.push_back(i);
+        }
+        result = nfn->call.funAddr(args, env);
         return result;
     }
     else if(fn->getType() == ValueType::FUNC){
@@ -332,6 +337,10 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
     if(obj_v->getType() == ValueType::List){
         ListValue* list = (ListValue*)obj_v;
         if(me->computed){
+            if(me->property->getKind() != NodeType::NUMERIC_L){
+                cout << "Index should be numeric!";
+                exit(0); // !!! debug sistemi ile deyis
+            }
             NumericLiteral* i = (NumericLiteral*)me->property;
             try{
                 return list->v.at(i->val);
@@ -347,13 +356,35 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
             //     exit(0); // !!! debug systemi ile deyis
             // }
             string name = ((Identifier*)me->property)->symbol;
-            FunctionCall temp;
-            temp.env = env;
-            temp.funAddr = n_funs::vector_returns;
-            temp.args = {list, Make_String(name)};
-            return Make_NFunc(temp);
-            // cout << "Unknown list function";
-            // exit(0); // !!! debug systemi ile deyis
+            if(name == "size"){
+                FunctionCall temp;
+                temp.env = env;
+                temp.funAddr = n_funs::vector_size;
+                temp.args.push_back(list);
+                NativeFuncVal* tnf = Make_NFunc(temp);
+                tnf->list = true;
+                return tnf;
+            }
+            if(name == "push"){
+                FunctionCall temp;
+                temp.env = env;
+                temp.funAddr = n_funs::vector_push;
+                temp.args.push_back(list);
+                NativeFuncVal* tnf = Make_NFunc(temp);
+                tnf->list = true;
+                return tnf;
+            }
+            if(name == "pop"){
+                FunctionCall temp;
+                temp.env = env;
+                temp.funAddr = n_funs::vector_pop;
+                temp.args.push_back(list);
+                NativeFuncVal* tnf = Make_NFunc(temp);
+                tnf->list = true;
+                return tnf;
+            }
+            cout << "Unknown list function!";
+            exit(0); // !!! debug systemi ile deyis
         }
     }
 

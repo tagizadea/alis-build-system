@@ -16,6 +16,7 @@ enum class ValueType{
     String,
     NFUNC,
     FUNC,
+    LFUNC,
     Object,
     List
 };
@@ -121,6 +122,7 @@ class NativeFuncVal : public Value{
     public:
 
     FunctionCall call;
+    bool list = false;
 
     ValueType getType() const override{
         return this->type;

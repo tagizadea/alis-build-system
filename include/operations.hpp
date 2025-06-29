@@ -21,7 +21,9 @@ void print_env(Env* env, int tab);
 class Env;
 
 namespace n_funs{
-    Value* vector_returns(vector <Value*> args, Env* env);
+    Value* vector_size(vector <Value*> args, Env* env);
+    Value* vector_push(vector <Value*> args, Env* env);
+    Value* vector_pop(vector <Value*> args, Env* env);
     Value* print(vector <Value*> args, Env* env);
     Value* timeNow(vector <Value*> args, Env* env);
     Value* floor(vector <Value*> args, Env* env);

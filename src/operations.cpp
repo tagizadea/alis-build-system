@@ -254,15 +254,33 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-Value *n_funs::vector_returns(vector<Value *> args, Env *env){
-    if(args.size() > 2){
+Value* n_funs::vector_size(vector<Value *> args, Env *env){
+    if(args.size() != 1){
         return env->lookUpVar("Null");
     }
-    
+    ListValue* l = (ListValue*)args[0];
+    return Make_Number(l->v.size());
 }
 
-Value *n_funs::print(vector<Value *> args, Env *env)
-{ // naive print fun
+Value* n_funs::vector_push(vector<Value *> args, Env *env){
+    if(args.size() < 2){
+        return env->lookUpVar("Null");
+    }
+    ListValue* l = (ListValue*)args[args.size() - 1];
+    for(int i = 0; i < args.size() - 1; ++i) l->v.push_back(args[i]);
+    return env->lookUpVar("Null");
+}
+
+Value* n_funs::vector_pop(vector<Value *> args, Env *env){
+    if(args.size() != 1){
+        return env->lookUpVar("Null");
+    }
+    ListValue* l = (ListValue*)args[0];
+    l->v.pop_back();
+    return env->lookUpVar("Null");
+}
+
+Value* n_funs::print(vector<Value *> args, Env *env){ // naive print fun
     queue <pair <vector <Value*> , string> > q;
     q.push({args, ""});
     while(!q.empty()){
