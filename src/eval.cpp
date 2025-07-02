@@ -330,20 +330,20 @@ Value* eval_while(WhileStmt* wh, Env* env){
 
 Value* eval_member_val_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return env->lookUpVar("Null");
-
     
     Value* obj_v = evaluate(me->object, env);
 
     if(obj_v->getType() == ValueType::List){
         ListValue* list = (ListValue*)obj_v;
         if(me->computed){
-            if(me->property->getKind() != NodeType::NUMERIC_L){
-                cout << "Index should be numeric!";
+            // NumericLiteral* i = (NumericLiteral*)me->property;
+            Value* i = evaluate(me->property, env);
+            if(i->getType() != ValueType::Number){
+                cout << "Index should be numeric! INPUT: " << (int)i->getType();
                 exit(0); // !!! debug sistemi ile deyis
             }
-            NumericLiteral* i = (NumericLiteral*)me->property;
             try{
-                return list->v.at(i->val);
+                return list->v.at( int(((NumberVal*)i)->val) );
             }
             catch(const std::exception& e){
                 std::cerr << e.what() << '\n'; 
