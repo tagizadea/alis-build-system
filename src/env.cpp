@@ -93,4 +93,13 @@ void InitNatives(Env* env){
     env->declareVar("floor", Make_NFunc(temp), true);
     temp.funAddr = n_funs::system;
     env->declareVar("system", Make_NFunc(temp), true);
+
+    // Native Vector Functions
+    ListVecNFuncs.resize(3);
+    temp.funAddr = n_funs::vector_size;
+    ListVecNFuncs[0] = Make_NFunc(temp);
+    temp.funAddr = n_funs::vector_push;
+    ListVecNFuncs[1] = Make_NFunc(temp);
+    temp.funAddr = n_funs::vector_pop;
+    ListVecNFuncs[2] = Make_NFunc(temp);
 }

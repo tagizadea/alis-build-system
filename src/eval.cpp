@@ -351,40 +351,20 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
             }
         }
         else{
-            // if(me->property->getKind() != NodeType::CALLEXPR){
-            //     cout << "List only have functions as not-computed members";
-            //     exit(0); // !!! debug systemi ile deyis
-            // }
             string name = ((Identifier*)me->property)->symbol;
-            if(name == "size"){
-                FunctionCall temp;
-                temp.env = env;
-                temp.funAddr = n_funs::vector_size;
-                temp.args.push_back(list);
-                NativeFuncVal* tnf = Make_NFunc(temp);
-                tnf->list = true;
-                return tnf;
+            NativeFuncVal* tnf = ListVecNFuncs[0];
+            if(name == "size") tnf = ListVecNFuncs[0];
+            else if(name == "push") tnf = ListVecNFuncs[1];
+            else if(name == "pop") tnf = ListVecNFuncs[2];
+            else{
+                cout << "Unknown list function!";
+                exit(0); // !!! debug systemi ile deyis
             }
-            if(name == "push"){
-                FunctionCall temp;
-                temp.env = env;
-                temp.funAddr = n_funs::vector_push;
-                temp.args.push_back(list);
-                NativeFuncVal* tnf = Make_NFunc(temp);
-                tnf->list = true;
-                return tnf;
-            }
-            if(name == "pop"){
-                FunctionCall temp;
-                temp.env = env;
-                temp.funAddr = n_funs::vector_pop;
-                temp.args.push_back(list);
-                NativeFuncVal* tnf = Make_NFunc(temp);
-                tnf->list = true;
-                return tnf;
-            }
-            cout << "Unknown list function!";
-            exit(0); // !!! debug systemi ile deyis
+            tnf->list = true;
+            tnf->call.args.clear();
+            tnf->call.args.push_back(list);
+            tnf->call.env = env;
+            return tnf;
         }
     }
 

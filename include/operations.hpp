@@ -20,6 +20,8 @@ void print_env(Env* env, int tab);
 
 class Env;
 
+extern vector <NativeFuncVal*> ListVecNFuncs;
+
 namespace n_funs{
     Value* vector_size(vector <Value*> args, Env* env);
     Value* vector_push(vector <Value*> args, Env* env);

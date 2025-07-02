@@ -3,6 +3,8 @@
 #include <ctime>
 #include <queue>
 
+vector <NativeFuncVal*> ListVecNFuncs;
+
 vector<string> getSystemFiles(vector<string> &files){
     vector <string> temp;
     for(int i=0; i<files.size(); ++i){
@@ -276,6 +278,10 @@ Value* n_funs::vector_pop(vector<Value *> args, Env *env){
         return env->lookUpVar("Null");
     }
     ListValue* l = (ListValue*)args[0];
+    if(l->v.empty()){
+        cout << "List boşdur: pop icra oluna bilmir!";
+        exit(0); // !!! debug sistemi ile deyis
+    }
     l->v.pop_back();
     return env->lookUpVar("Null");
 }
