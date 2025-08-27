@@ -256,7 +256,7 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-Value* n_funs::vector_size(vector<Value *> args, Env *env){
+Value* n_funs::vector_size(vector<Value*> args, Env *env){
     if(args.size() != 1){
         return env->lookUpVar("Null");
     }
@@ -264,29 +264,63 @@ Value* n_funs::vector_size(vector<Value *> args, Env *env){
     return Make_Number(l->v.size());
 }
 
-Value* n_funs::vector_push(vector<Value *> args, Env *env){
+Value* n_funs::vector_push(vector<Value*> args, Env *env){
     if(args.size() < 2){
         return env->lookUpVar("Null");
     }
+
     ListValue* l = (ListValue*)args[args.size() - 1];
-    for(int i = 0; i < args.size() - 1; ++i) l->v.push_back(args[i]);
+
+    if(l->v.empty()) for(int i=0;i<10;++i) l->mapTypeCounter[i] = 0;
+
+    for(int i = 0; i < args.size() - 1; ++i){
+        l->v.push_back(args[i]);
+
+        int val_id = (int)args[i]->getType();
+        if(l->mapTypeCounter[val_id] == 0) ++l->distinc_types;
+        ++l->mapTypeCounter[val_id];
+        if(l->distinc_types == 1) l->consist_of = args[i]->getType();
+        else l->consist_of = ValueType::None;
+    }
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::vector_pop(vector<Value *> args, Env *env){
-    if(args.size() != 1){
-        return env->lookUpVar("Null");
-    }
+Value* n_funs::vector_pop(vector<Value*> args, Env *env){
+    if(args.size() != 1) return env->lookUpVar("Null");
+
     ListValue* l = (ListValue*)args[0];
     if(l->v.empty()){
         cout << "List boşdur: pop icra oluna bilmir!";
         exit(0); // !!! debug sistemi ile deyis
     }
+
+    int val_id = (int)l->v[l->v.size() - 1]->getType();
+    --l->mapTypeCounter[val_id];
+    if(l->mapTypeCounter[val_id] == 0) --l->distinc_types;
+    if(l->distinc_types == 1) l->consist_of = l->v[l->v.size() - 1]->getType();
+    else l->consist_of = ValueType::None;
+
     l->v.pop_back();
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::print(vector<Value *> args, Env *env){ // naive print fun
+Value* n_funs::vector_sort(vector<Value*> args, Env *env){
+    if(args.size() != 1) return env->lookUpVar("Null");
+
+    ListValue* l = (ListValue*)args[0];
+
+    if(l->consist_of == ValueType::Number)
+        std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_Number);
+    else if(l->consist_of == ValueType::String)
+        std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_String);
+    else{
+        cout << "Warning: List consist of more than one type!\n"; // Debug sistemi ile evezle
+    }
+    return env->lookUpVar("Null");
+}
+
+Value* n_funs::print(vector<Value*> args, Env *env){ // naive print fun
+    // OBJ VE LIST PROBLEMLIDI !!!
     queue <pair <vector <Value*> , string> > q;
     q.push({args, ""});
     while(!q.empty()){
@@ -298,14 +332,22 @@ Value* n_funs::print(vector<Value *> args, Env *env){ // naive print fun
                 ObjectValue* temp = (ObjectValue*)v[i];
                 cout << tab_s << "Object\n";
     
-                for(pair <string, Value*> i : temp->properties){
-                    cout << tab_s + "    "<< "Key: \"" <<i.first << "\" Value: ";
-                    //print({i.second}, env);
-                    q.push({{i.second}, tab_s + "    "});
+                for(pair <string, Value*> j : temp->properties){
+                    // cout << tab_s + "    "<< "Key: \"" <<j.first << "\" Value: ";
+                    q.push({{j.second}, tab_s + "    " + "Key: \"" + j.first + "\" Value: \n"});
                 }
-                //cout << tab_s << "}\n";
-                cout << '\n';
-            } 
+                // cout << '\n';
+            }
+            else if(v[i]->getType() == ValueType::List){
+                ListValue* temp = (ListValue*)v[i];
+                cout << tab_s << "List";
+    
+                for(int j = 0; j < temp->v.size(); ++j){
+                    if(j == 0) q.push({{temp->v[j]}, tab_s + "    "});
+                    else q.push({{temp->v[j]}, tab_s + " "});
+                }
+                cout << "\n";
+            }
             else if(v[i]->getType() == ValueType::Number){
                 NumberVal* temp = (NumberVal*)v[i];
                 cout << tab_s << temp->val;
@@ -363,11 +405,21 @@ Value* n_funs::system(vector<Value*> args, Env* env){
     return env->lookUpVar("Null");
 }
 
-Value *n_funs::compile(vector<Value *> args, Env *env){
+Value *n_funs::compile(vector<Value*> args, Env *env){
     if(args.size() != 2){
         cout << "Compile Function: Number of args must be 2 (compiler and source files)";
         exit(0); // !!! debug sistemi ile deyis
     }
 
     return nullptr; // Not implemented yet
+}
+
+/* SORT COMPARATORS FOR DEFAULT TYPES*/
+
+bool sort_comps::cmp_less_Number(Value *a, Value *b){
+    return ((NumberVal*)a)->val < ((NumberVal*)b)->val;
+}
+
+bool sort_comps::cmp_less_String(Value *a, Value *b){
+    return ((StringVal*)a)->val < ((StringVal*)b)->val;
 }

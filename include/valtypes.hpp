@@ -102,6 +102,9 @@ class ListValue : public Value{
     public:
 
     std::vector <Value*> v;
+    ValueType consist_of = ValueType::None;
+    int mapTypeCounter[10];
+    int distinc_types = 0;
 
     ValueType getType() const override{
         return this->type;

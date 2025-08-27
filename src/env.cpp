@@ -102,4 +102,6 @@ void InitNatives(Env* env){
     ListVecNFuncs[1] = Make_NFunc(temp);
     temp.funAddr = n_funs::vector_pop;
     ListVecNFuncs[2] = Make_NFunc(temp);
+    temp.funAddr = n_funs::vector_sort;
+    ListVecNFuncs[3] = Make_NFunc(temp);
 }

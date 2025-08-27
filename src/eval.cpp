@@ -356,6 +356,7 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
             if(name == "size") tnf = ListVecNFuncs[0];
             else if(name == "push") tnf = ListVecNFuncs[1];
             else if(name == "pop") tnf = ListVecNFuncs[2];
+            else if(name == "sort") tnf = ListVecNFuncs[3];
             else{
                 cout << "Unknown list function!";
                 exit(0); // !!! debug systemi ile deyis
@@ -397,6 +398,12 @@ Value* eval_list_expr(ListLiteral* l, Env* env){
     for(int i=0;i<l->properties.size();++i){
         ElementLiteral* el = l->properties[i];
         v[el->key] = evaluate(el->val, env);
+
+        int val_id = (int)v[i]->getType();
+        if(list_val->mapTypeCounter[val_id] == 0) ++list_val->distinc_types;
+        ++list_val->mapTypeCounter[val_id];
+        if(list_val->distinc_types == 1) list_val->consist_of = v[i]->getType();
+        else list_val->consist_of = ValueType::None;
     }
     list_val->v = v;
     return list_val;

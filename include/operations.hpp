@@ -7,6 +7,7 @@
 #include <valtypes.hpp>
 #include <functional>
 #include <env.hpp>
+#include <algorithm>
 using namespace std;
 
 vector <string> getSystemFiles(vector <string> &files);
@@ -22,10 +23,16 @@ class Env;
 
 extern vector <NativeFuncVal*> ListVecNFuncs;
 
+namespace sort_comps{
+    bool cmp_less_Number(Value* a, Value* b);
+    bool cmp_less_String(Value* a, Value* b);
+}
+
 namespace n_funs{
     Value* vector_size(vector <Value*> args, Env* env);
     Value* vector_push(vector <Value*> args, Env* env);
     Value* vector_pop(vector <Value*> args, Env* env);
+    Value* vector_sort(vector <Value*> args, Env* env);
     Value* print(vector <Value*> args, Env* env);
     Value* timeNow(vector <Value*> args, Env* env);
     Value* floor(vector <Value*> args, Env* env);
