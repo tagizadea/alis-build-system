@@ -7,6 +7,7 @@
 #include <lexer.hpp>
 #include <parser.hpp>
 #include <eval.hpp>
+#include <manager.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -19,6 +20,7 @@ vector <string> files;
 int main(int argc, char *argv[]){
 
     cout << "Ali's Build System ALPHA!\n";
+    init_manager();
 
     try{
         for(const auto& entry : fs::directory_iterator(path)){
@@ -57,6 +59,7 @@ int main(int argc, char *argv[]){
 
     ifstream file(MainFile);
     string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    file.close();
     content += '\n';
     Lexer lexer(content.c_str());
     Token* tokens = lexer.tokenize();
