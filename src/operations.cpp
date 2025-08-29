@@ -433,6 +433,35 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
     return nullptr; // Not implemented yet
 }
 
+Value* n_funs::run(vector<Value*> args, Env* env){
+    if(args.size() != 1){
+        cout << "Run Function: Too many arguments!";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    if(args[0]->getType() != ValueType::String){
+        cout << "Run Function: Argument should be String!";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    
+    // ObjectValue* o = new ObjectValue;
+
+    ifstream file(((StringVal*)args[0])->val);
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    file.close();
+    content += '\n';
+    Lexer lexer(content.c_str());
+    Token* tokens = lexer.tokenize();
+
+    Parser* parser = new Parser(tokens);
+    Program* program = parser->produceAST();
+
+    // Env* local_env = new Env;
+    // InitNatives(local_env);
+    Value* eval = evaluate(program, env);
+
+    return env->lookUpVar("Null");
+}
+
 /* SORT COMPARATORS FOR DEFAULT TYPES*/
 
 bool sort_comps::cmp_less_Number(Value* a, Value* b){

@@ -29,7 +29,7 @@ Env* Env::resolve(string name){
 
     if(this->parent == nullptr){
         cout << "Variable Resolve Error: " << name << " does not exist";
-        exit(0);
+        exit(0); // !!! Debug systemi ile deyis
     }
 
     return this->parent->resolve(name);
@@ -95,6 +95,8 @@ void InitNatives(Env* env){
     env->declareVar("system", Make_NFunc(temp), true);
     temp.funAddr = n_funs::Ntrack;
     env->declareVar("track", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::run;
+    env->declareVar("run", Make_NFunc(temp), true);
 
     // Native Vector Functions
     ListVecNFuncs.resize(3);
