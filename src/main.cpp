@@ -21,10 +21,6 @@ int main(int argc, char *argv[]){
 
     cout << "Ali's Build System ALPHA!\n";
     init_manager();
-    Manager::getInstance().sources.assign({"issues.abs", "LICENSE"});
-    vector <string> changed_files = track();
-
-    for(string s : changed_files) cout << s << '\n';
 
     try{
         for(const auto& entry : fs::directory_iterator(path)){

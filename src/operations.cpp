@@ -256,7 +256,7 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-Value* n_funs::vector_size(vector<Value*> args, Env *env){
+Value* n_funs::vector_size(vector<Value*> args, Env* env){
     if(args.size() != 1){
         return env->lookUpVar("Null");
     }
@@ -264,7 +264,7 @@ Value* n_funs::vector_size(vector<Value*> args, Env *env){
     return Make_Number(l->v.size());
 }
 
-Value* n_funs::vector_push(vector<Value*> args, Env *env){
+Value* n_funs::vector_push(vector<Value*> args, Env* env){
     if(args.size() < 2){
         return env->lookUpVar("Null");
     }
@@ -285,7 +285,7 @@ Value* n_funs::vector_push(vector<Value*> args, Env *env){
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::vector_pop(vector<Value*> args, Env *env){
+Value* n_funs::vector_pop(vector<Value*> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
     ListValue* l = (ListValue*)args[0];
@@ -304,7 +304,7 @@ Value* n_funs::vector_pop(vector<Value*> args, Env *env){
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::vector_sort(vector<Value*> args, Env *env){
+Value* n_funs::vector_sort(vector<Value*> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
     ListValue* l = (ListValue*)args[0];
@@ -319,7 +319,7 @@ Value* n_funs::vector_sort(vector<Value*> args, Env *env){
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::print(vector<Value*> args, Env *env){ // naive print fun
+Value* n_funs::print(vector<Value*> args, Env* env){ // naive print fun
     // OBJ VE LIST PROBLEMLIDI !!!
     queue <pair <vector <Value*> , string> > q;
     q.push({args, ""});
@@ -405,7 +405,26 @@ Value* n_funs::system(vector<Value*> args, Env* env){
     return env->lookUpVar("Null");
 }
 
-Value *n_funs::compile(vector<Value*> args, Env *env){
+Value* n_funs::Ntrack(vector<Value*> args, Env* env){
+    ListValue* l = new ListValue;
+    vector <string> src;
+    for(int i = 0; i < args.size(); ++i){
+        if(args[i]->getType() != ValueType::String){
+            cout << "Track Function: only strings can be argument!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        string name = ((StringVal*)args[i])->val;
+        Manager::getInstance().sources.push_back(name);
+    }
+    src = track();
+    for(string s : src) l->v.push_back(Make_String(s));
+    l->consist_of = ValueType::String;
+    l->distinc_types = 1;
+    l->mapTypeCounter[(int)ValueType::String] = src.size();
+    return l;
+}
+
+Value* n_funs::compile(vector<Value*> args, Env* env){
     if(args.size() != 2){
         cout << "Compile Function: Number of args must be 2 (compiler and source files)";
         exit(0); // !!! debug sistemi ile deyis
@@ -416,10 +435,10 @@ Value *n_funs::compile(vector<Value*> args, Env *env){
 
 /* SORT COMPARATORS FOR DEFAULT TYPES*/
 
-bool sort_comps::cmp_less_Number(Value *a, Value *b){
+bool sort_comps::cmp_less_Number(Value* a, Value* b){
     return ((NumberVal*)a)->val < ((NumberVal*)b)->val;
 }
 
-bool sort_comps::cmp_less_String(Value *a, Value *b){
+bool sort_comps::cmp_less_String(Value* a, Value* b){
     return ((StringVal*)a)->val < ((StringVal*)b)->val;
 }

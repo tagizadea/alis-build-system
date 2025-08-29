@@ -93,6 +93,8 @@ void InitNatives(Env* env){
     env->declareVar("floor", Make_NFunc(temp), true);
     temp.funAddr = n_funs::system;
     env->declareVar("system", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::Ntrack;
+    env->declareVar("track", Make_NFunc(temp), true);
 
     // Native Vector Functions
     ListVecNFuncs.resize(3);

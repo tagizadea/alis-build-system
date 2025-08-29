@@ -8,6 +8,7 @@
 #include <functional>
 #include <env.hpp>
 #include <algorithm>
+#include <manager.hpp>
 using namespace std;
 
 vector <string> getSystemFiles(vector <string> &files);
@@ -39,6 +40,7 @@ namespace n_funs{
     Value* max(vector <Value*> args, Env* env);
     Value* min(vector <Value*> args, Env* env);
     Value* system(vector <Value*> args, Env* env);
+    Value* Ntrack(vector <Value*> args, Env* env);
     Value* compile(vector <Value*> args, Env* env);
 }
 

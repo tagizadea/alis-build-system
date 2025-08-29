@@ -44,7 +44,7 @@ void init_manager(){
         cout << "Manager error: The file \"about\" could not opened!";
         exit(0); // !!! Debug systemi ile deyis
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 0.3ALPHA";
+    about << "Ali's Build System for C/C++.\nVersion number: 0.5ALPHA";
     about.close();
 
     string line;
