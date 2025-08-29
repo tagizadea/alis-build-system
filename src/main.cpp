@@ -2,7 +2,6 @@
 #include <fstream>
 #include <filesystem>
 #include <vector>
-#include <commands.hpp>
 #include <operations.hpp>
 #include <lexer.hpp>
 #include <parser.hpp>
@@ -12,12 +11,12 @@ using namespace std;
 namespace fs = filesystem;
 
 const string path = ".";
-const string MainFile = "./main.abs";
+string MainFile = "./main.abs";
 bool mainFileFlag = false;
 
 vector <string> files;
 
-int main(int argc, char *argv[]){
+int main(int argc, char* argv[]){
 
     cout << "Ali's Build System ALPHA!\n";
     init_manager();
@@ -35,27 +34,24 @@ int main(int argc, char *argv[]){
 
     vector <string> SystemFiles = getSystemFiles(files);
 
-    if(argc == 1 && SystemFiles.empty()){
-        command::help();
+    if(argc > 2){
+        cout << "ABS can only run one script!";
         return 0;
     }
 
     for(int i=0; i<SystemFiles.size(); i++){
-        //cout << SystemFiles[i] << '\n';
         if(SystemFiles[i] == MainFile) mainFileFlag = true;
-        //string line;
-        //ifstream file(SystemFiles[i]); 
-        //while(getline(file, line)){
-        //    cout << line << '\n';
-        //}
+        if(argc == 2 && SystemFiles[i] == argv[1]) mainFileFlag = true;
     }
 
     cout << endl; //
 
     if(!mainFileFlag){
-        cout << "Xəta: Main faylı tapılmadı\n";
+        cout << "Error: Build Script not found!\n";
         return 0;
     }
+
+    if(argc == 2) MainFile = argv[1];
 
     ifstream file(MainFile);
     string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
