@@ -408,13 +408,26 @@ Value* n_funs::system(vector<Value*> args, Env* env){
 Value* n_funs::Ntrack(vector<Value*> args, Env* env){
     ListValue* l = new ListValue;
     vector <string> src;
-    for(int i = 0; i < args.size(); ++i){
-        if(args[i]->getType() != ValueType::String){
+    if(args.size() == 1 && args[0]->getType() == ValueType::List){
+        ListValue* le = (ListValue*)args[0];
+        if(le->consist_of != ValueType::String){
             cout << "Track Function: only strings can be argument!";
             exit(0); // !!! debug systemi ile deyis
         }
-        string name = ((StringVal*)args[i])->val;
-        Manager::getInstance().sources.push_back(name);
+        for(int i = 0; i < le->v.size(); ++i){
+            string name = ((StringVal*)le->v[i])->val;
+            Manager::getInstance().sources.push_back(name);
+        }
+    }
+    else{
+        for(int i = 0; i < args.size(); ++i){
+            if(args[i]->getType() != ValueType::String){
+                cout << "Track Function: only strings can be argument!";
+                exit(0); // !!! debug systemi ile deyis
+            }
+            string name = ((StringVal*)args[i])->val;
+            Manager::getInstance().sources.push_back(name);
+        }
     }
     src = track();
     for(string s : src) l->v.push_back(Make_String(s));
