@@ -71,6 +71,19 @@ NativeFuncVal* Make_NFunc(FunctionCall call){
 void InitNatives(Env* env){
     // Strings
     env->declareVar("endl", Make_String("\n"), true);
+    #if defined(_WIN32) || defined(_WIN64)
+        env->declareVar("HOSTNAME", Make_String("WINDOWS"), true);
+    #elif defined(__linux__)
+        env->declareVar("HOSTNAME", Make_String("LINUX"), true);
+    #elif defined(__APPLE__) && defined(__MACH__)
+        env->declareVar("HOSTNAME", Make_String("APPLE"), true);
+    #elif defined(__unix__) // all unices not caught above
+        env->declareVar("HOSTNAME", Make_String("UNIX"), true);
+    #elif defined(__FreeBSD__)
+        env->declareVar("HOSTNAME", Make_String("FREEBSD"), true);
+    #else
+        env->declareVar("HOSTNAME", Make_String("UNKNOWN"), true);
+    #endif
 
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
