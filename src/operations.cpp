@@ -394,6 +394,104 @@ Value* n_funs::floor(vector<Value*> args, Env* env){
     return Make_Number(res);
 }
 
+Value* n_funs::max(vector<Value*> args, Env* env){
+    if(args.size() == 1 && args[0]->getType() == ValueType::List){
+        ListValue* l = (ListValue*)args[0];
+        if(l->distinc_types != 1){
+            cout << "Max Function: Only one type list can be argument";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        if(l->consist_of == ValueType::Bool){
+            BoolValue* mx = (BoolValue*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((BoolValue*)l->v[i])->val > mx->val) mx = ((BoolValue*)l->v[i]);
+            }
+            return mx;
+        }
+        else if(l->consist_of == ValueType::FUNC || l->consist_of == ValueType::LFUNC ||
+        l->consist_of == ValueType::NFUNC || l->consist_of == ValueType::None ||
+        l->consist_of == ValueType::Null || l->consist_of == ValueType::Object){
+            cout << "Max Function: Arg value cannot be compared";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        else if(l->consist_of == ValueType::List){
+            ListValue* mx = (ListValue*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((ListValue*)l->v[i])->v.size() > mx->v.size()) mx = ((ListValue*)l->v[i]);
+            }
+            return mx;
+        }
+        else if(l->consist_of == ValueType::Number){
+            NumberVal* mx = (NumberVal*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((NumberVal*)l->v[i])->val > mx->val) mx = ((NumberVal*)l->v[i]);
+            }
+            return mx;
+        }
+        else if(l->consist_of == ValueType::String){
+            StringVal* mx = (StringVal*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((StringVal*)l->v[i])->val > mx->val) mx = ((StringVal*)l->v[i]);
+            }
+            return mx;
+        }
+    }
+    else{
+        cout << "Max Function: Wrong args. Only List";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    return env->lookUpVar("Null");
+}
+
+Value* n_funs::min(vector<Value*> args, Env* env){
+    if(args.size() == 1 && args[0]->getType() == ValueType::List){
+        ListValue* l = (ListValue*)args[0];
+        if(l->distinc_types != 1){
+            cout << "Min Function: Only one type list can be argument";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        if(l->consist_of == ValueType::Bool){
+            BoolValue* mn = (BoolValue*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((BoolValue*)l->v[i])->val < mn->val) mn = ((BoolValue*)l->v[i]);
+            }
+            return mn;
+        }
+        else if(l->consist_of == ValueType::FUNC || l->consist_of == ValueType::LFUNC ||
+        l->consist_of == ValueType::NFUNC || l->consist_of == ValueType::None ||
+        l->consist_of == ValueType::Null || l->consist_of == ValueType::Object){
+            cout << "Min Function: Arg value cannot be compared";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        else if(l->consist_of == ValueType::List){
+            ListValue* mn = (ListValue*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((ListValue*)l->v[i])->v.size() < mn->v.size()) mn = ((ListValue*)l->v[i]);
+            }
+            return mn;
+        }
+        else if(l->consist_of == ValueType::Number){
+            NumberVal* mn = (NumberVal*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((NumberVal*)l->v[i])->val < mn->val) mn = ((NumberVal*)l->v[i]);
+            }
+            return mn;
+        }
+        else if(l->consist_of == ValueType::String){
+            StringVal* mn = (StringVal*)l->v[0];
+            for(int i=1; i < l->v.size(); ++i){
+                if(((StringVal*)l->v[i])->val < mn->val) mn = ((StringVal*)l->v[i]);
+            }
+            return mn;
+        }
+    }
+    else{
+        cout << "Min Function: Wrong args. Only List";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    return env->lookUpVar("Null");
+}
+
 Value* n_funs::system(vector<Value*> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::String){
         cout << "System Function: Wrong args. Use platform specific commands";
@@ -438,8 +536,8 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
 }
 
 Value* n_funs::compile(vector<Value*> args, Env* env){
-    if(args.size() != 2){
-        cout << "Compile Function: Number of args must be 2 (compiler and source files)";
+    if(args.size() != 3){
+        cout << "Compile Function: Number of args must be 3 (compiler, source files and flags)";
         exit(0); // !!! debug sistemi ile deyis
     }
 
