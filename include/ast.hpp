@@ -25,7 +25,8 @@ enum class NodeType{
     OBJECT_L,
     LIST_L,
     IDENTIFIER,
-    BINARYEXPR
+    BINARYEXPR,
+    UNARYEXPR
 };
 
 class Stmt{
@@ -155,6 +156,19 @@ class Identifier : public Expr{
         NodeType kind = NodeType::IDENTIFIER;
         this->symbol = val;
     }
+    NodeType getKind() const override{
+        return kind;
+    }
+};
+
+class UnaryExpr : public Expr{
+    NodeType kind = NodeType::UNARYEXPR;
+    public:
+
+    bool left;
+    bool plus;
+    Expr* identifier;
+
     NodeType getKind() const override{
         return kind;
     }

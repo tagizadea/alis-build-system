@@ -12,6 +12,8 @@ map <string, TokenType> Keywords = {
     {"Number", TokenType::Number},
     {"+", TokenType::PLUS},
     {"-", TokenType::MINUS},
+    {"++", TokenType::UNARY_PLUS},
+    {"--", TokenType::UNARY_MINUS},
     {"*", TokenType::MULTIPLY},
     {"/", TokenType::DIVIDE},
     {"%", TokenType::MOD},
@@ -108,6 +110,7 @@ Token Lexer::parseOperator(){
 
     while(source[position] == '&' || source[position] == '|' || 
           source[position] == '=' || source[position] == '!' ||
+          source[position] == '+' || source[position] == '-' ||
           source[position] == '>' || source[position] == '<'){
             if(source[position - 1] == '(' || source[position - 1] == ')') break;
             start += source[position++];

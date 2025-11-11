@@ -37,7 +37,7 @@ Stmt* Parser::parse_var_declaration(){
     bool const isConst = eat().type == TokenType::Const;
     string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
     
-    if(at().type == TokenType::SEMICOLON or at().type){
+    if(at().type == TokenType::SEMICOLON){
         eat();
         if(isConst){
             cout << "Parser Error: Constant dəyər yoxdur!\n";
@@ -268,6 +268,36 @@ Expr* Parser::parse_additive_expr(){
     return left;
 }
 
+Expr* Parser::parse_unary_expr(){
+    if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
+        UnaryExpr* temp = new UnaryExpr;
+        temp->left = true;
+        temp->plus = eat().type == TokenType::UNARY_PLUS;
+        Expr* r = parse_primary_expr();
+        if(r->getKind() != NodeType::IDENTIFIER){
+            cout << "Unary Expr need identifier!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        temp->identifier = r;
+        return temp;
+    }
+    
+    Expr* right = parse_primary_expr();
+    if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
+        UnaryExpr* temp = new UnaryExpr;
+        temp->left = false;
+        temp->plus = eat().type == TokenType::UNARY_PLUS;
+        if(right->getKind() != NodeType::IDENTIFIER){
+            cout << "Unary Expr need identifier!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        temp->identifier = right;
+        return temp;
+    }
+    
+    return right;
+}
+
 Expr* Parser::parse_boolean_expr(){
     Expr* left = parse_additive_expr();
     
@@ -328,7 +358,8 @@ Expr* Parser::parse_call_member_expr(){
 }
 
 Expr* Parser::parse_member_expr(){
-    Expr* object = parse_primary_expr();
+    // Expr* object = parse_primary_expr();
+    Expr* object = parse_unary_expr();
 
     while(at().type == TokenType::DOT || at().type == TokenType::LBRACE){
         Token op = eat();

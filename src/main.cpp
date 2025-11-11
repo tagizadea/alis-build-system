@@ -60,19 +60,19 @@ int main(int argc, char* argv[]){
     Token* tokens = lexer.tokenize();
 
     // Printing Lexer for debug
-    /*cout << "Lexer:\n";
-    for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
-        cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
-        << (int)tokens[i].type << ")\n";
-    }
-    cout << '\n';*/
+    // cout << "Lexer:\n";
+    // for(int i = 0; tokens[i].type != TokenType::EndOfFile; ++i){
+    //     cout << "Token: " << tokens[i].value << " (Type: " << rKeywords[tokens[i].type] << ' '
+    //     << (int)tokens[i].type << ")\n";
+    // }
+    // cout << '\n';
     
     Parser* parser = new Parser(tokens);
     Program* program = parser->produceAST();
 
     // Printing AST for debug
-    cout << "AST:\n";
-    print_stmt(program, 0);
+    // cout << "AST:\n";
+    // print_stmt(program, 0);
 
     // Printing Evalutation for debug
     Env* env = new Env;

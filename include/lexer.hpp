@@ -6,7 +6,8 @@
 using namespace std;
 
 enum class TokenType{
-    Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, Let, Const, SEMICOLON, COLON, COMMA, DOT,
+    Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, UNARY_PLUS, UNARY_MINUS, 
+    Let, Const, SEMICOLON, COLON, COMMA, DOT,
     AND, OR, NOT, XOR, KICIK, BOYUK, EQUAL, NEQUAL, B_KICIK, B_BOYUK, FN,
     MULTIPLY, DIVIDE, MOD, LPAREN, RPAREN, LBRACK, RBRACK, LBRACE, RBRACE, String, EndOfFile, Invalid
 };

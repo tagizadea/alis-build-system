@@ -148,6 +148,15 @@ void print_stmt(Stmt* stmt, int tab){
         print_stmt(childObj->value, tab + 1);
         cout << '\n';
     }
+    else if(NodeType::UNARYEXPR == kind){
+        cout << tab_s << "Type: UnaryExpr\n";
+        UnaryExpr* childObj = dynamic_cast<UnaryExpr*>(stmt);
+        cout << tab_s << "LEFT: " << ((childObj->left) ? ("TRUE") : ("FALSE")) << '\n';
+        cout << tab_s << "OP: " << ((childObj->plus) ? ("++") : ("--")) << '\n';
+        cout << tab_s << "Identifier:\n";
+        print_stmt(childObj->identifier, tab + 1);
+        cout << '\n';
+    }
     else if(NodeType::IDENTIFIER == kind){
         cout << tab_s  << "Type: Identifier\n";
         Identifier* childObj = dynamic_cast<Identifier*>(stmt);
