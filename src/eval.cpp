@@ -301,7 +301,12 @@ Value* eval_condition(CondExpr* cond, Env* env){
             evaluate(i, scope);
         }
     }
-    else evaluate(cond->ElseBranch, scope);
+    else{
+        for(Stmt* i : cond->ElseBranch){
+            evaluate(i, scope);
+        }
+    }
+    // else evaluate(cond->ElseBranch, scope);
     delete scope;
     return env->lookUpVar("Null");
 }

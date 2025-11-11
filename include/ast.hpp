@@ -100,7 +100,7 @@ class CondExpr : public Stmt{
 
     Expr* condition;
     std::vector <Stmt*> ThenBranch;
-    Stmt* ElseBranch = nullptr;
+    std::vector <Stmt*> ElseBranch;
 
     NodeType getKind() const override{
         return kind;

@@ -84,6 +84,7 @@ void InitNatives(Env* env){
     #else
         env->declareVar("HOSTNAME", Make_String("UNKNOWN"), true);
     #endif
+    // env->declareVar("CC", Make_String("g++"), false);
 
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
@@ -114,7 +115,7 @@ void InitNatives(Env* env){
     env->declareVar("track", Make_NFunc(temp), true);
     temp.funAddr = n_funs::run;
     env->declareVar("run", Make_NFunc(temp), true);
-
+    
     // Native Vector Functions
     ListVecNFuncs.resize(3);
     temp.funAddr = n_funs::vector_size;

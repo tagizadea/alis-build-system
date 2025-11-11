@@ -94,7 +94,6 @@ Token Lexer::parseNumber(){
 Token Lexer::parseString(){
     position++; // Skip the opening quote
     string start = "";
-    start += source[position++];
     while(source[position] != '\"' && source[position] != '\0'){
         start += source[position];
         position++;

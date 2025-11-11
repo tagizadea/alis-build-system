@@ -37,7 +37,7 @@ Stmt* Parser::parse_var_declaration(){
     bool const isConst = eat().type == TokenType::Const;
     string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
     
-    if(at().type == TokenType::SEMICOLON){
+    if(at().type == TokenType::SEMICOLON or at().type){
         eat();
         if(isConst){
             cout << "Parser Error: Constant dəyər yoxdur!\n";
@@ -95,18 +95,18 @@ Expr* Parser::parse_expr(){
     return parse_assignment_expr();
 }
 
-Stmt* Parser::parse_condition_expr(){ // bir dene code gotururmus :'(
+Stmt* Parser::parse_condition_expr(){
     eat();
     expect(TokenType::LPAREN, "IF left parenthesis is missing");
     Expr* condition = parse_expr();
     expect(TokenType::RPAREN, "IF right parenthesis is missing");
     expect(TokenType::LBRACK, "IF left bracket is missing");
     vector <Stmt*> ThenBranch;
+    vector <Stmt*> ElseBranch;
     while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
         ThenBranch.push_back(parse_stmt());
     }
     expect(TokenType::RBRACK, "IF right bracket is missing");
-    Stmt* ElseBranch = nullptr;
     if(at().type == TokenType::ELSE){
         eat();
         bool f = false;
@@ -114,7 +114,16 @@ Stmt* Parser::parse_condition_expr(){ // bir dene code gotururmus :'(
             eat();
             f = true;
         }
-        ElseBranch = parse_stmt();
+
+        if(at().type == TokenType::IF){
+            ElseBranch.push_back( parse_condition_expr() );
+        }
+        else{
+            while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
+                ElseBranch.push_back(parse_stmt());
+            }
+        }
+
         if(f) expect(TokenType::RBRACK, "Else ucun bracket baglanmalidir");
     }
 

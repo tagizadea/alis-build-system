@@ -55,6 +55,9 @@
         "variant": "cpp",
         "algorithm": "cpp",
         "print": "cpp",
-        "queue": "cpp"
-    }
+        "queue": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

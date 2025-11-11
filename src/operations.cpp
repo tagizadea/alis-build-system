@@ -59,8 +59,9 @@ void print_stmt(Stmt* stmt, int tab){
             print_stmt(i, tab + 1);
         }
         cout << tab_s << "}\n" << tab_s << "Else{\n";
-        if(childObj->ElseBranch == nullptr) cout << tab_s << "No ElseBranch\n";
-        else print_stmt(childObj->ElseBranch, tab + 1);
+        for(Stmt* i : childObj->ElseBranch){
+            print_stmt(i, tab + 1);
+        }
         cout << tab_s << "}\n";
     }
     else if(NodeType::WHILE_LOOP == kind){
@@ -535,14 +536,87 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
     return l;
 }
 
-Value* n_funs::compile(vector<Value*> args, Env* env){
-    if(args.size() != 3){
-        cout << "Compile Function: Number of args must be 3 (compiler, source files and flags)";
-        exit(0); // !!! debug sistemi ile deyis
-    }
+// Value* n_funs::compile(vector<Value*> args, Env* env){
+//     if(args.size() == 0){
+//         cout << "Compile Function: No args";
+//         exit(0); // !!! debug sistemi ile deyis
+//     }
 
-    return nullptr; // Not implemented yet
-}
+//     vector <string> sources, incs;
+//     bool object_file = true, general_flag = true;
+//     string flag = "", output = "";
+//     vector <pair <string, string>> flags;
+
+//     if(args.size() >= 1 && args[0]->getType() == ValueType::List){
+//         ListValue* list = (ListValue*)args[0];
+//         if(list->consist_of != ValueType::String){
+//             cout << "Compile Function: Sources list should consist of Strings";
+//             exit(0); // !!! debug sistemi ile deyis
+//         }
+//         for(Value* i : list->v){
+//             StringVal* x = (StringVal*) i;
+//             sources.push_back(x->val);
+//         }
+//     }
+//     if(args.size() >= 2 && args[1]->getType() == ValueType::List){
+//         ListValue* list = (ListValue*)args[1];
+//         if(list->consist_of != ValueType::String){
+//             cout << "Compile Function: Includes list should consist of Strings";
+//             exit(0); // !!! debug sistemi ile deyis
+//         }
+//         for(Value* i : list->v){
+//             StringVal* x = (StringVal*) i;
+//             incs.push_back(x->val);
+//         }
+//     }
+//     if(args.size() >= 3 && args[2]->getType() == ValueType::String){
+//         StringVal* x = (StringVal*)args[2];
+//         output = x->val;
+//     }
+//     if(args.size() >= 4){
+//         if(args[3]->getType() == ValueType::String){
+//             flag = ((StringVal*)args[3])->val;
+//         }
+//         else if(args[3]->getType() == ValueType::List){
+//             ListValue* list = (ListValue*)args[3];
+//             if(list->consist_of != ValueType::Object){
+//                 cout << "Compile Function: Flags list should consist of Objects";
+//                 exit(0); // !!! debug sistemi ile deyis
+//             }
+//             general_flag = false;
+//             for(Value* i : list->v){
+//                 ObjectValue* o = (ObjectValue*) i;
+//                 if(!o->properties.count("name") || !o->properties.count("flag") || o->properties.size() != 2){
+//                     cout << "Compile Function: Flags list Object should be {name, flag}";
+//                     exit(0); // !!! debug sistemi ile deyis
+//                 }
+//                 string objname = ((StringVal*)o->properties["name"])->val;
+//                 string objflag = ((StringVal*)o->properties["flag"])->val;
+//                 flags.push_back({objname, objflag});
+//             }
+//         }
+//     }
+//     if(args.size() >= 5 && args[4]->getType() == ValueType::Bool){
+//         object_file = ((BoolValue*)args[4])->val;
+//     }
+//     if(args.size() > 5){
+//         cout << "Compile Function: Too many args";
+//         exit(0); // !!! debug sistemi ile deyis
+//     }
+
+//     // string compile_string = ((StringVal*)env->lookUpVar("CC"))->val;
+//     // Her fayl ucun ayri compile olacaq. Sonra da Link funksiyasi onlari birlesdirecek
+
+//     if(general_flag){
+//         string compile_string = ((StringVal*)env->lookUpVar("CC"))->val;
+//         for(string i : sources) compile_string += " " + i;
+//         for(string i : incs) compile_string += " -I" + i;
+//         compile_string += " " + flag;
+        
+//     }
+
+//     return env->lookUpVar("Null");
+// }
 
 Value* n_funs::run(vector<Value*> args, Env* env){
     if(args.size() != 1){
