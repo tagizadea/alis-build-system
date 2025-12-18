@@ -90,9 +90,10 @@ Stmt* Parser::parse_func_declaration(){
 }
 
 Expr* Parser::parse_expr(){
-    //return parse_primary_expr();
-    //return parse_additive_expr();
-    return parse_assignment_expr();
+    // return parse_primary_expr();
+    // return parse_additive_expr();
+    // return parse_assignment_expr();
+    return parse_unary_expr_post();
 }
 
 Stmt* Parser::parse_condition_expr(){
@@ -268,10 +269,9 @@ Expr* Parser::parse_additive_expr(){
     return left;
 }
 
-Expr* Parser::parse_unary_expr(){
+Expr* Parser::parse_unary_expr_pre(){
     if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
         UnaryExpr* temp = new UnaryExpr;
-        temp->left = true;
         temp->plus = eat().type == TokenType::UNARY_PLUS;
         Expr* r = parse_primary_expr();
         if(r->getKind() != NodeType::IDENTIFIER){
@@ -279,23 +279,42 @@ Expr* Parser::parse_unary_expr(){
             exit(0); // !!! debug systemi ile deyis
         }
         temp->identifier = r;
-        return temp;
+        return r;
     }
     
     Expr* right = parse_primary_expr();
-    if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
-        UnaryExpr* temp = new UnaryExpr;
-        temp->left = false;
-        temp->plus = eat().type == TokenType::UNARY_PLUS;
-        if(right->getKind() != NodeType::IDENTIFIER){
-            cout << "Unary Expr need identifier!";
-            exit(0); // !!! debug systemi ile deyis
-        }
-        temp->identifier = right;
-        return temp;
-    }
+    // if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
+    //     UnaryExpr* temp = new UnaryExpr;
+    //     temp->left = false;
+    //     temp->plus = eat().type == TokenType::UNARY_PLUS;
+    //     if(right->getKind() != NodeType::IDENTIFIER){
+    //         cout << "Unary Expr need identifier!";
+    //         exit(0); // !!! debug systemi ile deyis
+    //     }
+    //     temp->identifier = right;
+    //     return temp;
+    // }
     
     return right;
+}
+
+Expr* Parser::parse_unary_expr_post(){
+    Expr* left = parse_assignment_expr();
+
+    if(left->getKind() == NodeType::IDENTIFIER){
+        if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
+            // eat();
+            UnaryExpr* temp = new UnaryExpr;
+            temp->plus = eat().type == TokenType::UNARY_PLUS;
+            temp->identifier = left;
+            return temp;
+        }
+        // else{
+        //     cout << "HEY!\n";
+        // }
+    }
+
+    return left;
 }
 
 Expr* Parser::parse_boolean_expr(){
@@ -359,7 +378,7 @@ Expr* Parser::parse_call_member_expr(){
 
 Expr* Parser::parse_member_expr(){
     // Expr* object = parse_primary_expr();
-    Expr* object = parse_unary_expr();
+    Expr* object = parse_unary_expr_pre();
 
     while(at().type == TokenType::DOT || at().type == TokenType::LBRACE){
         Token op = eat();

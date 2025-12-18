@@ -165,7 +165,6 @@ class UnaryExpr : public Expr{
     NodeType kind = NodeType::UNARYEXPR;
     public:
 
-    bool left;
     bool plus;
     Expr* identifier;
 

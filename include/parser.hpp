@@ -25,7 +25,8 @@ class Parser{
     Expr* parse_expr();
     Expr* parse_primary_expr();
     Expr* parse_additive_expr();
-    Expr* parse_unary_expr();
+    Expr* parse_unary_expr_pre();
+    Expr* parse_unary_expr_post();
     Expr* parse_boolean_expr();
     Expr* parse_logical_expr();
     Expr* parse_mult_expr();
