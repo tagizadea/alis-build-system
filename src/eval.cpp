@@ -414,6 +414,16 @@ Value* eval_list_expr(ListLiteral* l, Env* env){
     return list_val;
 }
 
+Value* eval_unary_val_expr(UnaryExpr* l, Env* env){
+    NumberVal* temp = (NumberVal*)(evaluate(l->identifier, env));
+    if(l->left){
+        if(l->plus) ++temp->val;
+        else --temp->val;
+    }
+
+    return temp;
+}
+
 // Burda mem_valsory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
 Value* evaluate(Stmt* astNode, Env* env){
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
@@ -486,6 +496,10 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::MEMBEREXPR){ // SAFE
         MemberExpr* childObj = (MemberExpr*)astNode;
         return eval_member_val_expr(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::UNARYEXPR){
+        UnaryExpr* childObj = (UnaryExpr*)astNode;
+        return eval_unary_val_expr(childObj, env);
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle
