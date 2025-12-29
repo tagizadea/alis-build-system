@@ -420,6 +420,15 @@ Value* eval_unary_val_expr(UnaryExpr* l, Env* env){
         if(l->plus) ++temp->val;
         else --temp->val;
     }
+    else{
+        NumberVal* result = new NumberVal;
+        result->val = temp->val;
+
+        if(l->plus) ++temp->val;
+        else --temp->val;
+
+        return result;
+    }
 
     return temp;
 }

@@ -151,7 +151,6 @@ class Identifier : public Expr{
     NodeType kind = NodeType::IDENTIFIER;
     public:
     std::string symbol = "";
-    bool post = false;
     Identifier(std::string val){
         NodeType kind = NodeType::IDENTIFIER;
         this->symbol = val;
