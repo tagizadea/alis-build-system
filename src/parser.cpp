@@ -206,6 +206,86 @@ Expr* Parser::parse_assignment_expr(){
         return temp;
     }
 
+    if(at().type == TokenType::PLUS_ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        BinaryExpr* temp_b = new BinaryExpr;
+
+        temp_b->left = left;
+        temp_b->right = val;
+        temp_b->op = "+";
+        
+        temp->assignexpr = left;
+        temp->value = temp_b;
+        
+        return temp;
+    }
+
+    if(at().type == TokenType::MINUS_ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        BinaryExpr* temp_b = new BinaryExpr;
+
+        temp_b->left = left;
+        temp_b->right = val;
+        temp_b->op = "-";
+        
+        temp->assignexpr = left;
+        temp->value = temp_b;
+        
+        return temp;
+    }
+
+    if(at().type == TokenType::MULT_ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        BinaryExpr* temp_b = new BinaryExpr;
+
+        temp_b->left = left;
+        temp_b->right = val;
+        temp_b->op = "*";
+        
+        temp->assignexpr = left;
+        temp->value = temp_b;
+        
+        return temp;
+    }
+
+    if(at().type == TokenType::DIV_ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        BinaryExpr* temp_b = new BinaryExpr;
+
+        temp_b->left = left;
+        temp_b->right = val;
+        temp_b->op = "/";
+        
+        temp->assignexpr = left;
+        temp->value = temp_b;
+        
+        return temp;
+    }
+
+    if(at().type == TokenType::MOD_ASSIGN){
+        eat();
+        Expr* val = parse_assignment_expr();
+        AssignExpr* temp = new AssignExpr;
+        BinaryExpr* temp_b = new BinaryExpr;
+
+        temp_b->left = left;
+        temp_b->right = val;
+        temp_b->op = "%";
+        
+        temp->assignexpr = left;
+        temp->value = temp_b;
+        
+        return temp;
+    }
+
     return left;
 }
 
