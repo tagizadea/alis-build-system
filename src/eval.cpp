@@ -23,8 +23,10 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
     Value* lhs = evaluate(binop->left, env);
     Value* rhs = evaluate(binop->right, env);
 
-    bool id_l = binop->left->getKind() != NodeType::IDENTIFIER;
-    bool id_r = binop->right->getKind() != NodeType::IDENTIFIER;
+    // Burada memory leak problemi var. Gerek duzgun check olsun
+
+    // bool id_l = binop->left->getKind() != NodeType::IDENTIFIER;
+    // bool id_r = binop->right->getKind() != NodeType::IDENTIFIER;
 
     if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::String){
         if(binop->op == "+"){
@@ -32,8 +34,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             StringVal* nl = (StringVal*)lhs;
             StringVal* nr = (StringVal*)rhs;
             temp->val = nl->val + nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
     }
@@ -45,8 +47,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         string s = "";
         for(int i=0;i<nr->val;++i) s += nl->val;
         temp->val = s;
-        if(id_l) delete lhs;
-        if(id_r) delete rhs;
+        // if(id_l) delete lhs;
+        // if(id_r) delete rhs;
         return temp;
     }
     else if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
@@ -56,8 +58,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
         string s = "";
         for(int i=0;i<nl->val;++i) s += nr->val;
         temp->val = s;
-        if(id_l) delete lhs;
-        if(id_r) delete rhs;
+        // if(id_l) delete lhs;
+        // if(id_r) delete rhs;
         return temp;
     }
 
@@ -67,8 +69,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val && nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "||"){
@@ -76,8 +78,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val || nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
@@ -85,8 +87,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val == nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
@@ -94,8 +96,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             BoolValue* nl = (BoolValue*)lhs;
             BoolValue* nr = (BoolValue*)rhs;
             temp->val = nl->val != nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
     }
@@ -106,8 +108,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val + nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "-"){
@@ -115,8 +117,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val - nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "*"){
@@ -124,8 +126,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val * nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "/"){
@@ -133,8 +135,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val / nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "%"){
@@ -148,8 +150,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             long long left = nl->val;
             long long right = nr->val;
             temp->val = left % right;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">"){
@@ -157,8 +159,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val > nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<"){
@@ -166,8 +168,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val < nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">="){
@@ -175,8 +177,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val >= nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<="){
@@ -184,8 +186,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val <= nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
@@ -193,8 +195,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val == nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
@@ -202,8 +204,8 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
             NumberVal* nl = (NumberVal*)lhs;
             NumberVal* nr = (NumberVal*)rhs;
             temp->val = nl->val != nr->val;
-            if(id_l) delete lhs;
-            if(id_r) delete rhs;
+            // if(id_l) delete lhs;
+            // if(id_r) delete rhs;
             return temp;
         }
     }
