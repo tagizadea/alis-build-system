@@ -336,9 +336,11 @@ Value* eval_while(WhileStmt* wh, Env* env){
     }
 
     BoolValue* temp = (BoolValue*)condition;
-    Env* scope = new Env;
-    scope->parent = env;
+
+    
     while(temp->val){
+        Env* scope = new Env;
+        scope->parent = env;
         bool br = false;
         for(Stmt* i : wh->ThenBranch){
             Value* res;
@@ -356,8 +358,8 @@ Value* eval_while(WhileStmt* wh, Env* env){
         if(br) break;
         condition = evaluate(wh->condition, env); // MEMORY ISSUE ola biler
         temp = (BoolValue*)condition;
+        delete scope;
     }
-    delete scope;
     loop = false;
     return env->lookUpVar("Null");
 }
@@ -379,10 +381,13 @@ Value* eval_for(ForStmt* fr, Env* env){
     BoolValue* temp = (BoolValue*)condition;
 
     while(temp->val){
+        Env scope_d;
+        scope_d.parent = scope;
+
         bool br = false;
         for(Stmt* i : fr->ThenBranch){
             Value* res;
-            res = evaluate(i, scope);
+            res = evaluate(i, &scope_d);
             if(res->getType() == ValueType::Break){
                 br = true;
                 delete res;
