@@ -18,10 +18,13 @@ class Parser{
     Token expect(TokenType t, string err);
 
     Stmt* parse_stmt();
+    Stmt* parse_break();
+    Stmt* parse_continue();
     Stmt* parse_var_declaration();
     Stmt* parse_func_declaration();
     Stmt* parse_condition_expr();
     Stmt* parse_while();
+    Stmt* parse_for();
     Expr* parse_expr();
     Expr* parse_primary_expr();
     Expr* parse_additive_expr();

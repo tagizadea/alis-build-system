@@ -271,6 +271,10 @@ Value* eval_ident(Identifier* idn, Env* env){
 }
 
 Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
+    if(var_d->val->getKind() == NodeType::BREAK || var_d->val->getKind() == NodeType::CONTINUE){
+        cout << "Evaluation Error: Break or Continue cannot be assigned!";
+        exit(0); // !!! Debug systemi ile deyis
+    }
     Value* value = var_d->val ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
     return env->declareVar(var_d->identifier, value, var_d->constant);
 }
@@ -278,6 +282,10 @@ Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
 Value* eval_var_assignment(AssignExpr* as, Env* env){
     if(as->assignexpr->getKind() != NodeType::IDENTIFIER){
         cout << "Evaluation Error: Assignmentdə sol identifier işlənməyib!";
+        exit(0); // !!! Debug ile deyis
+    }
+    if(as->value->getKind() == NodeType::BREAK || as->value->getKind() == NodeType::CONTINUE){
+        cout << "Evaluation Error: Assignmentdə sag break ve ya continue olanmaz!";
         exit(0); // !!! Debug ile deyis
     }
     string varname = ((Identifier*)(as->assignexpr))->symbol;
@@ -298,12 +306,16 @@ Value* eval_condition(CondExpr* cond, Env* env){
     if(temp->val){
         //result = evaluate(cond->ThenBranch, env);
         for(Stmt* i : cond->ThenBranch){
-            evaluate(i, scope);
+            Value* res;
+            res = evaluate(i, scope);
+            if(res->getType() == ValueType::Break || res->getType() == ValueType::Continue) return res;
         }
     }
     else{
         for(Stmt* i : cond->ElseBranch){
-            evaluate(i, scope);
+            Value* res;
+            res = evaluate(i, scope);
+            if(res->getType() == ValueType::Break || res->getType() == ValueType::Continue) return res;
         }
     }
     // else evaluate(cond->ElseBranch, scope);
@@ -311,9 +323,11 @@ Value* eval_condition(CondExpr* cond, Env* env){
     return env->lookUpVar("Null");
 }
 
+bool loop = false;
+
 Value* eval_while(WhileStmt* wh, Env* env){
     Value* condition = evaluate(wh->condition, env);
-    
+    loop = true;
     if(condition->getType() != ValueType::Bool){
         cout << "Evaluation Error: WHILE condition must be boolean value";
         exit(0); // !!! debug systemi ile deyis
@@ -323,13 +337,67 @@ Value* eval_while(WhileStmt* wh, Env* env){
     Env* scope = new Env;
     scope->parent = env;
     while(temp->val){
+        bool br = false;
         for(Stmt* i : wh->ThenBranch){
-            evaluate(i, scope);
+            Value* res;
+            res = evaluate(i, scope);
+            if(res->getType() == ValueType::Break){
+                br = true;
+                delete res;
+                break;
+            }
+            if(res->getType() == ValueType::Continue){
+                delete res;
+                break;
+            }
         }
-        condition = evaluate(wh->condition, env);
+        if(br) break;
+        condition = evaluate(wh->condition, env); // MEMORY ISSUE ola biler
         temp = (BoolValue*)condition;
     }
     delete scope;
+    loop = false;
+    return env->lookUpVar("Null");
+}
+
+Value* eval_for(ForStmt* fr, Env* env){
+    loop = true;
+    Env* scope = new Env;
+    scope->parent = env;
+
+    Value* it = evaluate(fr->iterator_dec, scope);
+
+    Value* condition = evaluate(fr->condition, scope);
+
+    if(condition->getType() != ValueType::Bool){
+        cout << "Evaluation Error: WHILE condition must be boolean value";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    BoolValue* temp = (BoolValue*)condition;
+
+    while(temp->val){
+        bool br = false;
+        for(Stmt* i : fr->ThenBranch){
+            Value* res;
+            res = evaluate(i, scope);
+            if(res->getType() == ValueType::Break){
+                br = true;
+                delete res;
+                break;
+            }
+            if(res->getType() == ValueType::Continue){
+                delete res;
+                break;
+            }
+        }
+        if(br) break;
+        Value* operation = evaluate(fr->operation, scope);
+        condition = evaluate(fr->condition, scope);
+        temp = (BoolValue*)condition;
+    }
+    delete scope;
+    loop = false;
     return env->lookUpVar("Null");
 }
 
@@ -502,6 +570,10 @@ Value* evaluate(Stmt* astNode, Env* env){
         WhileStmt* childObj = (WhileStmt*)astNode;
         return eval_while(childObj, env);
     }
+    else if(astNode->getKind() == NodeType::FOR_LOOP){
+        ForStmt* childObj = (ForStmt*)astNode;
+        return eval_for(childObj, env);
+    }
     else if(astNode->getKind() == NodeType::MEMBEREXPR){ // SAFE
         MemberExpr* childObj = (MemberExpr*)astNode;
         return eval_member_val_expr(childObj, env);
@@ -509,6 +581,20 @@ Value* evaluate(Stmt* astNode, Env* env){
     else if(astNode->getKind() == NodeType::UNARYEXPR){
         UnaryExpr* childObj = (UnaryExpr*)astNode;
         return eval_unary_val_expr(childObj, env);
+    }
+    else if(astNode->getKind() == NodeType::CONTINUE){ // SAFE
+        if(!loop){
+            cout << "Eval Error: Continue cannot be used without loop!\n"; // !!! assert ile evezle
+            exit(0);
+        }
+        return new ContinueVal;
+    }
+    else if(astNode->getKind() == NodeType::BREAK){ // SAFE
+        if(!loop){
+            cout << "Eval Error: Break cannot be used without loop!\n"; // !!! assert ile evezle
+            exit(0);
+        }
+        return new BreakVal;
     }
     else{
         cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle

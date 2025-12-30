@@ -18,7 +18,9 @@ enum class ValueType{
     FUNC,
     LFUNC,
     Object,
-    List
+    List,
+    Break,
+    Continue
 };
 
 class Value{
@@ -56,6 +58,26 @@ class NumberVal : public Value{
     ValueType getType() const override{
         return this->type;
     } 
+};
+
+class ContinueVal : public Value{
+    private:
+    ValueType type = ValueType::Continue;
+    public:
+
+    ValueType getType() const override{
+        return this->type;
+    } 
+};
+
+class BreakVal : public Value{
+    private:
+    ValueType type = ValueType::Break;
+    public:
+
+    ValueType getType() const override{
+        return this->type;
+    }
 };
 
 class StringVal : public Value{

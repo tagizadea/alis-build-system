@@ -18,6 +18,9 @@ enum class NodeType{
     NOTEXPR,
     CONDEXPR,
     WHILE_LOOP,
+    FOR_LOOP,
+    BREAK,
+    CONTINUE,
     NUMERIC_L,
     STRING_L,
     PROPERTY_L,
@@ -124,6 +127,46 @@ class WhileStmt : public Stmt{
 
 };
 
+class ForStmt : public Stmt{
+    private:
+    NodeType kind = NodeType::FOR_LOOP;
+    
+    public:
+
+    Stmt* iterator_dec;
+    Expr* condition;
+    Expr* operation;
+    std::vector <Stmt*> ThenBranch;
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
+
+class BreakStmt : public Stmt{
+    private:
+    NodeType kind = NodeType::BREAK;
+    
+    public:
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
+
+class ContinueStmt : public Stmt{
+    private:
+    NodeType kind = NodeType::CONTINUE;
+    
+    public:
+
+    NodeType getKind() const override{
+        return kind;
+    }
+
+};
 
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;

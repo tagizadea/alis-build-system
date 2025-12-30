@@ -75,6 +75,27 @@ void print_stmt(Stmt* stmt, int tab){
         }
         cout << tab_s << "}\n";
     }
+    else if(NodeType::FOR_LOOP == kind){
+        cout << tab_s << "Type: FOR\n";
+        ForStmt* childObj = dynamic_cast<ForStmt*>(stmt);
+        cout << tab_s << "ITERATOR:\n";
+        print_stmt(childObj->iterator_dec, tab + 1);
+        cout << tab_s << "Condition:\n";
+        print_stmt(childObj->condition, tab + 1);
+        cout << tab_s << "OPERATION:\n";
+        print_stmt(childObj->operation, tab + 1);
+        cout << tab_s << "Then{\n";
+        for(Stmt* i : childObj->ThenBranch){
+            print_stmt(i, tab + 1);
+        }
+        cout << tab_s << "}\n";
+    }
+    else if(NodeType::BREAK == kind){
+        cout << tab_s << "Type: BREAK\n";
+    }
+    else if(NodeType::CONTINUE == kind){
+        cout << tab_s << "Type: CONTINUE\n";
+    }
     else if(NodeType::BINARYEXPR == kind){
         cout << tab_s << "Type: BinaryExpr\n";
         BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);

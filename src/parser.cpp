@@ -29,8 +29,23 @@ Stmt* Parser::parse_stmt(){
     }
     if(at().type == TokenType::IF) return parse_condition_expr();
     if(at().type == TokenType::WHILE) return parse_while();
+    if(at().type == TokenType::FOR) return parse_for();
+    if(at().type == TokenType::BREAK) return parse_break();
+    if(at().type == TokenType::CONTINUE) return parse_continue();
     if(at().type == TokenType::FN) return parse_func_declaration();
     return parse_expr();
+}
+
+Stmt* Parser::parse_break(){
+    eat();
+    BreakStmt* temp = new BreakStmt;
+    return temp;
+}
+
+Stmt* Parser::parse_continue(){
+    eat();
+    ContinueStmt* temp = new ContinueStmt;
+    return temp;
 }
 
 Stmt* Parser::parse_var_declaration(){
@@ -134,7 +149,7 @@ Stmt* Parser::parse_condition_expr(){
     return temp;
 }
 
-Stmt *Parser::parse_while(){
+Stmt* Parser::parse_while(){
     eat();
     expect(TokenType::LPAREN, "WHILE left parenthesis is missing");
     Expr* condition = parse_expr();
@@ -147,6 +162,33 @@ Stmt *Parser::parse_while(){
     expect(TokenType::RBRACK, "WHILE right bracket is missing");
     WhileStmt* temp = new WhileStmt;
     temp->condition = condition;
+    temp->ThenBranch = ThenBranch;
+    return temp;
+}
+
+Stmt* Parser::parse_for(){
+    eat();
+    expect(TokenType::LPAREN, "FOR left parenthesis is missing");
+    Stmt* it_dec = parse_stmt();
+
+    if(it_dec->getKind() != NodeType::VAR_D) expect(TokenType::SEMICOLON, "FOR semicolon is missing");
+
+    Expr* condition = parse_expr();
+    expect(TokenType::SEMICOLON, "FOR semicolon is missing");
+
+    Expr* operation = parse_expr();
+
+    expect(TokenType::RPAREN, "FOR right parenthesis is missing");
+    expect(TokenType::LBRACK, "FOR left bracket is missing");
+    vector <Stmt*> ThenBranch;
+    while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
+        ThenBranch.push_back(parse_stmt());
+    }
+    expect(TokenType::RBRACK, "FOR right bracket is missing");
+    ForStmt* temp = new ForStmt;
+    temp->iterator_dec = it_dec;
+    temp->condition = condition;
+    temp->operation = operation;
     temp->ThenBranch = ThenBranch;
     return temp;
 }
