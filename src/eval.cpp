@@ -277,7 +277,7 @@ Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
         cout << "Evaluation Error: Break or Continue cannot be assigned!";
         exit(0); // !!! Debug systemi ile deyis
     }
-    Value* value = var_d->val ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
+    Value* value = (var_d->val != nullptr && var_d->val != NULL) ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
     return env->declareVar(var_d->identifier, value, var_d->constant);
 }
 
@@ -374,20 +374,20 @@ Value* eval_for(ForStmt* fr, Env* env){
     Value* condition = evaluate(fr->condition, scope);
 
     if(condition->getType() != ValueType::Bool){
-        cout << "Evaluation Error: WHILE condition must be boolean value";
+        cout << "Evaluation Error: FOR condition must be boolean value";
         exit(0); // !!! debug systemi ile deyis
     }
 
     BoolValue* temp = (BoolValue*)condition;
 
     while(temp->val){
-        Env scope_d;
-        scope_d.parent = scope;
+        Env* scope_d = new Env;
+        scope_d->parent = scope;
 
         bool br = false;
         for(Stmt* i : fr->ThenBranch){
             Value* res;
-            res = evaluate(i, &scope_d);
+            res = evaluate(i, scope_d);
             if(res->getType() == ValueType::Break){
                 br = true;
                 delete res;
@@ -402,6 +402,7 @@ Value* eval_for(ForStmt* fr, Env* env){
         Value* operation = evaluate(fr->operation, scope);
         condition = evaluate(fr->condition, scope);
         temp = (BoolValue*)condition;
+        delete scope_d;
     }
     delete scope;
     loop = false;
@@ -509,7 +510,7 @@ Value* eval_unary_val_expr(UnaryExpr* l, Env* env){
 }
 
 // Burda mem_valsory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
-Value* evaluate(Stmt* astNode, Env* env){
+Value*  evaluate(Stmt* astNode, Env* env){
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
         NumericLiteral* childObj = (NumericLiteral*)astNode;
         NumberVal* temp = new NumberVal;
