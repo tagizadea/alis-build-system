@@ -7,12 +7,12 @@ map <string, TokenType> Keywords = {
     {"else", TokenType::ELSE},
     {"break", TokenType::BREAK},
     {"continue", TokenType::CONTINUE},
-    {"Identifier", TokenType::Identifier},
+    // {"Identifier", TokenType::Identifier},
     {"let", TokenType::Let},
     {"const", TokenType::Const},
     {"fn", TokenType::FN},
     {"=", TokenType::ASSIGN},
-    {"Number", TokenType::Number},
+    // {"Number", TokenType::Number},
     {"+", TokenType::PLUS},
     {"-", TokenType::MINUS},
     {"+=", TokenType::PLUS_ASSIGN},
@@ -45,8 +45,8 @@ map <string, TokenType> Keywords = {
     {":", TokenType::COLON},
     {",", TokenType::COMMA},
     {".", TokenType::DOT},
-    {"String", TokenType::String},
-    {"Invalid", TokenType::Invalid}
+    // {"String", TokenType::String},
+    // {"Invalid", TokenType::Invalid}
 };
 
 map <TokenType, string> rKeywords;

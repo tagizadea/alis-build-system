@@ -566,6 +566,115 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
     return l;
 }
 
+Value* n_funs::Type(vector<Value*> args, Env* env){
+    if(args.size() != 1){
+        cout << "Type Function: Only one argument possible!";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+
+    StringVal* ans = new StringVal;
+
+    switch(args[0]->getType()){
+    case ValueType::Bool :
+        ans->val = "Bool";
+        break;
+    case ValueType::FUNC :
+        ans->val = "Func";
+        break;
+    case ValueType::NFUNC :
+        ans->val = "NativeFunc";
+        break;
+    case ValueType::List :
+        ans->val = "List";
+        break;
+    case ValueType::Null :
+        ans->val = "Null";
+        break;
+    case ValueType::Number :
+        ans->val = "Number";
+        break;
+    case ValueType::Object :
+        ans->val = "Object";
+        break;
+    case ValueType::String :
+        ans->val = "String";
+        break;
+    
+    default:
+        ans->val = "Operator";
+        break;
+    }
+
+    return ans;
+}
+
+Value* n_funs::ston(vector<Value*> args, Env* env){
+    if(args.empty()){
+        cout << "Nothing to convert Number Value!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    ListValue* ans = new ListValue;
+
+    for(Value* i : args){
+        if(i->getType() == ValueType::String){
+            StringVal* temp = (StringVal*)i;
+            if(temp->val.size() >= 18){
+                cout << "Value: " << temp->val << " too big to convert to Number Value!\n";
+                continue; // debug systemi ile deyis !!!
+            }
+
+            long double n;
+            try{
+                n = stold(temp->val);
+            }
+            catch(const std::exception& e){
+                cout << "Value: " << temp->val << " impossible to convert Number Value!\n";
+                continue; // debug systemi ile deyis !!!
+            }
+
+            ans->v.push_back(Make_Number(n));
+        }
+        else cout << "Value type is not a String Value!\n"; // debug systemi ile deyis !!!
+    }
+
+    if(ans->v.size() == 1) return ans->v[0];
+    if(ans->v.empty()) return env->lookUpVar("Null");
+    return ans;
+}
+
+Value* n_funs::ntos(vector<Value*> args, Env* env){
+    if(args.empty()){
+        cout << "Nothing to convert Number Value!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    ListValue* ans = new ListValue;
+
+    for(Value* i : args){
+        if(i->getType() == ValueType::Number){
+            NumberVal* temp = (NumberVal*)i;
+
+            string n;
+            try{
+                if((long long)temp->val == temp->val) n = to_string((long long)temp->val);
+                else n = to_string(temp->val);
+            }
+            catch(const std::exception& e){
+                cout << "Value: " << temp->val << " impossible to convert String Value!\n";
+                continue; // debug systemi ile deyis !!!
+            }
+
+            ans->v.push_back(Make_String(n));
+        }
+        else cout << "Value type is not a Number Value!\n"; // debug systemi ile deyis !!!
+    }
+
+    if(ans->v.size() == 1) return ans->v[0];
+    if(ans->v.empty()) return env->lookUpVar("Null");
+    return ans;
+}
+
 // Value* n_funs::compile(vector<Value*> args, Env* env){
 //     if(args.size() == 0){
 //         cout << "Compile Function: No args";

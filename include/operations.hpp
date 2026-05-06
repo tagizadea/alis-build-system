@@ -42,6 +42,9 @@ namespace n_funs{
     Value* min(vector <Value*> args, Env* env);
     Value* system(vector <Value*> args, Env* env);
     Value* Ntrack(vector <Value*> args, Env* env);
+    Value* Type(vector <Value*> args, Env* env);
+    Value* ston(vector <Value*> args, Env* env);
+    Value* ntos(vector <Value*> args, Env* env);
     // Value* compile(vector <Value*> args, Env* env);
     Value* run(vector <Value*> args, Env* env);
 }
