@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 
 #include <iostream> // temp
@@ -61,8 +62,11 @@ class VarDeclaration : public Stmt{
     public:
 
     bool constant = false;
-    std::string identifier;
-    Expr* val;
+
+    std::unordered_map <std::string, Expr*> vars;
+
+    // std::string identifier;
+    // Expr* val;
 
     NodeType getKind() const override{
         return kind;

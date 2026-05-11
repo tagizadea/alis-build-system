@@ -155,10 +155,12 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: VariableDeclaration\n";
         VarDeclaration* childObj = dynamic_cast<VarDeclaration*>(stmt);
         cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
-        cout << tab_s << "Variable_Name: " << childObj->identifier << '\n';
-        cout << tab_s << "Value:\n";
-        if(childObj->val == nullptr) cout << tab_s << "Undefined value";
-        else print_stmt(childObj->val, tab + 1);
+        for(pair <string, Expr*> i : childObj->vars){
+            cout << tab_s << "Variable_Name: " << i.first << '\n';
+            cout << tab_s << "Value:\n";
+            if(i.second == nullptr) cout << tab_s << "Undefined value";
+            else print_stmt(i.second, tab + 1);
+        }
         cout << '\n';
     }
     else if(NodeType::ASSIGNEXPR == kind){

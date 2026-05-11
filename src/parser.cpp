@@ -48,31 +48,43 @@ Stmt* Parser::parse_continue(){
     return temp;
 }
 
+
+
 Stmt* Parser::parse_var_declaration(){
     bool const isConst = eat().type == TokenType::Const;
-    string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
-    
-    if(at().type == TokenType::SEMICOLON){
-        eat();
-        if(isConst){
-            cout << "Parser Error: Constant dəyər yoxdur!\n";
-            exit(0); // !!! Debug sistemi ile deyis
-        }
-
-        VarDeclaration* temp = new VarDeclaration;
-        temp->constant = false;
-        temp->identifier = identifier;
-        NumericLiteral* zero = new NumericLiteral("0");
-        temp->val = zero;
-        return temp;
-    }
-
-    expect(TokenType::ASSIGN, "Let or Const declared without assign or semicolon");
+    TokenType last = TokenType::Invalid;
     VarDeclaration* temp = new VarDeclaration;
-    temp->constant = isConst;
-    temp->identifier = identifier;
-    temp->val = parse_expr();
-    expect(TokenType::SEMICOLON, "Let or Const declared without semicolon");
+    do{
+        string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
+        if(at().type == TokenType::SEMICOLON || at().type == TokenType::COMMA){
+            if(isConst){
+                cout << "Parser Error: Constant dəyər yoxdur!\n";
+                exit(0); // !!! Debug sistemi ile deyis
+            }
+
+            temp->constant = false;
+            if(temp->vars.find(identifier) == temp->vars.end()) temp->vars[identifier] = new NumericLiteral("0");
+            else{
+                cout << "Parser Error: Eyni adlı bir neçə dəyişən təyin oluna bilməz!";
+                exit(0); // !!! debug systemi ile deyis
+            }
+        }
+        else{
+            expect(TokenType::ASSIGN, "Let or Const declared without assign or semicolon");
+            temp->constant = isConst;
+            if(temp->vars.find(identifier) == temp->vars.end()) temp->vars[identifier] = parse_expr();
+            else{
+                cout << "Parser Error: Eyni adlı bir neçə dəyişən təyin oluna bilməz!";
+                exit(0); // !!! debug systemi ile deyis
+            }
+        }
+        last = at().type;
+    }
+    while(eat().type == TokenType::COMMA);
+    if(last != TokenType::SEMICOLON){
+        cout << "Let or Const declared without semicolon";
+        exit(0); // !!! debug sistemi ile deyis
+    }
     return temp;
 }
 

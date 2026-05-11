@@ -273,12 +273,23 @@ Value* eval_ident(Identifier* idn, Env* env){
 }
 
 Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
-    if(var_d->val->getKind() == NodeType::BREAK || var_d->val->getKind() == NodeType::CONTINUE){
-        cout << "Evaluation Error: Break or Continue cannot be assigned!";
-        exit(0); // !!! Debug systemi ile deyis
+    // if(var_d->val->getKind() == NodeType::BREAK || var_d->val->getKind() == NodeType::CONTINUE){
+    //     cout << "Evaluation Error: Break or Continue cannot be assigned!";
+    //     exit(0); // !!! Debug systemi ile deyis
+    // }
+    // Value* value = (var_d->val != nullptr && var_d->val != NULL) ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
+    // return env->declareVar(var_d->identifier, value, var_d->constant);
+    Value* temp;
+    for(pair <string, Expr*> i : var_d->vars){
+        if(i.second->getKind() == NodeType::BREAK || i.second->getKind() == NodeType::CONTINUE){
+            cout << "Evaluation Error: Break or Continue cannot be assigned!";
+            exit(0); // !!! Debug systemi ile deyis
+        }
+        Value* value = (i.second != nullptr && i.second != NULL) ? (evaluate(i.second, env)) : (env->lookUpVar("Null"));
+        temp = env->declareVar(i.first, value, var_d->constant);
     }
-    Value* value = (var_d->val != nullptr && var_d->val != NULL) ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
-    return env->declareVar(var_d->identifier, value, var_d->constant);
+
+    return temp;
 }
 
 Value* eval_var_assignment(AssignExpr* as, Env* env){
