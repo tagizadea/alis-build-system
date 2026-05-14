@@ -114,7 +114,13 @@ class ObjectValue : public Value{
 
     ValueType getType() const override{
         return this->type;
-    } 
+    }
+
+    ObjectValue* clone(){
+        ObjectValue* temp = new ObjectValue;
+        for(std::pair <std::string, Value*> i : this->properties) temp->properties[i.first] = i.second;
+        return temp;
+    }
 };
 
 class ListValue : public Value{
@@ -128,9 +134,19 @@ class ListValue : public Value{
     int mapTypeCounter[10];
     int distinc_types = 0;
 
+    ListValue* clone(){
+        ListValue* temp = new ListValue;
+        temp->consist_of = this->consist_of;
+        temp->distinc_types = this->distinc_types;
+        temp->v.resize(this->v.size());
+        for(int i = 0; i < 11; ++i) temp->mapTypeCounter[i] = this->mapTypeCounter[i];
+        for(int i = 0; i < this->v.size(); ++i) temp->v[i] = this->v[i];
+        return temp;
+    }
+
     ValueType getType() const override{
         return this->type;
-    } 
+    }
 };
 
 struct FunctionCall{

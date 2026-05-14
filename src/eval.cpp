@@ -293,6 +293,41 @@ Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
 }
 
 Value* eval_var_assignment(AssignExpr* as, Env* env){
+    // Member Expr elave olunmalidir
+    
+    if(as->assignexpr->getKind() == NodeType::MEMBEREXPR){
+        MemberExpr* temp = (MemberExpr*)as->assignexpr;
+        Value* obj_v = evaluate(temp->object, env);
+        switch(obj_v->getType()){
+            case ValueType::Object :
+            if(temp->property->getKind() == NodeType::IDENTIFIER && temp->object->getKind() == NodeType::IDENTIFIER){
+                Identifier* property_key = (Identifier*)temp->property;
+                Identifier* obj_key = (Identifier*)temp->object;;
+                ObjectValue* obj = (ObjectValue*)obj_v;
+                obj = obj->clone();
+                env->assignVar(obj_key->symbol, obj);
+                obj->properties[property_key->symbol] = evaluate(as->value, env);
+            }
+            break;
+        case ValueType::List :
+            if(temp->property->getKind() == NodeType::NUMERIC_L && temp->object->getKind() == NodeType::IDENTIFIER){
+                NumberVal* index = (NumberVal*)evaluate(temp->property, env);
+                Identifier* key = (Identifier*)temp->object;
+                ListValue* l = (ListValue*)obj_v;
+                if(index->val >= 0 && index->val < l->v.size()){
+                    l = l->clone();
+                    env->assignVar(key->symbol, l);
+                    l->v[index->val] = evaluate(as->value, env);
+                }
+            }
+            break;
+        default:
+            cout << "Evaluation Error: Assignment can accept only ObjectValue and ListValue as MemberExpr!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        return env->lookUpVar("Null");
+    }
+
     if(as->assignexpr->getKind() != NodeType::IDENTIFIER){
         cout << "Evaluation Error: Assignmentdə sol identifier işlənməyib!";
         exit(0); // !!! Debug ile deyis
@@ -422,7 +457,7 @@ Value* eval_for(ForStmt* fr, Env* env){
 
 Value* eval_member_val_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return env->lookUpVar("Null");
-    
+
     Value* obj_v = evaluate(me->object, env);
 
     if(obj_v->getType() == ValueType::List){
@@ -462,16 +497,18 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
     }
 
     //cout << "NODETYPE: " << (int)me->property->getKind(); //
-    if(me->property->getKind() == NodeType::IDENTIFIER){
-        Identifier* key = (Identifier*)me->property;
-        ObjectValue* obj = (ObjectValue*)obj_v;
-        return obj->properties[key->symbol];
+    if(obj_v->getType() == ValueType::Object){
+        if(me->property->getKind() == NodeType::IDENTIFIER){
+            Identifier* key = (Identifier*)me->property;
+            ObjectValue* obj = (ObjectValue*)obj_v;
+            return obj->properties[key->symbol];
+        }
+        else if(me->property->getKind() == NodeType::CALLEXPR){ // parserde ele bunu
+            cout << "Evaluation Error: CallExpr objectdə çağırıla bilməz";
+            exit(0);
+        }
     }
-    if(me->property->getKind() == NodeType::CALLEXPR){ // parserde ele bunu
-        cout << "Evaluation Error: CallExpr objectdə çağırıla bilməz";
-        exit(0);
-    }
-
+    
     return evaluate(me->property, env);
 }
 
