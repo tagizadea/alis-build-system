@@ -537,35 +537,59 @@ Value* n_funs::system(vector<Value*> args, Env* env){
 }
 
 Value* n_funs::Ntrack(vector<Value*> args, Env* env){
-    ListValue* l = new ListValue;
-    vector <string> src;
-    if(args.size() == 1 && args[0]->getType() == ValueType::List){
-        ListValue* le = (ListValue*)args[0];
-        if(le->consist_of != ValueType::String){
-            cout << "Track Function: only strings can be argument!";
-            exit(0); // !!! debug systemi ile deyis
-        }
-        for(int i = 0; i < le->v.size(); ++i){
-            string name = ((StringVal*)le->v[i])->val;
-            Manager::getInstance().sources.push_back(name);
-        }
+    // ListValue* l = new ListValue;
+    // vector <string> src;
+    // if(args.size() == 1 && args[0]->getType() == ValueType::List){
+    //     ListValue* le = (ListValue*)args[0];
+    //     if(le->consist_of != ValueType::String){
+    //         cout << "Track Function: only strings can be argument!";
+    //         exit(0); // !!! debug systemi ile deyis
+    //     }
+    //     for(int i = 0; i < le->v.size(); ++i){
+    //         string name = ((StringVal*)le->v[i])->val;
+    //         Manager::getInstance().sources.push_back(name);
+    //     }
+    // }
+    // else{
+    //     for(int i = 0; i < args.size(); ++i){
+    //         if(args[i]->getType() != ValueType::String){
+    //             cout << "Track Function: only strings can be argument!";
+    //             exit(0); // !!! debug systemi ile deyis
+    //         }
+    //         string name = ((StringVal*)args[i])->val;
+    //         Manager::getInstance().sources.push_back(name);
+    //     }
+    // }
+    // src = track();
+    // for(string s : src) l->v.push_back(Make_String(s));
+    // l->consist_of = ValueType::String;
+    // l->distinc_types = 1;
+    // l->mapTypeCounter[(int)ValueType::String] = src.size();
+    // return l;
+    return env->lookUpVar("Null");
+}
+
+Value* n_funs::Ndefine(vector<Value*> args, Env* env){
+    if(args.size() < 1 && args.size() > 2){
+        cout << "Define Function: Only one or two arguments possible!";
+        exit(0); // !!! debug systemi ile deyis
     }
-    else{
-        for(int i = 0; i < args.size(); ++i){
-            if(args[i]->getType() != ValueType::String){
-                cout << "Track Function: only strings can be argument!";
-                exit(0); // !!! debug systemi ile deyis
-            }
-            string name = ((StringVal*)args[i])->val;
-            Manager::getInstance().sources.push_back(name);
-        }
+
+    if(args[0]->getType() != ValueType::String || (args.size() == 2 && args[1]->getType() != ValueType::String)){
+        cout << "Define Function: Arguments should be String Value!";
+        exit(0); // !!! debug systemi ile deyis
     }
-    src = track();
-    for(string s : src) l->v.push_back(Make_String(s));
-    l->consist_of = ValueType::String;
-    l->distinc_types = 1;
-    l->mapTypeCounter[(int)ValueType::String] = src.size();
-    return l;
+
+    auto& manager = Manager::getInstance();
+    string name = (static_cast<StringVal*>(args[0]))->val;
+    manager.defines[name] = nullopt;
+
+    if(args.size() == 2){
+        string value = (static_cast<StringVal*>(args[1]))->val;
+        manager.defines[name] = value;
+    }
+
+    return env->lookUpVar("Null");
 }
 
 Value* n_funs::Type(vector<Value*> args, Env* env){
@@ -677,87 +701,82 @@ Value* n_funs::ntos(vector<Value*> args, Env* env){
     return ans;
 }
 
-// Value* n_funs::compile(vector<Value*> args, Env* env){
-//     if(args.size() == 0){
-//         cout << "Compile Function: No args";
-//         exit(0); // !!! debug sistemi ile deyis
-//     }
+Value* n_funs::compile(vector<Value*> args, Env* env){
+    if(args.size() != 6){
+        cout << "Compile Function: The number of args should be 6";
+        exit(0); // !!! debug sistemi ile deyis
+    }
 
-//     vector <string> sources, incs;
-//     bool object_file = true, general_flag = true;
-//     string flag = "", output = "";
-//     vector <pair <string, string>> flags;
+    vector <string> sources, incs, flags, defines;
+    string flag = "", output = "", compiler = "", define = "", inc = "";
 
-//     if(args.size() >= 1 && args[0]->getType() == ValueType::List){
-//         ListValue* list = (ListValue*)args[0];
-//         if(list->consist_of != ValueType::String){
-//             cout << "Compile Function: Sources list should consist of Strings";
-//             exit(0); // !!! debug sistemi ile deyis
-//         }
-//         for(Value* i : list->v){
-//             StringVal* x = (StringVal*) i;
-//             sources.push_back(x->val);
-//         }
-//     }
-//     if(args.size() >= 2 && args[1]->getType() == ValueType::List){
-//         ListValue* list = (ListValue*)args[1];
-//         if(list->consist_of != ValueType::String){
-//             cout << "Compile Function: Includes list should consist of Strings";
-//             exit(0); // !!! debug sistemi ile deyis
-//         }
-//         for(Value* i : list->v){
-//             StringVal* x = (StringVal*) i;
-//             incs.push_back(x->val);
-//         }
-//     }
-//     if(args.size() >= 3 && args[2]->getType() == ValueType::String){
-//         StringVal* x = (StringVal*)args[2];
-//         output = x->val;
-//     }
-//     if(args.size() >= 4){
-//         if(args[3]->getType() == ValueType::String){
-//             flag = ((StringVal*)args[3])->val;
-//         }
-//         else if(args[3]->getType() == ValueType::List){
-//             ListValue* list = (ListValue*)args[3];
-//             if(list->consist_of != ValueType::Object){
-//                 cout << "Compile Function: Flags list should consist of Objects";
-//                 exit(0); // !!! debug sistemi ile deyis
-//             }
-//             general_flag = false;
-//             for(Value* i : list->v){
-//                 ObjectValue* o = (ObjectValue*) i;
-//                 if(!o->properties.count("name") || !o->properties.count("flag") || o->properties.size() != 2){
-//                     cout << "Compile Function: Flags list Object should be {name, flag}";
-//                     exit(0); // !!! debug sistemi ile deyis
-//                 }
-//                 string objname = ((StringVal*)o->properties["name"])->val;
-//                 string objflag = ((StringVal*)o->properties["flag"])->val;
-//                 flags.push_back({objname, objflag});
-//             }
-//         }
-//     }
-//     if(args.size() >= 5 && args[4]->getType() == ValueType::Bool){
-//         object_file = ((BoolValue*)args[4])->val;
-//     }
-//     if(args.size() > 5){
-//         cout << "Compile Function: Too many args";
-//         exit(0); // !!! debug sistemi ile deyis
-//     }
+    if(args[0]->getType() == ValueType::List){
+        ListValue* list = (ListValue*)args[0];
+        if(list->consist_of != ValueType::String){
+            cout << "Compile Function:[0] Sources list should consist of Strings";
+            exit(0); // !!! debug sistemi ile deyis
+        }
+        for(Value* i : list->v){
+            StringVal* x = (StringVal*) i;
+            sources.push_back(x->val);
+        }
+    }
+    else{
+        cout << "Compile Function:[0] Sources list argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    if(args[1]->getType() == ValueType::List){
+        ListValue* list = (ListValue*)args[1];
+        if(list->consist_of != ValueType::String){
+            cout << "Compile Function:[1] Includes list should consist of Strings";
+            exit(0); // !!! debug sistemi ile deyis
+        }
+        for(Value* i : list->v){
+            StringVal* x = (StringVal*) i;
+            incs.push_back(x->val);
+        }
+    }
+    else{
+        cout << "Compile Function:[1] Includes list argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    if(args[2]->getType() == ValueType::String){
+        StringVal* x = (StringVal*)args[2];
+        output = x->val;
+    }
+    else{
+        cout << "Compile Function:[2] Output string argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    
+    if(args[3]->getType() == ValueType::String){
+        StringVal* x = (StringVal*)args[2];
+        compiler = x->val;
+    }
+    else{
+        cout << "Compile Function:[3] Compiler string argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    if(args[4]->getType() == ValueType::String){
+        StringVal* x = (StringVal*)args[2];
+        flag = x->val;
+    }
+    else{
+        cout << "Compile Function:[4] Flags string argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
+    if(args[5]->getType() == ValueType::String){
+        StringVal* x = (StringVal*)args[2];
+        define = x->val;
+    }
+    else{
+        cout << "Compile Function:[5] Defines string argument is wrong";
+        exit(0); // !!! debug sistemi ile deyis
+    }
 
-//     // string compile_string = ((StringVal*)env->lookUpVar("CC"))->val;
-//     // Her fayl ucun ayri compile olacaq. Sonra da Link funksiyasi onlari birlesdirecek
 
-//     if(general_flag){
-//         string compile_string = ((StringVal*)env->lookUpVar("CC"))->val;
-//         for(string i : sources) compile_string += " " + i;
-//         for(string i : incs) compile_string += " -I" + i;
-//         compile_string += " " + flag;
-        
-//     }
-
-//     return env->lookUpVar("Null");
-// }
+    return env->lookUpVar("Null");
+}
 
 Value* n_funs::run(vector<Value*> args, Env* env){
     if(args.size() != 1){
@@ -786,6 +805,13 @@ Value* n_funs::run(vector<Value*> args, Env* env){
     Value* eval = evaluate(program, env);
 
     return env->lookUpVar("Null");
+}
+
+Value* n_funs::scan(vector<Value*> args, Env* env){
+
+    
+
+    return nullptr;
 }
 
 /* SORT COMPARATORS FOR DEFAULT TYPES*/

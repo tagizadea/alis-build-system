@@ -18,8 +18,13 @@ vector <string> files;
 int main(int argc, char* argv[]){
 
     cout << "Ali's Build System ALPHA!\n";
-    init_manager();
+    Manager::getInstance().init_manager();
 
+    // Manager::getInstance().sources.push_back("./test/test.cpp");
+
+    // scan_headers();
+
+    
     try{
         for(const auto& entry : fs::directory_iterator(path)){
             // cout << entry.path().string() << endl;

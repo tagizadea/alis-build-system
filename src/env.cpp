@@ -113,6 +113,8 @@ void InitNatives(Env* env){
     env->declareVar("system", Make_NFunc(temp), true);
     temp.funAddr = n_funs::Ntrack;
     env->declareVar("track", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::Ndefine;
+    env->declareVar("define", Make_NFunc(temp), true);
     temp.funAddr = n_funs::run;
     env->declareVar("run", Make_NFunc(temp), true);
     temp.funAddr = n_funs::Type;

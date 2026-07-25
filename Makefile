@@ -1,4 +1,4 @@
-src = src/ast.cpp src/parser.cpp src/eval.cpp src/env.cpp
+src = src/ast.cpp src/parser.cpp src/eval.cpp src/env.cpp src/xxhash64.cpp
 src += src/operations.cpp src/lexer.cpp src/main.cpp src/manager.cpp
 
 all:
