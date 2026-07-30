@@ -49,6 +49,8 @@ namespace n_funs{
     Value* compile(vector <Value*> args, Env* env);
     Value* run(vector <Value*> args, Env* env);
     Value* scan(vector <Value*> args, Env* env);
+    Value* set_include(vector <Value*> args, Env* env);
+
 }
 
 #endif

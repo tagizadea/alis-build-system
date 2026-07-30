@@ -1,73 +1,23 @@
 #include <manager.hpp>
-
-template<typename Entry, typename Cache>
-void readCache(const string& filename, Cache& cache){
-    const string path = ".abs/" + filename;
-
-    if(!fs::exists(path)){
-        {
-            fstream create(path, ios::out | ios::binary);
-            size_t size = 0;
-            writeBinary(create, size);
-        }
-    }
-
-    fstream temp_fstr(path, ios::in | ios::binary);
-
-    if(!temp_fstr.is_open()){
-        cout << "Manager error: The file \"" << filename << "\" could not be opened!";
-        exit(0);
-    }
-
-    size_t size = 0;
-    readBinary(temp_fstr, size);
-
-    for(size_t i = 0; i < size; ++i){
-        Entry temp;
-        temp.load(temp_fstr);
-        cache.insert({temp.name, temp});
-    }
-}
-
+#include <xxhash64.hpp>
+#include <stack>
 
 void Manager::init_manager(){
-    // generate_crc32_table();
 
-    // size_t size;
+    auto& manager = Manager::getInstance();
 
     if(!fs::is_directory(".abs")) fs::create_directory(".abs");
 
-    // fstream tracked;
-    // if(!fs::exists(".abs/tracked.txt")) tracked.open(".abs/tracked.txt", ios::in | ios::out | ios::app);
-    // else tracked.open(".abs/tracked.txt", ios::in | ios::out);
-    // if(!tracked.is_open()){
-    //     cout << "Manager error: The file \"tracked\" could not opened!";
-    //     exit(0); // !!! Debug systemi ile deyis
+    readCache<DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, DependencyCache);
+    readCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, FileCache);
+    readCache<ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, ObjectCache);
+
+    // int nese_count = 0;
+    // for(auto& i : DependencyCache){
+    //     cout << ++nese_count << ":\n" << i.first << '\n' << i.second.dependency_hash << '\n';
+    //     for(auto& s : i.second.includes) cout << s << '\n';
     // }
-
-
-    readCache<DependencyCacheEntry>("dependencies.cache", DependencyCache);
-    readCache<FileCacheEntry>("files.cache", FileCache);
-    readCache<ObjectCacheEntry>("objects.cache", ObjectCache);
     
-    // fstream deps;
-    // if(!fs::exists(".abs/dependencies")) deps.open(".abs/dependencies", ios::binary);
-    // else deps.open(".abs/dependencies", ios::binary);
-    // if(!deps.is_open()){
-    //     cout << "Manager error: The file \"dependencies\" could not opened!";
-    //     exit(0); // !!! Debug systemi ile deyis
-    // }
-
-    // readBinary(deps, size);
-
-    // for(int i = 0; i < size; ++i){
-    //     DependencyCacheEntry temp;
-    //     temp.load(deps);
-    //     DependencyCache.insert(temp.name, temp);
-    // }
-
-    // deps.close();
-
     fstream about(".abs/about.txt", ios::out);
     if(!about.is_open()){
         cout << "Manager error: The file \"about\" could not opened!";
@@ -76,79 +26,67 @@ void Manager::init_manager(){
     about << "Ali's Build System for C/C++.\nVersion number: 0.8ALPHA";
     about.close();
 
-    // string line;
-    // int line_cnt = 0;
-    // while(getline(tracked, line)){
-    //     if(line.size() <= 2) continue;
-    //     string name = "", checksum = "";
-    //     bool flag = false;
-    //     for(int i=0;i<line.size();++i){
-
-    //         if(line[i] == ' '){
-    //             flag = true;
-    //             continue;
-    //         }
-
-    //         if(flag) checksum += line[i];
-    //         else name += line[i];
-    //     }
-    //     try{
-    //         Manager::getInstance().tracked_files[name] = {++line_cnt, static_cast<uint32_t>(stoul(checksum))};
-    //     }
-    //     catch(const std::exception& e){
-    //         cout << "Manager error: \"tracked\" file corrupted! " << e.what() << '\n';
-    //         exit(0); // !!! Debug systemi ile deyis
-    //     }
-    // }
-    // tracked.close();
-    // for(auto i : Manager::getInstance().tracked_files) cout << i.first << ' ' << i.second.first << ' ' << i.second.second << '\n'; //
+    manager.include_paths.push_back("./");
 }
 
-vector<string> track(){
-    vector <string> ans;
+Manager::FileCacheEntry Manager::track(const string& Source){
+    Manager::FileCacheEntry ans;
+    ans.content_hash = 0;
+    ans.mtime = 0;
+    ans.name = "";
+    ans.size = 0;
+
+    auto& FileCache = Manager::getInstance().FileCache;
 
     // for(string s : Manager::getInstance().sources){
-    //     if(fs::exists(s)){
-    //         ifstream file(s);
-            // uint32_t checksum = compute_crc32(file);
-    //         uint32_t saved_checksum = 0;
-    //         bool first_time = false;
-    //         if(Manager::getInstance().tracked_files.count(s))
-    //             saved_checksum = Manager::getInstance().tracked_files[s].second;
-    //         else first_time = true;
-            
-    //         if(checksum != saved_checksum){
-    //             ans.push_back(s);
-    //             Manager::getInstance().tracked_files[s].second = checksum;
-    //             if(first_time){
-    //                 fstream tracked(".abs/tracked.txt", ios::app);
-    //                 tracked << s << ' ' << checksum << '\n';
-    //                 tracked.close();
-    //             }
-    //             else{
-    //                 int line = Manager::getInstance().tracked_files[s].first;
-    //                 fstream tracked(".abs/tracked.txt", ios::in | ios::out);
-    //                 string l;
-    //                 int c_l = 0;
-    //                 vector <string> temp;
-    //                 while(getline(tracked, l)){
-    //                     ++c_l;
-    //                     if(c_l == line) temp.push_back( s + " " + to_string(checksum));
-    //                     else temp.push_back(l);
-    //                 }
-    //                 tracked.clear();
-    //                 tracked.seekp(0, ios::beg);
-    //                 for(string si : temp){
-    //                     tracked << si << '\n';
-    //                 }
-    //                 tracked.close();
-    //             }
-    //         }
 
-    //         file.close();
-    //     }
+    // cout << "!!!FOR: " + s + "!!!\n"; //
+
+    if(fs::exists(Source)){
+
+        // cout << "!!!EXISTS: " + s + "!!!\n"; //
+        // ifstream file(s);
+
+        uint64_t mtime = GetFileMTime(Source), size = GetFileSize(Source);
+
+        if(FileCache.count(Source)){
+            auto entry = FileCache[Source];
+
+            // cout << "!!!FILE CACHE TAPILDI: " + s + "!!!\n"; //
+
+            // cout << entry.name << ' ' << entry.content_hash << ' ' << entry.mtime <<
+            // ' ' << entry.size << '\n'; //
+
+            if((mtime != entry.mtime || size != entry.size)){
+                uint64_t contentHash = xxh64::hash_file(Source);
+                entry.mtime = mtime;
+                entry.size = size;
+                if(contentHash != entry.content_hash){
+                    entry.content_hash = contentHash;
+                    // ans.push_back(Source);
+                    ans = entry;
+                }
+                FileCache[Source] = entry;
+            }
+        }
+        else{
+            auto entry = FileCache[Source];
+
+            // cout << "!!! ILK DEFE " + s + "!!!\n"; //
+
+            entry.content_hash = xxh64::hash_file(Source);
+            entry.mtime = mtime;
+            entry.name = Source;
+            entry.size = size;
+            // ans.push_back(Source);
+            ans = entry;
+            FileCache[Source] = entry;
+        }
+        // file.close();
+    }
     // }
 
+    // writeCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, FileCache);
     return ans;
 }
 
@@ -223,81 +161,186 @@ string extractHeaderName(const string& line){
     return "";
 }
 
-vector<string> scan_headers(){
+vector<string> Manager::scan_headers(const string& ChangedFile){
     set<string> uniqueHeaders;
+    string dephash = "";
     auto& manager = Manager::getInstance();
 
-    for(const string& filePath : manager.sources){
-        fstream file(filePath, ios::in);
-        if(!file.is_open()) continue;
+    fstream file;
+    string temp_path;
 
-        string rawLine, combinedLine;
-        vector<bool> skipStack;
-        bool inBlockComment = false;
+    for(const string& s : manager.include_paths){
+        temp_path = s + ((s[s.size() - 1] == '/') ? ("") : ("/")) + ChangedFile;
+        if(fs::exists(temp_path)){
+            file.open(temp_path, ios::in);
+            break;
+        }
+    }
 
-        while(getline(file, rawLine)){
-            string trimmedRaw = trimTrailing(rawLine);
-            if(!trimmedRaw.empty() && trimmedRaw.back() == '\\'){
-                combinedLine += trimmedRaw.substr(0, trimmedRaw.size() - 1);
-                continue; 
+    if(!file.is_open()){
+        // cout << "Manager: " + ChangedFile + " cannot be opened!\n";
+        // exit(0); // !!! debug systemi ile deyis
+        return vector <string>();
+    }
+
+    string rawLine, combinedLine;
+    vector<bool> skipStack;
+    bool inBlockComment = false;
+
+    Manager::DependencyCacheEntry entry;
+    entry.name = temp_path;
+
+    while(getline(file, rawLine)){
+        string trimmedRaw = trimTrailing(rawLine);
+        if(!trimmedRaw.empty() && trimmedRaw.back() == '\\'){
+            combinedLine += trimmedRaw.substr(0, trimmedRaw.size() - 1);
+            continue; 
+        }
+        else combinedLine += rawLine;
+
+        string line = combinedLine;
+        combinedLine = "";
+
+        if(!inBlockComment){
+            size_t startCmt = line.find("/*");
+            if(startCmt != string::npos){
+                if(line.find("*/", startCmt + 2) == string::npos) inBlockComment = true;
             }
-            else combinedLine += rawLine;
+        }
+        else{
+            if(line.find("*/") != string::npos) inBlockComment = false;
+            continue;
+        }
+        if(inBlockComment) continue;
 
-            string line = combinedLine;
-            combinedLine = "";
+        string ifndefMacro = extractDirectiveTarget(line, "#ifndef");
+        if(!ifndefMacro.empty()){
+            bool alreadyDef = manager.defines.count(ifndefMacro);
+            bool parentSkip = (!skipStack.empty() && skipStack.back());
+            skipStack.push_back(parentSkip || alreadyDef);
+            continue;
+        }
 
-            if(!inBlockComment){
-                size_t startCmt = line.find("/*");
-                if(startCmt != string::npos){
-                    if(line.find("*/", startCmt + 2) == string::npos) inBlockComment = true;
-                }
-            }
-            else{
-                if(line.find("*/") != string::npos) inBlockComment = false;
-                continue;
-            }
-            if(inBlockComment) continue;
+        string ifdefMacro = extractDirectiveTarget(line, "#ifdef");
+        if(!ifdefMacro.empty()){
+            bool notDef = !manager.defines.count(ifdefMacro);
+            bool parentSkip = (!skipStack.empty() && skipStack.back());
+            skipStack.push_back(parentSkip || notDef);
+            continue;
+        }
 
-            string ifndefMacro = extractDirectiveTarget(line, "#ifndef");
-            if(!ifndefMacro.empty()){
-                bool alreadyDef = manager.defines.count(ifndefMacro);
-                bool parentSkip = (!skipStack.empty() && skipStack.back());
-                skipStack.push_back(parentSkip || alreadyDef);
-                continue;
-            }
+        size_t endifPos = line.find("#endif");
+        if(endifPos != string::npos && isAllWhitespace(line.substr(0, endifPos))){
+            if(!skipStack.empty()) skipStack.pop_back();
+            continue;
+        }
 
-            string ifdefMacro = extractDirectiveTarget(line, "#ifdef");
-            if(!ifdefMacro.empty()){
-                bool notDef = !manager.defines.count(ifdefMacro);
-                bool parentSkip = (!skipStack.empty() && skipStack.back());
-                skipStack.push_back(parentSkip || notDef);
-                continue;
-            }
+        if(!skipStack.empty() && skipStack.back()) continue;
 
-            size_t endifPos = line.find("#endif");
-            if(endifPos != string::npos && isAllWhitespace(line.substr(0, endifPos))){
-                if(!skipStack.empty()) skipStack.pop_back();
-                continue;
-            }
+        string undefName = extractDirectiveTarget(line, "#undef");
+        if(!undefName.empty()){
+            manager.defines.erase(undefName);
+            continue;
+        }
 
-            if(!skipStack.empty() && skipStack.back()) continue;
+        auto [defName, defVal] = extractDefineParts(line);
+        if(!defName.empty()){
+            manager.defines[defName] = defVal.empty() ? nullopt : make_optional(defVal);
+            continue;
+        }
 
-            string undefName = extractDirectiveTarget(line, "#undef");
-            if(!undefName.empty()){
-                manager.defines.erase(undefName);
-                continue;
-            }
-
-            auto [defName, defVal] = extractDefineParts(line);
-            if(!defName.empty()){
-                manager.defines[defName] = defVal.empty() ? nullopt : make_optional(defVal);
-                continue;
-            }
-
-            string header = extractHeaderName(line);
-            if(!header.empty()) uniqueHeaders.insert(header);
+        string header = extractHeaderName(line);
+        if(!header.empty()){
+            uniqueHeaders.insert(header);
+            dephash += header;
+            entry.includes.push_back(header);
         }
     }
     
+    
+    entry.dependency_hash = xxh64::hash_string(dephash);
+
+    if(manager.DependencyCache.count(temp_path) && manager.DependencyCache[temp_path].dependency_hash == entry.dependency_hash) return vector<string>();
+    
+    manager.DependencyCache[temp_path] = entry;
+    // writeCache<DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
+
+    for(const string& s : uniqueHeaders){
+        auto temp = scan_headers(s);
+        for(const string& i : temp) uniqueHeaders.insert(i);
+    }
+
     return vector<string>(uniqueHeaders.begin(), uniqueHeaders.end());
+}
+
+bool IsSourceFile(const string& name){
+    string s = "";
+    for(int i = name.size() - 1; i >= 0 && name[i] != '.'; --i) s += name[i];
+    return (s == "c" || s == "xxc" || s == "ppc" || s == "cc" || s == "C");
+}
+
+vector<string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string>& color){
+    auto& manager = Manager::getInstance();
+    vector <string> DirtyHeaderNames;
+    map <string, vector <string>> reverse_graph;
+
+    stack <DependencyCacheEntry> Stack;
+
+    Stack.push(Node);
+    color.insert(Node.name);
+
+    while(!Stack.empty()){
+        const DependencyCacheEntry& temp_Node = Stack.top();
+
+        for(const string& i : temp_Node.includes){
+
+            reverse_graph[i].push_back(temp_Node.name);
+            
+            if(color.find(i) == color.end()){
+                Stack.push(manager.DependencyCache[i]);
+                color.insert(i);
+            
+                if(!IsSourceFile(i)){
+                    FileCacheEntry temp_Entry = track(i);
+            
+                    if(temp_Entry.mtime != 0){
+                        manager.FileCache[i] = temp_Entry;
+                        DirtyHeaderNames.push_back(i);
+                    }
+
+                }
+            }
+        }
+    }
+
+    set <string> color_reverse;
+
+    for(const string& i : DirtyHeaderNames){
+
+        if(color_reverse.find() == color_reverse.end()){
+            stack <string> stack_reverse;
+            stack_reverse.push(i);
+            color_reverse.insert(i);
+
+            while(!stack_reverse.empty()){
+
+                const string& temp_Reverse_Node = stack_reverse.top();
+
+                for(const string& s : reverse_graph[i]){
+
+                    if(color_reverse.find(s) == color_reverse.end()){
+                        color_reverse.insert(s);
+                        stack_reverse.push(s);
+                    }
+
+                }
+
+            }
+
+        }
+    }
+
+    vector <string> ShouldCompile;
+    for(const string& i : color_reverse) if(IsSourceFile(i)) ShouldCompile.push_back(i);
+    return ShouldCompile;
 }

@@ -123,6 +123,8 @@ void InitNatives(Env* env){
     env->declareVar("StoN", Make_NFunc(temp), true);
     temp.funAddr = n_funs::ntos;
     env->declareVar("NtoS", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::set_include;
+    env->declareVar("set_include", Make_NFunc(temp), true);
     
     // Native Vector Functions
     ListVecNFuncs.resize(4); // Increase each time when adding new method

@@ -16,10 +16,10 @@ bool mainFileFlag = false;
 vector <string> files;
 
 int main(int argc, char* argv[]){
-
+    
     cout << "Ali's Build System ALPHA!\n";
     Manager::getInstance().init_manager();
-
+    
     // Manager::getInstance().sources.push_back("./test/test.cpp");
 
     // scan_headers();

@@ -537,35 +537,66 @@ Value* n_funs::system(vector<Value*> args, Env* env){
 }
 
 Value* n_funs::Ntrack(vector<Value*> args, Env* env){
-    // ListValue* l = new ListValue;
-    // vector <string> src;
-    // if(args.size() == 1 && args[0]->getType() == ValueType::List){
-    //     ListValue* le = (ListValue*)args[0];
-    //     if(le->consist_of != ValueType::String){
-    //         cout << "Track Function: only strings can be argument!";
-    //         exit(0); // !!! debug systemi ile deyis
-    //     }
-    //     for(int i = 0; i < le->v.size(); ++i){
-    //         string name = ((StringVal*)le->v[i])->val;
-    //         Manager::getInstance().sources.push_back(name);
-    //     }
-    // }
-    // else{
-    //     for(int i = 0; i < args.size(); ++i){
-    //         if(args[i]->getType() != ValueType::String){
-    //             cout << "Track Function: only strings can be argument!";
-    //             exit(0); // !!! debug systemi ile deyis
-    //         }
-    //         string name = ((StringVal*)args[i])->val;
-    //         Manager::getInstance().sources.push_back(name);
-    //     }
-    // }
-    // src = track();
-    // for(string s : src) l->v.push_back(Make_String(s));
-    // l->consist_of = ValueType::String;
-    // l->distinc_types = 1;
-    // l->mapTypeCounter[(int)ValueType::String] = src.size();
-    // return l;
+    ListValue* l = new ListValue;
+    vector <string> src, headers, reversed_files;
+
+    auto& manager = Manager::getInstance();
+
+    if(args.size() == 1 && args[0]->getType() == ValueType::List){
+        ListValue* le = (ListValue*)args[0];
+        if(le->consist_of != ValueType::String){
+            cout << "Track Function: only strings can be argument!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        for(int i = 0; i < le->v.size(); ++i){
+            string name = ((StringVal*)le->v[i])->val;
+            manager.sources.push_back(name);
+        }
+    }
+    else{
+        for(int i = 0; i < args.size(); ++i){
+            if(args[i]->getType() != ValueType::String){
+                cout << "Track Function: only strings can be argument!";
+                exit(0); // !!! debug systemi ile deyis
+            }
+            string name = ((StringVal*)args[i])->val;
+            manager.sources.push_back(name);
+        }
+    }
+    
+    // src = manager.track();
+
+    for(const auto& i : manager.sources){
+        auto temp_entry = manager.track(i);
+        src.push_back(temp_entry.name);
+    }
+
+    for(const auto& i : src){
+        vector <string> temp_list = manager.scan_headers(i);
+        headers.insert(headers.end(), temp_list.begin(), temp_list.end());
+    }
+
+    set <string> color;
+
+    for(const auto& i : manager.DependencyCache){
+        vector <string> temp_list;
+        if(color.find(i.first) == color.end()) temp_list = manager.scan_graph(i.second, color);
+        reversed_files.insert(reversed_files.end(), temp_list.begin(), temp_list.end());
+    }
+
+    // for(string s : src)             l->v.push_back(Make_String(s));
+    // for(string s : headers)         l->v.push_back(Make_String(s));
+    for(string s : reversed_files)  l->v.push_back(Make_String(s));
+
+    l->consist_of = ValueType::String;
+    l->distinc_types = 1;
+    l->mapTypeCounter[(int)ValueType::String] = src.size();
+
+    // writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
+    // writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
+    
+    return l;
+    
     return env->lookUpVar("Null");
 }
 
@@ -812,6 +843,23 @@ Value* n_funs::scan(vector<Value*> args, Env* env){
     
 
     return nullptr;
+}
+
+Value* n_funs::set_include(vector<Value*> args, Env* env){
+    if(args.size() != 1){
+        cout << "Set Include Function: The argument should be a string!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    if(args[0]->getType() != ValueType::String){
+        cout << "Set Include Function: The argument should be a string!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    string temp = static_cast<StringVal*>(args[0])->val;
+
+    Manager::getInstance().include_paths.push_back(temp);
+
+    return env->lookUpVar("Null");
 }
 
 /* SORT COMPARATORS FOR DEFAULT TYPES*/
