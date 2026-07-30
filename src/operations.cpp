@@ -538,7 +538,8 @@ Value* n_funs::system(vector<Value*> args, Env* env){
 
 Value* n_funs::Ntrack(vector<Value*> args, Env* env){
     ListValue* l = new ListValue;
-    vector <string> src, headers, reversed_files;
+    vector <string> src, headers, DirtyHeaderNames,reversed_files;
+    map <string, vector <string>> reverse_graph;
 
     auto& manager = Manager::getInstance();
 
@@ -568,7 +569,7 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
 
     for(const auto& i : manager.sources){
         auto temp_entry = manager.track(i);
-        src.push_back(temp_entry.name);
+        if(temp_entry.mtime != 0) src.push_back(temp_entry.name);
     }
 
     for(const auto& i : src){
@@ -580,20 +581,22 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
 
     for(const auto& i : manager.DependencyCache){
         vector <string> temp_list;
-        if(color.find(i.first) == color.end()) temp_list = manager.scan_graph(i.second, color);
-        reversed_files.insert(reversed_files.end(), temp_list.begin(), temp_list.end());
+        if(color.find(i.first) == color.end()) temp_list = manager.scan_graph(i.second, color, reverse_graph);
+        DirtyHeaderNames.insert(DirtyHeaderNames.end(), temp_list.begin(), temp_list.end());
     }
 
-    // for(string s : src)             l->v.push_back(Make_String(s));
+    reversed_files = manager.reverse_invalidation(reverse_graph, DirtyHeaderNames);
+
+    for(string s : src)             l->v.push_back(Make_String(s));
     // for(string s : headers)         l->v.push_back(Make_String(s));
     for(string s : reversed_files)  l->v.push_back(Make_String(s));
 
     l->consist_of = ValueType::String;
     l->distinc_types = 1;
-    l->mapTypeCounter[(int)ValueType::String] = src.size();
+    l->mapTypeCounter[(int)ValueType::String] = src.size() + reversed_files.size();
 
-    // writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
-    // writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
+    writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
+    writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
     
     return l;
     

@@ -227,7 +227,8 @@ class Manager{
     
     FileCacheEntry track(const string& Source);
     vector <string> scan_headers(const string& ChangedFile);
-    vector <string> scan_graph(const DependencyCacheEntry& Node, set <string>& color);
+    vector <string> scan_graph(const DependencyCacheEntry& Node, set <string>& color, map <string, vector <string>>& reverse_graph);
+    vector <string> reverse_invalidation(map <string, vector <string>>& reverse_graph, vector <string>& DirtyHeaderNames);
 };
 
 #endif

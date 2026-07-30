@@ -251,10 +251,19 @@ vector<string> Manager::scan_headers(const string& ChangedFile){
 
         string header = extractHeaderName(line);
         if(!header.empty()){
+            string resolved = header;
+            for(const string& path : manager.include_paths){
+                string candidate = path + (path.back() == '/' ? "" : "/") + header;
+                if(fs::exists(candidate)){
+                    resolved = candidate;
+                    break;
+                }
+            }
             uniqueHeaders.insert(header);
             dephash += header;
-            entry.includes.push_back(header);
+            entry.includes.push_back(resolved);
         }
+
     }
     
     
@@ -279,10 +288,10 @@ bool IsSourceFile(const string& name){
     return (s == "c" || s == "xxc" || s == "ppc" || s == "cc" || s == "C");
 }
 
-vector<string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string>& color){
+vector <string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string>& color, map <string, vector <string>>& reverse_graph){
     auto& manager = Manager::getInstance();
     vector <string> DirtyHeaderNames;
-    map <string, vector <string>> reverse_graph;
+    // map <string, vector <string>> reverse_graph;
 
     stack <DependencyCacheEntry> Stack;
 
@@ -311,22 +320,28 @@ vector<string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string
                 }
             }
         }
+
+        Stack.pop();
     }
 
+    return DirtyHeaderNames;
+}
+
+vector<string> Manager::reverse_invalidation(map<string, vector<string>>& reverse_graph, vector <string>& DirtyHeaderNames){
     set <string> color_reverse;
 
     for(const string& i : DirtyHeaderNames){
 
-        if(color_reverse.find() == color_reverse.end()){
+        if(color_reverse.find(i) == color_reverse.end()){
             stack <string> stack_reverse;
             stack_reverse.push(i);
             color_reverse.insert(i);
 
             while(!stack_reverse.empty()){
-
                 const string& temp_Reverse_Node = stack_reverse.top();
+                
 
-                for(const string& s : reverse_graph[i]){
+                for(const string& s : reverse_graph[temp_Reverse_Node]){
 
                     if(color_reverse.find(s) == color_reverse.end()){
                         color_reverse.insert(s);
@@ -335,6 +350,7 @@ vector<string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string
 
                 }
 
+                stack_reverse.pop();
             }
 
         }
