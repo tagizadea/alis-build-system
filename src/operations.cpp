@@ -587,7 +587,7 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
 
     reversed_files = manager.reverse_invalidation(reverse_graph, DirtyHeaderNames);
 
-    for(string s : src)             l->v.push_back(Make_String(s));
+    // for(string s : src)             l->v.push_back(Make_String(s));
     // for(string s : headers)         l->v.push_back(Make_String(s));
     for(string s : reversed_files)  l->v.push_back(Make_String(s));
 
@@ -736,78 +736,48 @@ Value* n_funs::ntos(vector<Value*> args, Env* env){
 }
 
 Value* n_funs::compile(vector<Value*> args, Env* env){
-    if(args.size() != 6){
-        cout << "Compile Function: The number of args should be 6";
-        exit(0); // !!! debug sistemi ile deyis
-    }
 
-    vector <string> sources, incs, flags, defines;
-    string flag = "", output = "", compiler = "", define = "", inc = "";
+    vector <ObjectValue*> temp_Argument;
 
-    if(args[0]->getType() == ValueType::List){
-        ListValue* list = (ListValue*)args[0];
-        if(list->consist_of != ValueType::String){
-            cout << "Compile Function:[0] Sources list should consist of Strings";
-            exit(0); // !!! debug sistemi ile deyis
-        }
-        for(Value* i : list->v){
-            StringVal* x = (StringVal*) i;
-            sources.push_back(x->val);
-        }
-    }
-    else{
-        cout << "Compile Function:[0] Sources list argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
-    }
-    if(args[1]->getType() == ValueType::List){
-        ListValue* list = (ListValue*)args[1];
-        if(list->consist_of != ValueType::String){
-            cout << "Compile Function:[1] Includes list should consist of Strings";
-            exit(0); // !!! debug sistemi ile deyis
-        }
-        for(Value* i : list->v){
-            StringVal* x = (StringVal*) i;
-            incs.push_back(x->val);
+    if(args.size() == 1 && args[0]->getType() == ValueType::List && ((ListValue*)args[0])->consist_of == ValueType::Object){
+        ListValue* temp_List = static_cast<ListValue*>(args[0]);
+        auto& temp_v = temp_List->v;
+        for(const auto& i : temp_v){
+            ObjectValue* x = static_cast<ObjectValue*>(i);
+            if(x->properties.count("compiler_path") && x->properties.count("src")
+            && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
+                temp_Argument.push_back(x);
+            }
+            else{
+                cout << "Compile Function: Object structure is wrong!";
+                exit(0); // !!! debug systemi ile deyis
+            }
         }
     }
-    else{
-        cout << "Compile Function:[1] Includes list argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
-    }
-    if(args[2]->getType() == ValueType::String){
-        StringVal* x = (StringVal*)args[2];
-        output = x->val;
-    }
-    else{
-        cout << "Compile Function:[2] Output string argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
-    }
-    
-    if(args[3]->getType() == ValueType::String){
-        StringVal* x = (StringVal*)args[2];
-        compiler = x->val;
+    else if(args.size() == 1 && args[0]->getType() == ValueType::Object){
+        if(x->properties.count("compiler_path") && x->properties.count("src")
+        && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
+            temp_Argument.push_back(x);
+        }
+        else{
+            cout << "Compile Function: Object structure is wrong!";
+            exit(0); // !!! debug systemi ile deyis
+        }
     }
     else{
-        cout << "Compile Function:[3] Compiler string argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
+        cout << "Compile Function: Wrong argument!";
+        exit(0); // !!! debug systemi ile deyis
     }
-    if(args[4]->getType() == ValueType::String){
-        StringVal* x = (StringVal*)args[2];
-        flag = x->val;
-    }
-    else{
-        cout << "Compile Function:[4] Flags string argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
-    }
-    if(args[5]->getType() == ValueType::String){
-        StringVal* x = (StringVal*)args[2];
-        define = x->val;
-    }
-    else{
-        cout << "Compile Function:[5] Defines string argument is wrong";
-        exit(0); // !!! debug sistemi ile deyis
-    }
+    // tipleri ucun elave ifler yaz. Meselen tracked_src list olmalidi, consist of string
 
+    set <string> compiled;
+
+    for(const auto& i : temp_Argument){
+        ListValue* temp_List = static_cast<ListValue*>(i->properties["tracked_src"]);
+        for(const auto& j : temp_List->v){
+            
+        }
+    }
 
     return env->lookUpVar("Null");
 }
