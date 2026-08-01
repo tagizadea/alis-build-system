@@ -2,6 +2,12 @@
 #include <chrono>
 #include <ctime>
 #include <queue>
+#include <xxhash64.hpp>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sstream>
+#include <filesystem>
+#include <thread>
 
 vector <NativeFuncVal*> ListVecNFuncs;
 
@@ -20,6 +26,126 @@ vector<string> getSystemFiles(vector<string> &files){
     }
 
     return temp;
+}
+
+// Splits a command string into arguments, respecting double quotes.
+static vector<string> splitCommand(const string& cmd){
+    vector <string> args;
+    string current;
+    bool inQuotes = false;
+
+    for(char c : cmd){
+        if(c == '"'){
+            inQuotes = !inQuotes;
+        }
+        else if(c == ' ' && !inQuotes){
+            if(!current.empty()){
+                args.push_back(current);
+                current.clear();
+            }
+        }
+        else{
+            current += c;
+        }
+    }
+    if(!current.empty()) args.push_back(current);
+
+    return args;
+}
+
+// Executes a shell command using POSIX fork/exec/waitpid.
+// Returns the exit status of the command, or -1 if the command could not be executed.
+int exec(const string& cmd){
+    vector <string> args = splitCommand(cmd);
+    if(args.empty()) return -1;
+
+    vector <char*> argv;
+    for(string& s : args) argv.push_back(&s[0]);
+    argv.push_back(nullptr);
+
+    pid_t pid = fork();
+    if(pid == -1) return -1;
+
+    if(pid == 0){
+        // Child process
+        execvp(argv[0], argv.data());
+        _exit(127); // exec failed
+    }
+
+    // Parent process
+    int status;
+    if(waitpid(pid, &status, 0) == -1) return -1;
+
+    if(WIFEXITED(status)) return WEXITSTATUS(status);
+    return -1;
+}
+
+// Executes multiple commands in parallel, limited by the number of CPU cores.
+// Returns a vector of exit statuses, one per command (in the same order).
+// A status of -1 means the command could not be executed.
+static vector<int> execParallel(const vector<string>& commands){
+    vector<int> statuses(commands.size(), -1);
+    if(commands.empty()) return statuses;
+
+    unsigned int maxConcurrent = std::max(1u, std::thread::hardware_concurrency());
+
+    size_t next = 0;
+    vector<pid_t> pids;
+    vector<size_t> indices;
+
+    while(next < commands.size() || !pids.empty()){
+        // Launch new children while under the concurrency limit
+        while(next < commands.size() && pids.size() < maxConcurrent){
+            vector<string> args = splitCommand(commands[next]);
+            if(args.empty()){
+                statuses[next] = -1;
+                ++next;
+                continue;
+            }
+
+            vector<char*> argv;
+            for(string& s : args) argv.push_back(&s[0]);
+            argv.push_back(nullptr);
+
+            pid_t pid = fork();
+            if(pid == -1){
+                statuses[next] = -1;
+                ++next;
+                continue;
+            }
+
+            if(pid == 0){
+                execvp(argv[0], argv.data());
+                _exit(127);
+            }
+
+            pids.push_back(pid);
+            indices.push_back(next);
+            ++next;
+        }
+
+        // Wait for one child to finish
+        int status;
+        pid_t done = waitpid(-1, &status, 0);
+        if(done == -1){
+            // No children left or error
+            if(pids.empty()) break;
+            continue;
+        }
+
+        // Find which command this pid corresponds to
+        for(size_t i = 0; i < pids.size(); ++i){
+            if(pids[i] == done){
+                if(WIFEXITED(status)) statuses[indices[i]] = WEXITSTATUS(status);
+                else statuses[indices[i]] = -1;
+                pids.erase(pids.begin() + i);
+                indices.erase(indices.begin() + i);
+                break;
+            }
+        }
+    }
+
+    return statuses;
 }
 
 // Printing Abstact Syntax Tree using Statements
@@ -755,6 +881,7 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
         }
     }
     else if(args.size() == 1 && args[0]->getType() == ValueType::Object){
+        ObjectValue* x = static_cast<ObjectValue*>(args[0]);
         if(x->properties.count("compiler_path") && x->properties.count("src")
         && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
             temp_Argument.push_back(x);
@@ -768,18 +895,169 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
         cout << "Compile Function: Wrong argument!";
         exit(0); // !!! debug systemi ile deyis
     }
-    // tipleri ucun elave ifler yaz. Meselen tracked_src list olmalidi, consist of string
 
-    set <string> compiled;
+    auto& manager = Manager::getInstance();
+    ListValue* result = new ListValue;
 
-    for(const auto& i : temp_Argument){
-        ListValue* temp_List = static_cast<ListValue*>(i->properties["tracked_src"]);
-        for(const auto& j : temp_List->v){
-            
+    for(const auto& config : temp_Argument){
+        // Validate property types
+        if(config->properties["compiler_path"]->getType() != ValueType::String ||
+           config->properties["out_dir"]->getType() != ValueType::String ||
+           config->properties["flag"]->getType() != ValueType::String){
+            cout << "Compile Function: compiler_path, out_dir and flag must be String!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+        if(config->properties["src"]->getType() != ValueType::List ||
+           config->properties["tracked_src"]->getType() != ValueType::List){
+            cout << "Compile Function: src and tracked_src must be List!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+
+        string compiler_path = static_cast<StringVal*>(config->properties["compiler_path"])->val;
+        string out_dir = static_cast<StringVal*>(config->properties["out_dir"])->val;
+        string flag = static_cast<StringVal*>(config->properties["flag"])->val;
+
+        ListValue* src_list = static_cast<ListValue*>(config->properties["src"]);
+        ListValue* tracked_list = static_cast<ListValue*>(config->properties["tracked_src"]);
+
+        if(src_list->consist_of != ValueType::String || tracked_list->consist_of != ValueType::String){
+            cout << "Compile Function: src and tracked_src must consist of Strings!";
+            exit(0); // !!! debug systemi ile deyis
+        }
+
+        // Build set of dirty (tracked) sources
+        set <string> tracked_set;
+        for(Value* v : tracked_list->v){
+            tracked_set.insert(static_cast<StringVal*>(v)->val);
+        }
+
+        // Ensure out_dir exists
+        fs::create_directories(out_dir);
+
+        // Hash of flags - so changing flags triggers recompile
+        uint64_t flags_hash = xxh64::hash_string(flag);
+
+        // Collect compile commands and their metadata for parallel execution
+        vector <string> commands;
+        vector <string> cmd_src_paths;
+        vector <string> cmd_obj_paths;
+        vector <uint64_t> cmd_build_hashes;
+
+        for(Value* v : src_list->v){
+            string src_path = static_cast<StringVal*>(v)->val;
+
+            // Compute object path: out_dir/<basename>.o
+            string basename = fs::path(src_path).filename().string();
+            size_t dot = basename.find_last_of('.');
+            if(dot != string::npos) basename = basename.substr(0, dot);
+            string obj_path = out_dir + "/" + basename + ".o";
+
+            // Compute build hash = content_hash + flags_hash
+            uint64_t content_hash = 0;
+            auto file_it = manager.FileCache.find(src_path);
+            if(file_it != manager.FileCache.end()){
+                content_hash = file_it->second.content_hash;
+            }
+            else{
+                // Track the file to get its content hash
+                Manager::FileCacheEntry entry = manager.track(src_path);
+                content_hash = entry.content_hash;
+            }
+            uint64_t build_hash = xxh64::hash_bytes(&content_hash, sizeof(content_hash), flags_hash);
+
+            bool need_compile = false;
+
+            if(tracked_set.count(src_path)){
+                // Dirty file - must compile
+                need_compile = true;
+            }
+            else{
+                // Check object cache
+                auto obj_it = manager.ObjectCache.find(obj_path);
+                if(obj_it == manager.ObjectCache.end() ||
+                   obj_it->second.build_hash != build_hash ||
+                   !fs::exists(obj_path)){
+                    need_compile = true;
+                }
+            }
+
+            if(need_compile){
+                string cmd = compiler_path + " -c " + src_path + " -o " + obj_path + " " + flag;
+                commands.push_back(cmd);
+                cmd_src_paths.push_back(src_path);
+                cmd_obj_paths.push_back(obj_path);
+                cmd_build_hashes.push_back(build_hash);
+            }
+
+            result->v.push_back(Make_String(obj_path));
+        }
+
+        // Execute all compile commands in parallel
+        if(!commands.empty()){
+            vector <int> statuses = execParallel(commands);
+
+            for(size_t i = 0; i < statuses.size(); ++i){
+                if(statuses[i] != 0){
+                    cout << "Compile Error: Failed to compile " << cmd_src_paths[i] << " (status: " << statuses[i] << ")";
+                    exit(0); // !!! debug systemi ile deyis
+                }
+
+                // Update object cache
+                Manager::ObjectCacheEntry obj_entry;
+                obj_entry.name = cmd_obj_paths[i];
+                obj_entry.build_hash = cmd_build_hashes[i];
+                obj_entry.object_size = GetFileSize(cmd_obj_paths[i]);
+                manager.ObjectCache[cmd_obj_paths[i]] = obj_entry;
+            }
         }
     }
 
-    return env->lookUpVar("Null");
+    result->consist_of = ValueType::String;
+    result->distinc_types = 1;
+    result->mapTypeCounter[(int)ValueType::String] = result->v.size();
+
+    writeCache<Manager::ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, manager.ObjectCache);
+
+    return result;
+}
+
+Value* n_funs::link(vector<Value*> args, Env* env){
+    if(args.size() != 3){
+        cout << "Link Function: The number of args should be 3 (objects list, executable name, compiler path)";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    if(args[0]->getType() != ValueType::List || ((ListValue*)args[0])->consist_of != ValueType::String){
+        cout << "Link Function: First argument should be a List of Strings (object file paths)!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    if(args[1]->getType() != ValueType::String){
+        cout << "Link Function: Second argument should be a String (executable name)!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+    if(args[2]->getType() != ValueType::String){
+        cout << "Link Function: Third argument should be a String (compiler path)!";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    ListValue* objects = static_cast<ListValue*>(args[0]);
+    string executable = static_cast<StringVal*>(args[1])->val;
+    string compiler_path = static_cast<StringVal*>(args[2])->val;
+
+    // Build link command: compiler obj1 obj2 ... -o executable
+    string cmd = compiler_path;
+    for(Value* v : objects->v){
+        cmd += " " + static_cast<StringVal*>(v)->val;
+    }
+    cmd += " -o " + executable;
+
+    int status = exec(cmd);
+    if(status != 0){
+        cout << "Link Error: Failed to link " << executable << " (status: " << status << ")";
+        exit(0); // !!! debug systemi ile deyis
+    }
+
+    return Make_String(executable);
 }
 
 Value* n_funs::run(vector<Value*> args, Env* env){

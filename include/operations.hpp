@@ -20,6 +20,10 @@ void print_eval(Value* eval, int tab);
 // Printing Env
 void print_env(Env* env, int tab);
 
+// Executes a shell command using POSIX fork/exec/waitpid.
+// Returns the exit status of the command, or -1 if the command could not be executed.
+int exec(const string& cmd);
+
 
 class Env;
 
@@ -47,6 +51,7 @@ namespace n_funs{
     Value* ston(vector <Value*> args, Env* env);
     Value* ntos(vector <Value*> args, Env* env);
     Value* compile(vector <Value*> args, Env* env);
+    Value* link(vector <Value*> args, Env* env);
     Value* run(vector <Value*> args, Env* env);
     Value* scan(vector <Value*> args, Env* env);
     Value* set_include(vector <Value*> args, Env* env);

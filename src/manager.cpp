@@ -23,7 +23,7 @@ void Manager::init_manager(){
         cout << "Manager error: The file \"about\" could not opened!";
         exit(0); // !!! Debug systemi ile deyis
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 0.8ALPHA";
+    about << "Ali's Build System for C/C++.\nVersion number: 0.9ALPHA";
     about.close();
 
     manager.include_paths.push_back("./");
