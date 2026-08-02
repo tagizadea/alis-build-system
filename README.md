@@ -38,7 +38,7 @@ This compiles the ABS interpreter and runs it with `main.abs` (the default build
 ABS looks for a `.abs` file in the current directory. The default is `main.abs`, or you can pass a script name as an argument:
 
 ```bash
-./main mybuild.abs
+./abs mybuild.abs
 ```
 
 ### 2. Tracking Sources
