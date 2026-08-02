@@ -3,11 +3,17 @@
 #include <ctime>
 #include <queue>
 #include <xxhash64.hpp>
-#include <sys/wait.h>
-#include <unistd.h>
 #include <sstream>
 #include <filesystem>
 #include <thread>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#endif
 
 vector <NativeFuncVal*> ListVecNFuncs;
 
@@ -30,7 +36,7 @@ vector<string> getSystemFiles(vector<string> &files){
 
 // Splits a command string into arguments, respecting double quotes.
 static vector<string> splitCommand(const string& cmd){
-    vector <string> args;
+    vector<string> args;
     string current;
     bool inQuotes = false;
 
@@ -53,13 +59,66 @@ static vector<string> splitCommand(const string& cmd){
     return args;
 }
 
-// Executes a shell command using POSIX fork/exec/waitpid.
-// Returns the exit status of the command, or -1 if the command could not be executed.
+#ifdef _WIN32
+// Helper to build a command line string for CreateProcess from arguments
+static string buildCommandLine(const vector<string>& args) {
+    string cmdLine;
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (i > 0) cmdLine += " ";
+        // Simple quoting if spaces are present
+        if (args[i].find(' ') != string::npos) {
+            cmdLine += "\"" + args[i] + "\"";
+        } else {
+            cmdLine += args[i];
+        }
+    }
+    return cmdLine;
+}
+#endif
+
+// Executes a single shell command.
 int exec(const string& cmd){
-    vector <string> args = splitCommand(cmd);
+    vector<string> args = splitCommand(cmd);
     if(args.empty()) return -1;
 
-    vector <char*> argv;
+#ifdef _WIN32
+    string cmdLine = buildCommandLine(args);
+    vector<char> writableCmd(cmdLine.begin(), cmdLine.end());
+    writableCmd.push_back('\0');
+
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    if (!CreateProcessA(
+        nullptr,             // Application name (use search path)
+        writableCmd.data(),  // Command line
+        nullptr,             // Process handle not inheritable
+        nullptr,             // Thread handle not inheritable
+        FALSE,               // Set handle inheritance to FALSE
+        0,                   // No creation flags
+        nullptr,             // Use parent's environment block
+        nullptr,             // Use parent's starting directory 
+        &si,                 // Pointer to STARTUPINFO structure
+        &pi                  // Pointer to PROCESS_INFORMATION structure
+    )) {
+        return -1;
+    }
+
+    // Wait until child process exits
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    DWORD exitCode = -1;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    return static_cast<int>(exitCode);
+#else
+    vector<char*> argv;
     for(string& s : args) argv.push_back(&s[0]);
     argv.push_back(nullptr);
 
@@ -67,34 +126,93 @@ int exec(const string& cmd){
     if(pid == -1) return -1;
 
     if(pid == 0){
-        // Child process
         execvp(argv[0], argv.data());
-        _exit(127); // exec failed
+        _exit(127);
     }
 
-    // Parent process
     int status;
     if(waitpid(pid, &status, 0) == -1) return -1;
 
     if(WIFEXITED(status)) return WEXITSTATUS(status);
     return -1;
+#endif
 }
 
 // Executes multiple commands in parallel, limited by the number of CPU cores.
-// Returns a vector of exit statuses, one per command (in the same order).
-// A status of -1 means the command could not be executed.
 static vector<int> execParallel(const vector<string>& commands){
     vector<int> statuses(commands.size(), -1);
     if(commands.empty()) return statuses;
 
     unsigned int maxConcurrent = std::max(1u, std::thread::hardware_concurrency());
 
+#ifdef _WIN32
+    size_t next = 0;
+    vector<HANDLE> hProcesses;
+    vector<size_t> indices;
+
+    while(next < commands.size() || !hProcesses.empty()){
+        // Launch new children while under concurrency limit
+        while(next < commands.size() && hProcesses.size() < maxConcurrent){
+            vector<string> args = splitCommand(commands[next]);
+            if(args.empty()){
+                statuses[next] = -1;
+                ++next;
+                continue;
+            }
+
+            string cmdLine = buildCommandLine(args);
+            vector<char> writableCmd(cmdLine.begin(), cmdLine.end());
+            writableCmd.push_back('\0');
+
+            STARTUPINFOA si;
+            PROCESS_INFORMATION pi;
+            ZeroMemory(&si, sizeof(si));
+            si.cb = sizeof(si);
+            ZeroMemory(&pi, sizeof(pi));
+
+            if (!CreateProcessA(nullptr, writableCmd.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+                statuses[next] = -1;
+                ++next;
+                continue;
+            }
+
+            CloseHandle(pi.hThread); // We only need to wait on the process handle
+            hProcesses.push_back(pi.hProcess);
+            indices.push_back(next);
+            ++next;
+        }
+
+        if(hProcesses.empty()) break;
+
+        // Wait for any of the processes to finish
+        DWORD waitResult = WaitForMultipleObjects(
+            static_cast<DWORD>(hProcesses.size()),
+            hProcesses.data(),
+            FALSE,          // Wait for ANY
+            INFINITE
+        );
+
+        if(waitResult >= WAIT_OBJECT_0 && waitResult < WAIT_OBJECT_0 + hProcesses.size()){
+            size_t index = waitResult - WAIT_OBJECT_0;
+            HANDLE hProc = hProcesses[index];
+
+            DWORD exitCode = -1;
+            GetExitCodeProcess(hProc, &exitCode);
+            statuses[indices[index]] = static_cast<int>(exitCode);
+
+            CloseHandle(hProc);
+            hProcesses.erase(hProcesses.begin() + index);
+            indices.erase(indices.begin() + index);
+        } else {
+            break; // Handle wait errors
+        }
+    }
+#else
     size_t next = 0;
     vector<pid_t> pids;
     vector<size_t> indices;
 
     while(next < commands.size() || !pids.empty()){
-        // Launch new children while under the concurrency limit
         while(next < commands.size() && pids.size() < maxConcurrent){
             vector<string> args = splitCommand(commands[next]);
             if(args.empty()){
@@ -124,16 +242,13 @@ static vector<int> execParallel(const vector<string>& commands){
             ++next;
         }
 
-        // Wait for one child to finish
         int status;
         pid_t done = waitpid(-1, &status, 0);
         if(done == -1){
-            // No children left or error
             if(pids.empty()) break;
             continue;
         }
 
-        // Find which command this pid corresponds to
         for(size_t i = 0; i < pids.size(); ++i){
             if(pids[i] == done){
                 if(WIFEXITED(status)) statuses[indices[i]] = WEXITSTATUS(status);
@@ -144,6 +259,7 @@ static vector<int> execParallel(const vector<string>& commands){
             }
         }
     }
+#endif
 
     return statuses;
 }
