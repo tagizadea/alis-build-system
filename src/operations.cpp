@@ -41,36 +41,28 @@ static vector<string> splitCommand(const string& cmd){
     bool inQuotes = false;
 
     for(char c : cmd){
-        if(c == '"'){
-            inQuotes = !inQuotes;
-        }
+        if(c == '"') inQuotes = !inQuotes;
         else if(c == ' ' && !inQuotes){
             if(!current.empty()){
                 args.push_back(current);
                 current.clear();
             }
         }
-        else{
-            current += c;
-        }
+        else current += c;
     }
     if(!current.empty()) args.push_back(current);
-
     return args;
 }
 
 #ifdef _WIN32
 // Helper to build a command line string for CreateProcess from arguments
-static string buildCommandLine(const vector<string>& args) {
+static string buildCommandLine(const vector<string>& args){
     string cmdLine;
-    for (size_t i = 0; i < args.size(); ++i) {
-        if (i > 0) cmdLine += " ";
+    for(size_t i = 0; i < args.size(); ++i){
+        if(i > 0) cmdLine += " ";
         // Simple quoting if spaces are present
-        if (args[i].find(' ') != string::npos) {
-            cmdLine += "\"" + args[i] + "\"";
-        } else {
-            cmdLine += args[i];
-        }
+        if(args[i].find(' ') != string::npos) cmdLine += "\"" + args[i] + "\"";
+        else cmdLine += args[i];
     }
     return cmdLine;
 }
@@ -92,7 +84,7 @@ int exec(const string& cmd){
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    if (!CreateProcessA(
+    if(!CreateProcessA(
         nullptr,             // Application name (use search path)
         writableCmd.data(),  // Command line
         nullptr,             // Process handle not inheritable
@@ -103,7 +95,7 @@ int exec(const string& cmd){
         nullptr,             // Use parent's starting directory 
         &si,                 // Pointer to STARTUPINFO structure
         &pi                  // Pointer to PROCESS_INFORMATION structure
-    )) {
+    )){
         return -1;
     }
 
@@ -1117,6 +1109,7 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
                     cout << "Compile Error: Failed to compile " << cmd_src_paths[i] << " (status: " << statuses[i] << ")";
                     exit(0); // !!! debug systemi ile deyis
                 }
+                else cout << "Compile Success: " << cmd_src_paths[i] << " (status: " << statuses[i] << ")\n";
 
                 // Update object cache
                 Manager::ObjectCacheEntry obj_entry;
@@ -1172,6 +1165,7 @@ Value* n_funs::link(vector<Value*> args, Env* env){
         cout << "Link Error: Failed to link " << executable << " (status: " << status << ")";
         exit(0); // !!! debug systemi ile deyis
     }
+    else cout << "Link Success: " << executable << " (status: " << status << ")\n";
 
     return Make_String(executable);
 }
