@@ -55,9 +55,9 @@ map <TokenType, string> rKeywords;
 
 Lexer::Lexer(string source) : source(source), position(0) {}
 
-std::vector<Token> Lexer::tokenize(){
+vector<Token> Lexer::tokenize(){
     ABS_PROFILE_FUNC();
-    std::vector<Token> tokens;
+    vector<Token> tokens;
     tokens.reserve(1024);
 
     while(source[position] != '\0'){

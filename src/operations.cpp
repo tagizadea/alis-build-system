@@ -18,7 +18,7 @@ using namespace std;
 #include <dlfcn.h>
 #endif
 
-vector <std::shared_ptr<NativeFuncVal>> ListVecNFuncs;
+vector <shared_ptr<NativeFuncVal>> ListVecNFuncs;
 
 vector<string> getSystemFiles(vector<string> &files){
     vector <string> temp;
@@ -138,7 +138,7 @@ static vector<int> execParallel(const vector<string>& commands){
     vector<int> statuses(commands.size(), -1);
     if(commands.empty()) return statuses;
 
-    unsigned int maxConcurrent = std::max(1u, std::thread::hardware_concurrency());
+    unsigned int maxConcurrent = max(1u, thread::hardware_concurrency());
 
 #ifdef _WIN32
     size_t next = 0;
@@ -453,7 +453,7 @@ void print_stmt(Stmt* stmt, int tab){
 
 
 // Printing Evaluation
-void print_eval(std::shared_ptr<Value> eval, int tab){
+void print_eval(shared_ptr<Value> eval, int tab){
     string tab_s = "";
     for(int i = 0; i < tab; ++i) tab_s += "    ";
     if(eval == nullptr){
@@ -524,7 +524,7 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-std::shared_ptr<Value> n_funs::vector_size(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::vector_size(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
         return env->lookUpVar("Null");
     }
@@ -532,7 +532,7 @@ std::shared_ptr<Value> n_funs::vector_size(vector<std::shared_ptr<Value>> args, 
     return Make_Number(l->v.size());
 }
 
-std::shared_ptr<Value> n_funs::vector_push(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::vector_push(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() < 2){
         return env->lookUpVar("Null");
     }
@@ -553,7 +553,7 @@ std::shared_ptr<Value> n_funs::vector_push(vector<std::shared_ptr<Value>> args, 
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::vector_pop(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::vector_pop(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
     ListValue* l = (ListValue*)args[0].get();
@@ -571,15 +571,15 @@ std::shared_ptr<Value> n_funs::vector_pop(vector<std::shared_ptr<Value>> args, E
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::vector_sort(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::vector_sort(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
     ListValue* l = (ListValue*)args[0].get();
 
     if(l->consist_of == ValueType::Number)
-        std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_Number);
+        sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_Number);
     else if(l->consist_of == ValueType::String)
-        std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_String);
+        sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_String);
     else{
         ABS_WARNING(cat::Operations, "ops.list_multi_type");
     }
@@ -587,7 +587,7 @@ std::shared_ptr<Value> n_funs::vector_sort(vector<std::shared_ptr<Value>> args, 
 }
 
 // Recursive helper: prints a single value to the stream.
-static void printValue(const std::shared_ptr<Value>& v, std::ostream& os){
+static void printValue(const shared_ptr<Value>& v, ostream& os){
     if(v == nullptr){
         os << "Null";
         return;
@@ -640,18 +640,15 @@ static void printValue(const std::shared_ptr<Value>& v, std::ostream& os){
     }
 }
 
-std::shared_ptr<Value> n_funs::print(vector<std::shared_ptr<Value>> args, Env* env){
-    for(size_t i = 0; i < args.size(); ++i){
-        if(i > 0) std::cout << ' ';
-        printValue(args[i], std::cout);
-    }
+shared_ptr<Value> n_funs::print(vector<shared_ptr<Value>> args, Env* env){
+    for(const auto& arg : args) printValue(arg, cout);
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::timeNow(vector<std::shared_ptr<Value>> args, Env* env){
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-    std::tm* local_time = std::localtime(&now_c);
+shared_ptr<Value> n_funs::timeNow(vector<shared_ptr<Value>> args, Env* env){
+    auto now = chrono::system_clock::now();
+    time_t now_c = chrono::system_clock::to_time_t(now);
+    tm* local_time = localtime(&now_c);
 
     // Extract hour and minute
     int hour = local_time->tm_hour;
@@ -659,7 +656,7 @@ std::shared_ptr<Value> n_funs::timeNow(vector<std::shared_ptr<Value>> args, Env*
     return Make_Number(hour * 60 + minute);
 }
 
-std::shared_ptr<Value> n_funs::floor(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::floor(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::Number){
         ABS_FATAL(cat::Operations, "ops.floor_wrong_args");
     }
@@ -668,14 +665,14 @@ std::shared_ptr<Value> n_funs::floor(vector<std::shared_ptr<Value>> args, Env* e
     return Make_Number(res);
 }
 
-std::shared_ptr<Value> n_funs::max(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::max(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() == 1 && args[0]->getType() == ValueType::List){
         ListValue* l = (ListValue*)args[0].get();
         if(l->distinc_types != 1){
             ABS_FATAL(cat::Operations, "ops.max_multi_type");
         }
         if(l->consist_of == ValueType::Bool){
-            std::shared_ptr<Value> mx = l->v[0];
+            shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((BoolValue*)l->v[i].get())->val > ((BoolValue*)mx.get())->val) mx = l->v[i];
             }
@@ -687,21 +684,21 @@ std::shared_ptr<Value> n_funs::max(vector<std::shared_ptr<Value>> args, Env* env
             ABS_FATAL(cat::Operations, "ops.max_not_comparable");
         }
         else if(l->consist_of == ValueType::List){
-            std::shared_ptr<Value> mx = l->v[0];
+            shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((ListValue*)l->v[i].get())->v.size() > ((ListValue*)mx.get())->v.size()) mx = l->v[i];
             }
             return mx;
         }
         else if(l->consist_of == ValueType::Number){
-            std::shared_ptr<Value> mx = l->v[0];
+            shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((NumberVal*)l->v[i].get())->val > ((NumberVal*)mx.get())->val) mx = l->v[i];
             }
             return mx;
         }
         else if(l->consist_of == ValueType::String){
-            std::shared_ptr<Value> mx = l->v[0];
+            shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((StringVal*)l->v[i].get())->val > ((StringVal*)mx.get())->val) mx = l->v[i];
             }
@@ -714,14 +711,14 @@ std::shared_ptr<Value> n_funs::max(vector<std::shared_ptr<Value>> args, Env* env
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::min(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::min(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() == 1 && args[0]->getType() == ValueType::List){
         ListValue* l = (ListValue*)args[0].get();
         if(l->distinc_types != 1){
             ABS_FATAL(cat::Operations, "ops.min_multi_type");
         }
         if(l->consist_of == ValueType::Bool){
-            std::shared_ptr<Value> mn = l->v[0];
+            shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((BoolValue*)l->v[i].get())->val < ((BoolValue*)mn.get())->val) mn = l->v[i];
             }
@@ -733,21 +730,21 @@ std::shared_ptr<Value> n_funs::min(vector<std::shared_ptr<Value>> args, Env* env
             ABS_FATAL(cat::Operations, "ops.min_not_comparable");
         }
         else if(l->consist_of == ValueType::List){
-            std::shared_ptr<Value> mn = l->v[0];
+            shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((ListValue*)l->v[i].get())->v.size() < ((ListValue*)mn.get())->v.size()) mn = l->v[i];
             }
             return mn;
         }
         else if(l->consist_of == ValueType::Number){
-            std::shared_ptr<Value> mn = l->v[0];
+            shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((NumberVal*)l->v[i].get())->val < ((NumberVal*)mn.get())->val) mn = l->v[i];
             }
             return mn;
         }
         else if(l->consist_of == ValueType::String){
-            std::shared_ptr<Value> mn = l->v[0];
+            shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
                 if(((StringVal*)l->v[i].get())->val < ((StringVal*)mn.get())->val) mn = l->v[i];
             }
@@ -760,19 +757,19 @@ std::shared_ptr<Value> n_funs::min(vector<std::shared_ptr<Value>> args, Env* env
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::system(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::system(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::String){
         ABS_FATAL(cat::Operations, "ops.system_wrong_args");
     }
     
     StringVal* temp = (StringVal*)args[0].get();
-    std::system(temp->val.c_str());
+    ::system(temp->val.c_str());
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::Ntrack(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::Ntrack(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("track()");
-    auto l = std::make_shared<ListValue>();
+    auto l = make_shared<ListValue>();
     vector <string> src, headers, DirtyHeaderNames,reversed_files;
     map <string, vector <string>> reverse_graph;
 
@@ -830,7 +827,7 @@ std::shared_ptr<Value> n_funs::Ntrack(vector<std::shared_ptr<Value>> args, Env* 
     return l;
 }
 
-std::shared_ptr<Value> n_funs::Ndefine(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::Ndefine(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() < 1 && args.size() > 2){
         ABS_FATAL(cat::Operations, "ops.define_wrong_args");
     }
@@ -851,12 +848,12 @@ std::shared_ptr<Value> n_funs::Ndefine(vector<std::shared_ptr<Value>> args, Env*
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::Type(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::Type(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
         ABS_FATAL(cat::Operations, "ops.type_wrong_args");
     }
 
-    auto ans = std::make_shared<StringVal>();
+    auto ans = make_shared<StringVal>();
 
     switch(args[0]->getType()){
     case ValueType::Bool :
@@ -892,12 +889,12 @@ std::shared_ptr<Value> n_funs::Type(vector<std::shared_ptr<Value>> args, Env* en
     return ans;
 }
 
-std::shared_ptr<Value> n_funs::ston(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::ston(vector<shared_ptr<Value>> args, Env* env){
     if(args.empty()){
         ABS_FATAL(cat::Operations, "ops.ston_empty");
     }
 
-    auto ans = std::make_shared<ListValue>();
+    auto ans = make_shared<ListValue>();
 
     for(const auto& i : args){
         if(i->getType() == ValueType::String){
@@ -911,7 +908,7 @@ std::shared_ptr<Value> n_funs::ston(vector<std::shared_ptr<Value>> args, Env* en
             try{
                 n = stold(temp->val);
             }
-            catch(const std::exception& e){
+            catch(const exception& e){
                 ABS_WARNING(cat::Operations, "ops.ston_convert_fail", temp->val);
                 continue;
             }
@@ -926,12 +923,12 @@ std::shared_ptr<Value> n_funs::ston(vector<std::shared_ptr<Value>> args, Env* en
     return ans;
 }
 
-std::shared_ptr<Value> n_funs::ntos(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::ntos(vector<shared_ptr<Value>> args, Env* env){
     if(args.empty()){
         ABS_FATAL(cat::Operations, "ops.ntos_empty");
     }
 
-    auto ans = std::make_shared<ListValue>();
+    auto ans = make_shared<ListValue>();
 
     for(const auto& i : args){
         if(i->getType() == ValueType::Number){
@@ -942,7 +939,7 @@ std::shared_ptr<Value> n_funs::ntos(vector<std::shared_ptr<Value>> args, Env* en
                 if((long long)temp->val == temp->val) n = to_string((long long)temp->val);
                 else n = to_string(temp->val);
             }
-            catch(const std::exception& e){
+            catch(const exception& e){
                 ABS_WARNING(cat::Operations, "ops.ntos_convert_fail", temp->val);
                 continue;
             }
@@ -957,7 +954,7 @@ std::shared_ptr<Value> n_funs::ntos(vector<std::shared_ptr<Value>> args, Env* en
     return ans;
 }
 
-std::shared_ptr<Value> n_funs::compile(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("compile()");
     vector <ObjectValue*> temp_Argument;
 
@@ -990,7 +987,7 @@ std::shared_ptr<Value> n_funs::compile(vector<std::shared_ptr<Value>> args, Env*
     }
 
     auto& manager = Manager::getInstance();
-    auto result = std::make_shared<ListValue>();
+    auto result = make_shared<ListValue>();
 
     for(const auto& config : temp_Argument){
         // Validate property types
@@ -1111,7 +1108,7 @@ std::shared_ptr<Value> n_funs::compile(vector<std::shared_ptr<Value>> args, Env*
     return result;
 }
 
-std::shared_ptr<Value> n_funs::link(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::link(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("link()");
     if(args.size() != 3){
         ABS_FATAL(cat::Operations, "ops.link_wrong_args");
@@ -1147,7 +1144,7 @@ std::shared_ptr<Value> n_funs::link(vector<std::shared_ptr<Value>> args, Env* en
     return Make_String(executable);
 }
 
-std::shared_ptr<Value> n_funs::run(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::run(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
         ABS_FATAL(cat::Operations, "ops.run_too_many");
     }
@@ -1155,12 +1152,12 @@ std::shared_ptr<Value> n_funs::run(vector<std::shared_ptr<Value>> args, Env* env
         ABS_FATAL(cat::Operations, "ops.run_not_string");
     }
     
-    std::string scriptPath = static_cast<StringVal*>(args[0].get())->val;
+    string scriptPath = static_cast<StringVal*>(args[0].get())->val;
     debug::Debugger::getInstance().setScriptContext(scriptPath);
 
     // Create an isolated environment for the sub-script.
     // Parent = caller's env so natives (print, compile, link, ...) are accessible.
-    auto scriptEnv = std::make_unique<Env>();
+    auto scriptEnv = make_unique<Env>();
     scriptEnv->parent = env;
     InitNatives(scriptEnv.get());
 
@@ -1169,15 +1166,15 @@ std::shared_ptr<Value> n_funs::run(vector<std::shared_ptr<Value>> args, Env* env
     file.close();
     content += '\n';
     Lexer lexer(content.c_str());
-    std::vector<Token> tokens = lexer.tokenize();
+    vector<Token> tokens = lexer.tokenize();
 
     Parser parser(tokens);
-    std::unique_ptr<Program> program = parser.produceAST();
+    unique_ptr<Program> program = parser.produceAST();
 
     evaluate(program.get(), scriptEnv.get());
 
     // Build the return ObjectValue: a snapshot of the sub-script's variables.
-    auto result = std::make_shared<ObjectValue>();
+    auto result = make_shared<ObjectValue>();
     for(auto& [name, val] : scriptEnv->variables){
         result->properties[name] = val;
     }
@@ -1189,11 +1186,11 @@ std::shared_ptr<Value> n_funs::run(vector<std::shared_ptr<Value>> args, Env* env
     return result;
 }
 
-std::shared_ptr<Value> n_funs::scan(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::scan(vector<shared_ptr<Value>> args, Env* env){
     return nullptr;
 }
 
-std::shared_ptr<Value> n_funs::set_include(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::set_include(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
         ABS_FATAL(cat::Operations, "ops.set_include_not_string");
     }
@@ -1208,7 +1205,7 @@ std::shared_ptr<Value> n_funs::set_include(vector<std::shared_ptr<Value>> args, 
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::set_lang(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::set_lang(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1 || args[0]->getType() != ValueType::String){
         ABS_ERROR(cat::DSL, "debug.unknown_lang", "set_lang() requires a single string argument");
         return env->lookUpVar("Null");
@@ -1219,14 +1216,14 @@ std::shared_ptr<Value> n_funs::set_lang(vector<std::shared_ptr<Value>> args, Env
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::debug_level(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::debug_level(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1 || args[0]->getType() != ValueType::String){
         ABS_ERROR(cat::DSL, "debug.invalid_level", "debug_level() requires a single string argument");
         return env->lookUpVar("Null");
     }
     string levelStr = static_cast<StringVal*>(args[0].get())->val;
     // Uppercase the string for comparison
-    for(auto& c : levelStr) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    for(auto& c : levelStr) c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
     debug::Level lvl;
     if(levelStr == "TRACE")   lvl = debug::Level::Trace;
     else if(levelStr == "DEBUG")   lvl = debug::Level::Debug;
@@ -1242,15 +1239,15 @@ std::shared_ptr<Value> n_funs::debug_level(vector<std::shared_ptr<Value>> args, 
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::debug_log(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::debug_log(vector<shared_ptr<Value>> args, Env* env){
     // This is a passthrough that lets .abs scripts print debug messages
     // with proper formatting. Usage: debug_log("message")
-    std::string msg;
+    string msg;
     for(size_t i = 0; i < args.size(); ++i){
         if(i > 0) msg += " ";
         const auto& v = args[i];
         switch(v->getType()){
-            case ValueType::Number: msg += std::to_string(static_cast<NumberVal*>(v.get())->val); break;
+            case ValueType::Number: msg += to_string(static_cast<NumberVal*>(v.get())->val); break;
             case ValueType::String: msg += static_cast<StringVal*>(v.get())->val; break;
             case ValueType::Bool:   msg += static_cast<BoolValue*>(v.get())->val ? "true" : "false"; break;
             case ValueType::Null:   msg += "Null"; break;
@@ -1261,7 +1258,7 @@ std::shared_ptr<Value> n_funs::debug_log(vector<std::shared_ptr<Value>> args, En
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::glob(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::glob(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 2) ABS_FATAL(cat::Operations, "ops.glob_wrong_args");
     if(args[0]->getType() != ValueType::String || args[1]->getType() != ValueType::String){
         ABS_FATAL(cat::Operations, "ops.glob_not_string");
@@ -1298,7 +1295,7 @@ std::shared_ptr<Value> n_funs::glob(vector<std::shared_ptr<Value>> args, Env* en
     return result;
 }
 
-std::shared_ptr<Value> n_funs::load_plugin(vector<std::shared_ptr<Value>> args, Env* env){
+shared_ptr<Value> n_funs::load_plugin(vector<shared_ptr<Value>> args, Env* env){
     if(args.size() != 1) ABS_FATAL(cat::Operations, "ops.plugin_wrong_args");
     if(args[0]->getType() != ValueType::String) ABS_FATAL(cat::Operations, "ops.plugin_not_string");
 
@@ -1348,10 +1345,10 @@ std::shared_ptr<Value> n_funs::load_plugin(vector<std::shared_ptr<Value>> args, 
 
 /* SORT COMPARATORS FOR DEFAULT TYPES*/
 
-bool sort_comps::cmp_less_Number(std::shared_ptr<Value> a, std::shared_ptr<Value> b){
+bool sort_comps::cmp_less_Number(shared_ptr<Value> a, shared_ptr<Value> b){
     return ((NumberVal*)a.get())->val < ((NumberVal*)b.get())->val;
 }
 
-bool sort_comps::cmp_less_String(std::shared_ptr<Value> a, std::shared_ptr<Value> b){
+bool sort_comps::cmp_less_String(shared_ptr<Value> a, shared_ptr<Value> b){
     return ((StringVal*)a.get())->val < ((StringVal*)b.get())->val;
 }

@@ -292,7 +292,7 @@ vector<string> Manager::scan_headers(const string& ChangedFile){
 bool IsSourceFile(const string& name){
     string ext = fs::path(name).extension().string();
     // Normalize to lowercase for case-insensitive comparison.
-    for(char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    for(char& c : ext) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
     return ext == ".c" || ext == ".cc" || ext == ".cpp" || ext == ".cxx" || ext == ".c++";
 }
 

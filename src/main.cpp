@@ -19,7 +19,7 @@ vector <string> files;
 int main(int argc, char* argv[]){
     
 #if defined(ABS_PROFILE) && ABS_PROFILE
-    std::atexit([](){ debug::Debugger::getInstance().dumpProfile(); });
+    atexit([](){ debug::Debugger::getInstance().dumpProfile(); });
 #endif
 
     cout << "Ali's Build System ALPHA!\n";
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
     file.close();
     content += '\n';
     Lexer lexer(content.c_str());
-    std::vector<Token> tokens = lexer.tokenize();
+    vector<Token> tokens = lexer.tokenize();
 
     // Printing Lexer for debug
     // cout << "Lexer:\n";
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
     // cout << '\n';
     
     Parser parser(tokens);
-    std::unique_ptr<Program> program = parser.produceAST();
+    unique_ptr<Program> program = parser.produceAST();
 
     // Printing AST for debug
     // cout << "AST:\n";
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
     // Printing Evalutation for debug
     Env* env = new Env;
     InitNatives(env);
-    std::shared_ptr<Value> eval = evaluate(program.get(), env);
+    shared_ptr<Value> eval = evaluate(program.get(), env);
     //cout << "\nEVALUATION:\n";
     //print_eval(eval, 0);
 

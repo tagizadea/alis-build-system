@@ -3,7 +3,7 @@ using namespace std;
 #include <operations.hpp>
 #include <debug.hpp>
 
-std::shared_ptr<Value> Env::declareVar(string name, std::shared_ptr<Value> val, bool isConst){
+shared_ptr<Value> Env::declareVar(string name, shared_ptr<Value> val, bool isConst){
     if(variables.find(name) != variables.end()){
         ABS_FATAL(cat::Env, "env.declare_duplicate", name);
     }
@@ -14,7 +14,7 @@ std::shared_ptr<Value> Env::declareVar(string name, std::shared_ptr<Value> val, 
     return val;
 }
 
-std::shared_ptr<Value> Env::assignVar(string name, std::shared_ptr<Value> val){
+shared_ptr<Value> Env::assignVar(string name, shared_ptr<Value> val){
     Env* en = this->resolve(name);
     if(en->constants.find(name) != en->constants.end()){
         ABS_FATAL(cat::Env, "env.assign_const", name);
@@ -33,35 +33,35 @@ Env* Env::resolve(string name){
     return this->parent->resolve(name);
 }
 
-std::shared_ptr<Value> Env::lookUpVar(string name){
+shared_ptr<Value> Env::lookUpVar(string name){
     Env* en = this->resolve(name);
     return en->variables[name];
 }
 
-std::shared_ptr<NumberVal> Make_Number(long double val){
-    auto num = std::make_shared<NumberVal>();
+shared_ptr<NumberVal> Make_Number(long double val){
+    auto num = make_shared<NumberVal>();
     num->val = val;
     return num;
 }
 
-std::shared_ptr<StringVal> Make_String(std::string val){
-    auto st = std::make_shared<StringVal>();
+shared_ptr<StringVal> Make_String(string val){
+    auto st = make_shared<StringVal>();
     st->val = val;
     return st;
 }
 
-std::shared_ptr<BoolValue> Make_Bool(bool b){
-    auto val = std::make_shared<BoolValue>();
+shared_ptr<BoolValue> Make_Bool(bool b){
+    auto val = make_shared<BoolValue>();
     val->val = b;
     return val;
 }
 
-std::shared_ptr<NullVal> Make_Null(){
-    return std::make_shared<NullVal>();
+shared_ptr<NullVal> Make_Null(){
+    return make_shared<NullVal>();
 }
 
-std::shared_ptr<NativeFuncVal> Make_NFunc(FunctionCall call){
-    auto fun = std::make_shared<NativeFuncVal>();
+shared_ptr<NativeFuncVal> Make_NFunc(FunctionCall call){
+    auto fun = make_shared<NativeFuncVal>();
     fun->call = call;
     return fun;
 }
@@ -85,7 +85,7 @@ void InitNatives(Env* env){
 
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
-    env->declareVar("ZERO", std::make_shared<NumberVal>(), true);
+    env->declareVar("ZERO", make_shared<NumberVal>(), true);
 
     // Bools
     env->declareVar("true", Make_Bool(true), true);
