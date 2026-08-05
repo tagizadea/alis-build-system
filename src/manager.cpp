@@ -9,6 +9,7 @@ void Manager::init_manager(){
     auto& manager = Manager::getInstance();
 
     if(!fs::is_directory(".abs")) fs::create_directory(".abs");
+    if(!fs::is_directory(".abs/plugins")) fs::create_directory(".abs/plugins");
 
     readCache<DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, DependencyCache);
     readCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, FileCache);
@@ -24,7 +25,7 @@ void Manager::init_manager(){
     if(!about.is_open()){
         ABS_FATAL(cat::Manager, "manager.about_open_fail");
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 0.10.0";
+    about << "Ali's Build System for C/C++.\nVersion number: 1.0.0-beta";
     about.close();
 
     manager.include_paths.push_back("./");

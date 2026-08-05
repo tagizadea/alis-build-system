@@ -468,6 +468,16 @@ Debugger::Debugger() : impl_(new Impl){
     registerMessage("ops.glob_wrong_args",        Lang::AZ, "glob() 2 arqument gözləyir (qovluq, genişlənmə)");
     registerMessage("ops.glob_not_string",        Lang::EN, "glob() arguments must be strings");
     registerMessage("ops.glob_not_string",        Lang::AZ, "glob() arqumentləri sətir olmalıdır");
+    registerMessage("ops.plugin_wrong_args",      Lang::EN, "load_plugin() expects a single argument (plugin name)");
+    registerMessage("ops.plugin_wrong_args",      Lang::AZ, "load_plugin() bir arqument gözləyir (plagin adı)");
+    registerMessage("ops.plugin_not_string",      Lang::EN, "load_plugin() argument must be a string");
+    registerMessage("ops.plugin_not_string",      Lang::AZ, "load_plugin() arqumenti sətir olmalıdır");
+    registerMessage("ops.plugin_not_found",       Lang::EN, "Plugin not found: {0}");
+    registerMessage("ops.plugin_not_found",       Lang::AZ, "Plagin tapılmadı: {0}");
+    registerMessage("ops.plugin_load_fail",       Lang::EN, "Failed to load plugin: {0}");
+    registerMessage("ops.plugin_load_fail",       Lang::AZ, "Plagin yüklənə bilmədi: {0}");
+    registerMessage("ops.plugin_no_init",         Lang::EN, "Plugin \"{0}\" does not export abs_plugin_init");
+    registerMessage("ops.plugin_no_init",         Lang::AZ, "\"{0}\" plagini abs_plugin_init funksiyasını ixrac etmir");
 
     // ---- Manager ----
     registerMessage("manager.cache_open_fail",   Lang::EN, "Could not open cache file \"{0}\"");

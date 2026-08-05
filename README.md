@@ -2,7 +2,7 @@
 
 A custom build system for C/C++ projects with its own scripting language (`.abs`). ABS lets you define your build workflow as a script — track source files, detect changes, compile in parallel, and link — all from a single declarative script.
 
-> **Status:** Under development (v0.10.0)
+> **Status:** v1.0.0-beta — all core features implemented
 
 ---
 
@@ -16,6 +16,8 @@ ABS is a build system that:
 - **Compiles in parallel** — uses all available CPU cores
 - **Caches results** — unchanged files are not recompiled
 - **Links** object files into an executable
+- **Extends via plugins** — compiled shared libraries that register native functions
+- **Debugs itself** — multi-language error reporting with script file/line/column context
 
 The build workflow is written in **ABS**, a small scripting language with variables, functions, conditionals, loops, lists, and objects.
 
@@ -28,6 +30,14 @@ make
 ```
 
 This compiles the ABS interpreter and runs it with `main.abs` (the default build script).
+
+### Build Options
+
+```bash
+make ABS_LANG=AZ        # Azerbaijani debug messages (default: EN)
+make ABS_PROFILE=1      # Enable performance profiling
+make ABS_32BIT=1        # Force 32-bit mode (auto-detected on 32-bit platforms)
+```
 
 ---
 
@@ -147,6 +157,9 @@ print(config.compiler_path);
 | `track(...)` | Register source files, detect changes, return dirty files |
 | `compile(config)` | Compile sources to object files (parallel, cached) |
 | `link(objects, name, compiler)` | Link object files into an executable |
+| `glob(dir, ext)` | Find all files with a given extension in a directory |
+| `load_plugin(name)` | Load a compiled plugin from `.abs/plugins/` |
+| `run(script)` | Run another ABS script, returns its environment as an object |
 | `set_include(path)` | Add an include search path |
 | `define(name, value?)` | Define a preprocessor macro |
 | `print(...)` | Print values |
@@ -157,7 +170,77 @@ print(config.compiler_path);
 | `max(list)` / `min(list)` | Max/min of a list |
 | `system(cmd)` | Run a shell command |
 | `timeNow()` | Current time (minutes since midnight) |
-| `run(script)` | Run another ABS script |
+| `set_lang("EN"/"AZ")` | Change debug message language at runtime |
+| `debug_level("INFO")` | Set debug output severity threshold |
+| `debug_log(msg)` | Log a message through the debug system |
+
+---
+
+## Plugin System
+
+ABS supports compiled plugins — shared libraries that register native functions into the ABS environment.
+
+### Plugin Format
+
+A plugin is a shared library (`.so`/`.dylib`/`.dll`) that exports one function:
+
+```c
+// myplugin.cpp
+#include "env.hpp"
+#include "valtypes.hpp"
+#include "operations.hpp"
+
+std::shared_ptr<Value> my_function(std::vector<std::shared_ptr<Value>> args, Env* env){
+    return Make_String("Hello from plugin!");
+}
+
+extern "C" void abs_plugin_init(Env* env){
+    FunctionCall call;
+    call.funAddr = my_function;
+    env->declareVar("my_function", Make_NFunc(call), true);
+    env->declareVar("my_var", Make_String("value"), true);
+}
+```
+
+### Compiling a Plugin
+
+```bash
+# macOS
+g++-15 -shared -fPIC myplugin.cpp -o .abs/plugins/myplugin.so -I./include -std=c++20 -undefined dynamic_lookup
+
+# Linux
+g++ -shared -fPIC myplugin.cpp -o .abs/plugins/myplugin.so -I./include -std=c++20
+
+# Windows
+cl /LD myplugin.cpp /Fe:.abs/plugins/myplugin.dll /I./include
+```
+
+### Using a Plugin
+
+```abs
+load_plugin("myplugin")
+print(my_var, endl)        # "value"
+print(my_function(), endl) # "Hello from plugin!"
+```
+
+Plugins are placed in `.abs/plugins/` (created automatically on first run).
+
+---
+
+## Debug System
+
+ABS has a built-in multi-language debug system:
+
+- **Severity levels:** TRACE, DEBUG, INFO, WARNING, ERROR, FATAL
+- **Categories:** LEXER, PARSER, EVAL, ENV, MANAGER, OPS, MEMORY, PERF, DSL
+- **Languages:** English (default) and Azerbaijani, selectable at compile time (`make ABS_LANG=AZ`) or runtime (`set_lang("AZ")`)
+- **Script context:** errors show the `.abs` file path and line:column where the problem occurred
+- **Profiling:** opt-in via `make ABS_PROFILE=1`, shows per-function timing at exit
+
+Example error output:
+```
+[FATAL][ENV] src/env.cpp:29 (resolve) | ./main.abs:26:11 | Variable "src" does not exist [env.resolve_not_found]
+```
 
 ---
 
@@ -170,9 +253,16 @@ ABS stores its state in the `.abs/` directory:
 | `.abs/files.cache` | File metadata (content hash, mtime, size) |
 | `.abs/dependencies.cache` | Include dependency graph |
 | `.abs/objects.cache` | Object file build hashes |
+| `.abs/plugins/` | Compiled plugin libraries |
 
 If you change the build system itself or suspect stale cache, delete the `.abs/` directory to start fresh:
 
 ```bash
 rm -rf .abs
 ```
+
+---
+
+## Portability
+
+ABS targets 32-bit and 64-bit systems with C++20 support. The `ABS_32BIT` define (auto-detected) switches to 32-bit-safe cache serialization and `double` instead of `long double`. POSIX and Windows are first-class platforms; other platforms can be ported by the community.

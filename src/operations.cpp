@@ -15,6 +15,7 @@ using namespace std;
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <dlfcn.h>
 #endif
 
 vector <std::shared_ptr<NativeFuncVal>> ListVecNFuncs;
@@ -1295,6 +1296,54 @@ std::shared_ptr<Value> n_funs::glob(vector<std::shared_ptr<Value>> args, Env* en
     result->mapTypeCounter[(int)ValueType::String] = result->v.size();
 
     return result;
+}
+
+std::shared_ptr<Value> n_funs::load_plugin(vector<std::shared_ptr<Value>> args, Env* env){
+    if(args.size() != 1) ABS_FATAL(cat::Operations, "ops.plugin_wrong_args");
+    if(args[0]->getType() != ValueType::String) ABS_FATAL(cat::Operations, "ops.plugin_not_string");
+
+    string pluginName = static_cast<StringVal*>(args[0].get())->val;
+
+    // Resolve plugin path: .abs/plugins/<name><ext>
+    // On macOS, try .dylib first, then .so (since -shared produces .so too).
+    string pluginPath = ".abs/plugins/" + pluginName;
+#ifdef _WIN32
+    pluginPath += ".dll";
+#elif defined(__APPLE__)
+    pluginPath += ".dylib";
+    if(!fs::exists(pluginPath)) pluginPath = ".abs/plugins/" + pluginName + ".so";
+#else
+    pluginPath += ".so";
+#endif
+
+    if(!fs::exists(pluginPath)) ABS_FATAL(cat::Operations, "ops.plugin_not_found", pluginPath);
+
+    // Plugin init function signature: void abs_plugin_init(Env*)
+    using InitFunc = void(*)(Env*);
+
+#ifdef _WIN32
+    HMODULE handle = LoadLibraryA(pluginPath.c_str());
+    if(!handle) ABS_FATAL(cat::Operations, "ops.plugin_load_fail", pluginPath);
+    InitFunc init = reinterpret_cast<InitFunc>(GetProcAddress(handle, "abs_plugin_init"));
+    if(!init){
+        FreeLibrary(handle);
+        ABS_FATAL(cat::Operations, "ops.plugin_no_init", pluginName);
+    }
+    init(env);
+    // Keep the library loaded for the lifetime of the process.
+#else
+    void* handle = dlopen(pluginPath.c_str(), RTLD_NOW);
+    if(!handle) ABS_FATAL(cat::Operations, "ops.plugin_load_fail", pluginPath);
+    InitFunc init = reinterpret_cast<InitFunc>(dlsym(handle, "abs_plugin_init"));
+    if(!init){
+        dlclose(handle);
+        ABS_FATAL(cat::Operations, "ops.plugin_no_init", pluginName);
+    }
+    init(env);
+    // Keep the library loaded for the lifetime of the process.
+#endif
+
+    return env->lookUpVar("Null");
 }
 
 /* SORT COMPARATORS FOR DEFAULT TYPES*/

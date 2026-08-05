@@ -9,6 +9,15 @@ ABS_LANG ?= EN
 # Override with: make ABS_PROFILE=1
 ABS_PROFILE ?= 0
 
+# Export symbols so compiled plugins (.so/.dylib) can call back into ABS
+# (Make_NFunc, Make_String, Env::declareVar, etc.)
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    EXPORT_FLAG = -Wl,-export_dynamic
+else
+    EXPORT_FLAG = -rdynamic
+endif
+
 all:
-	g++-15 ${src} -o main -I./include -std=c++20 -g -DLANG=\"${ABS_LANG}\" -DABS_PROFILE=${ABS_PROFILE}
+	g++-15 ${src} -o main -I./include -std=c++20 -g ${EXPORT_FLAG} -DLANG=\"${ABS_LANG}\" -DABS_PROFILE=${ABS_PROFILE}
 	./main
