@@ -14,6 +14,7 @@
 #include <any>
 #include <type_traits>
 #include <debug.hpp>
+#include <portable.hpp>
 
 namespace fs = std::filesystem;
 
@@ -47,6 +48,24 @@ typename std::enable_if<std::is_trivially_copyable<T>::value, void>::type
 readBinary(std::istream &is, T &value){
     is.read(reinterpret_cast<char*>(&value), sizeof(T));
 }
+
+// On 32-bit platforms, split uint64_t into two uint32_t writes/reads to
+// avoid 64-bit software emulation. On-disk format stays 8 bytes.
+#if ABS_32BIT
+inline void writeBinary(std::ostream& os, uint64_t value){
+    uint32_t hi = static_cast<uint32_t>(value >> 32);
+    uint32_t lo = static_cast<uint32_t>(value & 0xFFFFFFFFULL);
+    writeBinary(os, hi);
+    writeBinary(os, lo);
+}
+
+inline void readBinary(std::istream& is, uint64_t& value){
+    uint32_t hi = 0, lo = 0;
+    readBinary(is, hi);
+    readBinary(is, lo);
+    value = (static_cast<uint64_t>(hi) << 32) | lo;
+}
+#endif
 
 inline void writeBinary(std::ostream &os, const std::string &s){
     size_t size = s.size();

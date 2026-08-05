@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <portable.hpp>
 
 class Stmt;
 class Env;
@@ -54,7 +55,11 @@ class NumberVal : public Value{
     
     ValueType type = ValueType::Number;
     public:
+#if ABS_32BIT
+    double val = 0.0;
+#else
     long double val = 0.0;
+#endif
 
     ValueType getType() const override{
         return this->type;
