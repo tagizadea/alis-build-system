@@ -1,4 +1,6 @@
 #include <operations.hpp>
+using namespace std;
+#include <debug.hpp>
 #include <chrono>
 #include <ctime>
 #include <queue>
@@ -15,7 +17,7 @@
 #include <sys/types.h>
 #endif
 
-vector <NativeFuncVal*> ListVecNFuncs;
+vector <std::shared_ptr<NativeFuncVal>> ListVecNFuncs;
 
 vector<string> getSystemFiles(vector<string> &files){
     vector <string> temp;
@@ -266,7 +268,7 @@ void print_stmt(Stmt* stmt, int tab){
         Program* childObj = dynamic_cast<Program*>(stmt);
         cout << tab_s << "{\n";
         for(int i = 0; i < childObj->body.size();++i){
-            print_stmt(childObj->body[i], tab + 1);
+            print_stmt(childObj->body[i].get(), tab + 1);
             cout << '\n';
         }
         cout << tab_s << "}\n";
@@ -278,8 +280,8 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Params: ";
         for(string &s : childObj->parameters) cout << s << ' ';
         cout << '\n' << tab_s << "Body:\n";
-        for(Stmt* i : childObj->body){
-            print_stmt(i, tab + 1);
+        for(const auto& i : childObj->body){
+            print_stmt(i.get(), tab + 1);
         }
         cout << '\n';
     }
@@ -287,14 +289,14 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: ConditionExpr\n";
         CondExpr* childObj = dynamic_cast<CondExpr*>(stmt);
         cout << tab_s << "Condition:\n";
-        print_stmt(childObj->condition, tab + 1);
+        print_stmt(childObj->condition.get(), tab + 1);
         cout << tab_s << "Then{\n";
-        for(Stmt* i : childObj->ThenBranch){
-            print_stmt(i, tab + 1);
+        for(const auto& i : childObj->ThenBranch){
+            print_stmt(i.get(), tab + 1);
         }
         cout << tab_s << "}\n" << tab_s << "Else{\n";
-        for(Stmt* i : childObj->ElseBranch){
-            print_stmt(i, tab + 1);
+        for(const auto& i : childObj->ElseBranch){
+            print_stmt(i.get(), tab + 1);
         }
         cout << tab_s << "}\n";
     }
@@ -302,10 +304,10 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: WHILE\n";
         WhileStmt* childObj = dynamic_cast<WhileStmt*>(stmt);
         cout << tab_s << "Condition:\n";
-        print_stmt(childObj->condition, tab + 1);
+        print_stmt(childObj->condition.get(), tab + 1);
         cout << tab_s << "Then{\n";
-        for(Stmt* i : childObj->ThenBranch){
-            print_stmt(i, tab + 1);
+        for(const auto& i : childObj->ThenBranch){
+            print_stmt(i.get(), tab + 1);
         }
         cout << tab_s << "}\n";
     }
@@ -313,14 +315,14 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: FOR\n";
         ForStmt* childObj = dynamic_cast<ForStmt*>(stmt);
         cout << tab_s << "ITERATOR:\n";
-        print_stmt(childObj->iterator_dec, tab + 1);
+        print_stmt(childObj->iterator_dec.get(), tab + 1);
         cout << tab_s << "Condition:\n";
-        print_stmt(childObj->condition, tab + 1);
+        print_stmt(childObj->condition.get(), tab + 1);
         cout << tab_s << "OPERATION:\n";
-        print_stmt(childObj->operation, tab + 1);
+        print_stmt(childObj->operation.get(), tab + 1);
         cout << tab_s << "Then{\n";
-        for(Stmt* i : childObj->ThenBranch){
-            print_stmt(i, tab + 1);
+        for(const auto& i : childObj->ThenBranch){
+            print_stmt(i.get(), tab + 1);
         }
         cout << tab_s << "}\n";
     }
@@ -333,16 +335,16 @@ void print_stmt(Stmt* stmt, int tab){
     else if(NodeType::BINARYEXPR == kind){
         cout << tab_s << "Type: BinaryExpr\n";
         BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);
-        print_stmt(childObj->left, tab + 1);
+        print_stmt(childObj->left.get(), tab + 1);
         cout << tab_s << "Operator: " << childObj->op << '\n';
-        print_stmt(childObj->right, tab + 1);
+        print_stmt(childObj->right.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::NOTEXPR == kind){
         cout << tab_s << "Type: NotExpr\n";
         NotExpr* childObj = dynamic_cast<NotExpr*>(stmt);
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->val, tab + 1);
+        print_stmt(childObj->val.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::NUMERIC_L == kind){
@@ -359,13 +361,13 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: ObjectLiteral";
         ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
         cout << "{\n";
-        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
+        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i].get(), tab + 1);
         cout << tab_s << "}\n";
     }
     else if(NodeType::LIST_L == kind){
         cout << tab_s << "Type: ListLiteral{\n";
         ListLiteral* childObj = dynamic_cast<ListLiteral*>(stmt);
-        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i], tab + 1);
+        for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i].get(), tab + 1);
     }
     else if(NodeType::ELEMENT_L == kind){
         cout << tab_s << "Type: ElementLiteral\n";
@@ -373,7 +375,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Index: " << childObj->key << '\n';
         cout << tab_s << "Value:\n";
         if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
-        else print_stmt(childObj->val, tab + 1);
+        else print_stmt(childObj->val.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::PROPERTY_L == kind){
@@ -382,27 +384,27 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Key: "<<childObj->key << '\n';
         cout << tab_s << "Value:\n";
         if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
-        else print_stmt(childObj->val, tab + 1);
+        else print_stmt(childObj->val.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::VAR_D == kind){
         cout << tab_s << "Type: VariableDeclaration\n";
         VarDeclaration* childObj = dynamic_cast<VarDeclaration*>(stmt);
         cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
-        for(pair <string, Expr*> i : childObj->vars){
+        for(auto& i : childObj->vars){
             cout << tab_s << "Variable_Name: " << i.first << '\n';
             cout << tab_s << "Value:\n";
             if(i.second == nullptr) cout << tab_s << "Undefined value";
-            else print_stmt(i.second, tab + 1);
+            else print_stmt(i.second.get(), tab + 1);
         }
         cout << '\n';
     }
     else if(NodeType::ASSIGNEXPR == kind){
         cout << tab_s << "Type: AssignmentExpr\n";
         AssignExpr* childObj = dynamic_cast<AssignExpr*>(stmt);
-        print_stmt(childObj->assignexpr, tab + 1);
+        print_stmt(childObj->assignexpr.get(), tab + 1);
         cout << tab_s << "Value:\n";
-        print_stmt(childObj->value, tab + 1);
+        print_stmt(childObj->value.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::UNARYEXPR == kind){
@@ -411,7 +413,7 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "LEFT: " << ((childObj->left) ? ("TRUE") : ("FALSE")) << '\n';
         cout << tab_s << "OP: " << ((childObj->plus) ? ("++") : ("--")) << '\n';
         cout << tab_s << "Identifier:\n";
-        print_stmt(childObj->identifier, tab + 1);
+        print_stmt(childObj->identifier.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::IDENTIFIER == kind){
@@ -423,13 +425,12 @@ void print_stmt(Stmt* stmt, int tab){
         cout << tab_s << "Type: MemberExpr\n";
         MemberExpr* childObj = dynamic_cast<MemberExpr*>(stmt);
         cout << tab_s << "IsComputed: " << (int)childObj->computed << '\n';
-        //cout << tab_s << "ObjectType: " << (int)childObj->object->getKind() << '\n';
         cout << tab_s << "ObjectValue:\n";
         if(childObj->object == nullptr) cout << tab_s << "Undefined value";
-        else print_stmt(childObj->object, tab + 1);
+        else print_stmt(childObj->object.get(), tab + 1);
         cout << tab_s << "Property:\n";
         if(childObj->property == nullptr) cout << tab_s << "Undefined value";
-        else print_stmt(childObj->property, tab + 1);
+        else print_stmt(childObj->property.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::CALLEXPR == kind){
@@ -437,11 +438,11 @@ void print_stmt(Stmt* stmt, int tab){
         CallExpr* childObj = dynamic_cast<CallExpr*>(stmt);
         cout << tab_s << "Args:{\n";
         for(int i=0; i < childObj->args.size();++i){
-            print_stmt(childObj->args[i], tab + 1);
+            print_stmt(childObj->args[i].get(), tab + 1);
         }
         cout << tab_s << "}\n";
         cout << tab_s << "CallEr:\n";
-        print_stmt(childObj->callexpr, tab + 1);
+        print_stmt(childObj->callexpr.get(), tab + 1);
         cout << '\n';
     }
     else{
@@ -451,7 +452,7 @@ void print_stmt(Stmt* stmt, int tab){
 
 
 // Printing Evaluation
-void print_eval(Value* eval, int tab){
+void print_eval(std::shared_ptr<Value> eval, int tab){
     string tab_s = "";
     for(int i = 0; i < tab; ++i) tab_s += "    ";
     if(eval == nullptr){
@@ -460,23 +461,23 @@ void print_eval(Value* eval, int tab){
     }
     if(eval->getType() == ValueType::Number){
         cout << tab_s << "Type: Number\n";
-        NumberVal* temp = (NumberVal*)eval;
+        NumberVal* temp = (NumberVal*)eval.get();
         cout << tab_s << "Value: " << temp->val << '\n';
     }
     else if(eval->getType() == ValueType::String){
         cout << tab_s << "Type: String\n";
-        StringVal* temp = (StringVal*)eval;
+        StringVal* temp = (StringVal*)eval.get();
         cout << tab_s << "Value: " << temp->val << '\n';
     }
     else if(eval->getType() == ValueType::Bool){
         cout << tab_s << "Type: Bool\n";
-        BoolValue* temp = (BoolValue*)eval;
+        BoolValue* temp = (BoolValue*)eval.get();
         cout << tab_s << "Value: " << (int)temp->val << '\n'; 
     }
     else if(eval->getType() == ValueType::Object){
         cout << tab_s << "Type: Object\n";
-        ObjectValue* temp = (ObjectValue*)eval;
-        for(pair <string, Value*> i : temp->properties){
+        ObjectValue* temp = (ObjectValue*)eval.get();
+        for(auto& i : temp->properties){
             cout << tab_s << "Key: " << i.first << '\n';
             cout << tab_s << "Value:\n";
             if(i.second == nullptr) cout << tab_s << "Unknown value!";
@@ -486,11 +487,10 @@ void print_eval(Value* eval, int tab){
     }
     else if(eval->getType() == ValueType::NFUNC){
         cout << tab_s << "Type: NativeFunc\n";
-        //NativeFuncVal* temp = (NativeFuncVal*)eval;
     }
     else if(eval->getType() == ValueType::FUNC){
         cout << tab_s << "Type: Function\n";
-        FunctionVal* temp = (FunctionVal*)eval;
+        FunctionVal* temp = (FunctionVal*)eval.get();
         cout << tab_s << "Name: " << temp->name << '\n';
         cout << tab_s << "Params: ";
         for(string &s : temp->params) cout << s << ' ';
@@ -509,7 +509,7 @@ void print_env(Env* env, int tab){
     else cout << "Env: child\n\n";
 
     cout << "Variables:\n";
-    for(pair <string, Value*> i : env->variables){
+    for(auto& i : env->variables){
         cout << "Name: " << i.first << '\n' << "Value:\n";
         print_eval(i.second, tab + 1);
         cout << '\n';
@@ -523,20 +523,20 @@ void print_env(Env* env, int tab){
 
 /* ---------------------- ABS OPERATIONS ----------------------*/
 
-Value* n_funs::vector_size(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::vector_size(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
         return env->lookUpVar("Null");
     }
-    ListValue* l = (ListValue*)args[0];
+    ListValue* l = (ListValue*)args[0].get();
     return Make_Number(l->v.size());
 }
 
-Value* n_funs::vector_push(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::vector_push(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() < 2){
         return env->lookUpVar("Null");
     }
 
-    ListValue* l = (ListValue*)args[args.size() - 1];
+    ListValue* l = (ListValue*)args[args.size() - 1].get();
 
     if(l->v.empty()) for(int i=0;i<10;++i) l->mapTypeCounter[i] = 0;
 
@@ -552,13 +552,12 @@ Value* n_funs::vector_push(vector<Value*> args, Env* env){
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::vector_pop(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::vector_pop(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
-    ListValue* l = (ListValue*)args[0];
+    ListValue* l = (ListValue*)args[0].get();
     if(l->v.empty()){
-        cout << "List boşdur: pop icra oluna bilmir!";
-        exit(0); // !!! debug sistemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.pop_empty");
     }
 
     int val_id = (int)l->v[l->v.size() - 1]->getType();
@@ -571,42 +570,39 @@ Value* n_funs::vector_pop(vector<Value*> args, Env* env){
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::vector_sort(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::vector_sort(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1) return env->lookUpVar("Null");
 
-    ListValue* l = (ListValue*)args[0];
+    ListValue* l = (ListValue*)args[0].get();
 
     if(l->consist_of == ValueType::Number)
         std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_Number);
     else if(l->consist_of == ValueType::String)
         std::sort(l->v.begin(), l->v.end(), sort_comps::cmp_less_String);
     else{
-        cout << "Warning: List consist of more than one type!\n"; // Debug sistemi ile evezle
+        ABS_WARNING(cat::Operations, "ops.list_multi_type");
     }
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::print(vector<Value*> args, Env* env){ // naive print fun
-    // OBJ VE LIST PROBLEMLIDI !!!
-    queue <pair <vector <Value*> , string> > q;
+std::shared_ptr<Value> n_funs::print(vector<std::shared_ptr<Value>> args, Env* env){ // naive print fun
+    queue <pair <vector <std::shared_ptr<Value>> , string> > q;
     q.push({args, ""});
     while(!q.empty()){
-        vector <Value*> v = q.front().first;
+        vector <std::shared_ptr<Value>> v = q.front().first;
         string tab_s = q.front().second;
 
         for(int i=0;i<v.size();++i){
             if(v[i]->getType() == ValueType::Object){
-                ObjectValue* temp = (ObjectValue*)v[i];
+                ObjectValue* temp = (ObjectValue*)v[i].get();
                 cout << tab_s << "Object\n";
     
-                for(pair <string, Value*> j : temp->properties){
-                    // cout << tab_s + "    "<< "Key: \"" <<j.first << "\" Value: ";
+                for(auto& j : temp->properties){
                     q.push({{j.second}, tab_s + "    " + "Key: \"" + j.first + "\" Value: \n"});
                 }
-                // cout << '\n';
             }
             else if(v[i]->getType() == ValueType::List){
-                ListValue* temp = (ListValue*)v[i];
+                ListValue* temp = (ListValue*)v[i].get();
                 cout << tab_s << "List";
     
                 for(int j = 0; j < temp->v.size(); ++j){
@@ -616,31 +612,30 @@ Value* n_funs::print(vector<Value*> args, Env* env){ // naive print fun
                 cout << "\n";
             }
             else if(v[i]->getType() == ValueType::Number){
-                NumberVal* temp = (NumberVal*)v[i];
+                NumberVal* temp = (NumberVal*)v[i].get();
                 cout << tab_s << temp->val;
             }
             else if(v[i]->getType() == ValueType::Bool){
-                BoolValue* temp = (BoolValue*)v[i];
+                BoolValue* temp = (BoolValue*)v[i].get();
                 if(temp->val) cout << tab_s << "True";
                 else cout << tab_s << "False";
             }
             else if(v[i]->getType() == ValueType::String){
-                StringVal* temp = (StringVal*)v[i];
+                StringVal* temp = (StringVal*)v[i].get();
                 cout << tab_s << temp->val;
             }
             else if(v[i]->getType() == ValueType::Null){
-                NullVal* temp = (NullVal*)v[i];
+                NullVal* temp = (NullVal*)v[i].get();
                 cout << tab_s << temp->val;
             }
         }
 
         q.pop();
     }
-    //cout << '\n';
     return env->lookUpVar("Null");
 }
 
-Value *n_funs::timeNow(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::timeNow(vector<std::shared_ptr<Value>> args, Env* env){
     auto now = std::chrono::system_clock::now();
     std::time_t now_c = std::chrono::system_clock::to_time_t(now);
     std::tm* local_time = std::localtime(&now_c);
@@ -651,156 +646,145 @@ Value *n_funs::timeNow(vector<Value*> args, Env* env){
     return Make_Number(hour * 60 + minute);
 }
 
-Value* n_funs::floor(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::floor(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::Number){
-        cout << "Floor Function: Wrong args";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.floor_wrong_args");
     }
-    NumberVal* temp = (NumberVal*)args[0];
+    NumberVal* temp = (NumberVal*)args[0].get();
     long long res = temp->val;
     return Make_Number(res);
 }
 
-Value* n_funs::max(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::max(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() == 1 && args[0]->getType() == ValueType::List){
-        ListValue* l = (ListValue*)args[0];
+        ListValue* l = (ListValue*)args[0].get();
         if(l->distinc_types != 1){
-            cout << "Max Function: Only one type list can be argument";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.max_multi_type");
         }
         if(l->consist_of == ValueType::Bool){
-            BoolValue* mx = (BoolValue*)l->v[0];
+            std::shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((BoolValue*)l->v[i])->val > mx->val) mx = ((BoolValue*)l->v[i]);
+                if(((BoolValue*)l->v[i].get())->val > ((BoolValue*)mx.get())->val) mx = l->v[i];
             }
             return mx;
         }
         else if(l->consist_of == ValueType::FUNC || l->consist_of == ValueType::LFUNC ||
         l->consist_of == ValueType::NFUNC || l->consist_of == ValueType::None ||
         l->consist_of == ValueType::Null || l->consist_of == ValueType::Object){
-            cout << "Max Function: Arg value cannot be compared";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.max_not_comparable");
         }
         else if(l->consist_of == ValueType::List){
-            ListValue* mx = (ListValue*)l->v[0];
+            std::shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((ListValue*)l->v[i])->v.size() > mx->v.size()) mx = ((ListValue*)l->v[i]);
+                if(((ListValue*)l->v[i].get())->v.size() > ((ListValue*)mx.get())->v.size()) mx = l->v[i];
             }
             return mx;
         }
         else if(l->consist_of == ValueType::Number){
-            NumberVal* mx = (NumberVal*)l->v[0];
+            std::shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((NumberVal*)l->v[i])->val > mx->val) mx = ((NumberVal*)l->v[i]);
+                if(((NumberVal*)l->v[i].get())->val > ((NumberVal*)mx.get())->val) mx = l->v[i];
             }
             return mx;
         }
         else if(l->consist_of == ValueType::String){
-            StringVal* mx = (StringVal*)l->v[0];
+            std::shared_ptr<Value> mx = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((StringVal*)l->v[i])->val > mx->val) mx = ((StringVal*)l->v[i]);
+                if(((StringVal*)l->v[i].get())->val > ((StringVal*)mx.get())->val) mx = l->v[i];
             }
             return mx;
         }
     }
     else{
-        cout << "Max Function: Wrong args. Only List";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.max_wrong_args");
     }
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::min(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::min(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() == 1 && args[0]->getType() == ValueType::List){
-        ListValue* l = (ListValue*)args[0];
+        ListValue* l = (ListValue*)args[0].get();
         if(l->distinc_types != 1){
-            cout << "Min Function: Only one type list can be argument";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.min_multi_type");
         }
         if(l->consist_of == ValueType::Bool){
-            BoolValue* mn = (BoolValue*)l->v[0];
+            std::shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((BoolValue*)l->v[i])->val < mn->val) mn = ((BoolValue*)l->v[i]);
+                if(((BoolValue*)l->v[i].get())->val < ((BoolValue*)mn.get())->val) mn = l->v[i];
             }
             return mn;
         }
         else if(l->consist_of == ValueType::FUNC || l->consist_of == ValueType::LFUNC ||
         l->consist_of == ValueType::NFUNC || l->consist_of == ValueType::None ||
         l->consist_of == ValueType::Null || l->consist_of == ValueType::Object){
-            cout << "Min Function: Arg value cannot be compared";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.min_not_comparable");
         }
         else if(l->consist_of == ValueType::List){
-            ListValue* mn = (ListValue*)l->v[0];
+            std::shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((ListValue*)l->v[i])->v.size() < mn->v.size()) mn = ((ListValue*)l->v[i]);
+                if(((ListValue*)l->v[i].get())->v.size() < ((ListValue*)mn.get())->v.size()) mn = l->v[i];
             }
             return mn;
         }
         else if(l->consist_of == ValueType::Number){
-            NumberVal* mn = (NumberVal*)l->v[0];
+            std::shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((NumberVal*)l->v[i])->val < mn->val) mn = ((NumberVal*)l->v[i]);
+                if(((NumberVal*)l->v[i].get())->val < ((NumberVal*)mn.get())->val) mn = l->v[i];
             }
             return mn;
         }
         else if(l->consist_of == ValueType::String){
-            StringVal* mn = (StringVal*)l->v[0];
+            std::shared_ptr<Value> mn = l->v[0];
             for(int i=1; i < l->v.size(); ++i){
-                if(((StringVal*)l->v[i])->val < mn->val) mn = ((StringVal*)l->v[i]);
+                if(((StringVal*)l->v[i].get())->val < ((StringVal*)mn.get())->val) mn = l->v[i];
             }
             return mn;
         }
     }
     else{
-        cout << "Min Function: Wrong args. Only List";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.min_wrong_args");
     }
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::system(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::system(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() > 1 || args[0]->getType() != ValueType::String){
-        cout << "System Function: Wrong args. Use platform specific commands";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.system_wrong_args");
     }
     
-    StringVal* temp = (StringVal*)args[0];
+    StringVal* temp = (StringVal*)args[0].get();
     std::system(temp->val.c_str());
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::Ntrack(vector<Value*> args, Env* env){
-    ListValue* l = new ListValue;
+std::shared_ptr<Value> n_funs::Ntrack(vector<std::shared_ptr<Value>> args, Env* env){
+    ABS_PROFILE_SCOPE("track()");
+    auto l = std::make_shared<ListValue>();
     vector <string> src, headers, DirtyHeaderNames,reversed_files;
     map <string, vector <string>> reverse_graph;
 
     auto& manager = Manager::getInstance();
 
     if(args.size() == 1 && args[0]->getType() == ValueType::List){
-        ListValue* le = (ListValue*)args[0];
+        ListValue* le = (ListValue*)args[0].get();
         if(le->consist_of != ValueType::String){
-            cout << "Track Function: only strings can be argument!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.track_not_string");
         }
         for(int i = 0; i < le->v.size(); ++i){
-            string name = ((StringVal*)le->v[i])->val;
+            string name = ((StringVal*)le->v[i].get())->val;
             manager.sources.push_back(name);
         }
     }
     else{
         for(int i = 0; i < args.size(); ++i){
             if(args[i]->getType() != ValueType::String){
-                cout << "Track Function: only strings can be argument!";
-                exit(0); // !!! debug systemi ile deyis
+                ABS_FATAL(cat::Operations, "ops.track_not_string");
             }
-            string name = ((StringVal*)args[i])->val;
+            string name = ((StringVal*)args[i].get())->val;
             manager.sources.push_back(name);
         }
     }
     
-    // src = manager.track();
-
     for(const auto& i : manager.sources){
         auto temp_entry = manager.track(i);
         if(temp_entry.mtime != 0) src.push_back(temp_entry.name);
@@ -821,8 +805,6 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
 
     reversed_files = manager.reverse_invalidation(reverse_graph, DirtyHeaderNames);
 
-    // for(string s : src)             l->v.push_back(Make_String(s));
-    // for(string s : headers)         l->v.push_back(Make_String(s));
     for(string s : reversed_files)  l->v.push_back(Make_String(s));
 
     l->consist_of = ValueType::String;
@@ -833,40 +815,35 @@ Value* n_funs::Ntrack(vector<Value*> args, Env* env){
     writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
     
     return l;
-    
-    return env->lookUpVar("Null");
 }
 
-Value* n_funs::Ndefine(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::Ndefine(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() < 1 && args.size() > 2){
-        cout << "Define Function: Only one or two arguments possible!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.define_wrong_args");
     }
 
     if(args[0]->getType() != ValueType::String || (args.size() == 2 && args[1]->getType() != ValueType::String)){
-        cout << "Define Function: Arguments should be String Value!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.define_not_string");
     }
 
     auto& manager = Manager::getInstance();
-    string name = (static_cast<StringVal*>(args[0]))->val;
+    string name = (static_cast<StringVal*>(args[0].get()))->val;
     manager.defines[name] = nullopt;
 
     if(args.size() == 2){
-        string value = (static_cast<StringVal*>(args[1]))->val;
+        string value = (static_cast<StringVal*>(args[1].get()))->val;
         manager.defines[name] = value;
     }
 
     return env->lookUpVar("Null");
 }
 
-Value* n_funs::Type(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::Type(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
-        cout << "Type Function: Only one argument possible!";
-        exit(0); // !!! debug sistemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.type_wrong_args");
     }
 
-    StringVal* ans = new StringVal;
+    auto ans = std::make_shared<StringVal>();
 
     switch(args[0]->getType()){
     case ValueType::Bool :
@@ -902,20 +879,19 @@ Value* n_funs::Type(vector<Value*> args, Env* env){
     return ans;
 }
 
-Value* n_funs::ston(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::ston(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.empty()){
-        cout << "Nothing to convert Number Value!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.ston_empty");
     }
 
-    ListValue* ans = new ListValue;
+    auto ans = std::make_shared<ListValue>();
 
-    for(Value* i : args){
+    for(const auto& i : args){
         if(i->getType() == ValueType::String){
-            StringVal* temp = (StringVal*)i;
+            StringVal* temp = (StringVal*)i.get();
             if(temp->val.size() >= 18){
-                cout << "Value: " << temp->val << " too big to convert to Number Value!\n";
-                continue; // debug systemi ile deyis !!!
+                ABS_WARNING(cat::Operations, "ops.ston_too_big", temp->val);
+                continue;
             }
 
             long double n;
@@ -923,13 +899,13 @@ Value* n_funs::ston(vector<Value*> args, Env* env){
                 n = stold(temp->val);
             }
             catch(const std::exception& e){
-                cout << "Value: " << temp->val << " impossible to convert Number Value!\n";
-                continue; // debug systemi ile deyis !!!
+                ABS_WARNING(cat::Operations, "ops.ston_convert_fail", temp->val);
+                continue;
             }
 
             ans->v.push_back(Make_Number(n));
         }
-        else cout << "Value type is not a String Value!\n"; // debug systemi ile deyis !!!
+        else ABS_WARNING(cat::Operations, "ops.ston_not_string");
     }
 
     if(ans->v.size() == 1) return ans->v[0];
@@ -937,17 +913,16 @@ Value* n_funs::ston(vector<Value*> args, Env* env){
     return ans;
 }
 
-Value* n_funs::ntos(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::ntos(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.empty()){
-        cout << "Nothing to convert Number Value!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.ntos_empty");
     }
 
-    ListValue* ans = new ListValue;
+    auto ans = std::make_shared<ListValue>();
 
-    for(Value* i : args){
+    for(const auto& i : args){
         if(i->getType() == ValueType::Number){
-            NumberVal* temp = (NumberVal*)i;
+            NumberVal* temp = (NumberVal*)i.get();
 
             string n;
             try{
@@ -955,13 +930,13 @@ Value* n_funs::ntos(vector<Value*> args, Env* env){
                 else n = to_string(temp->val);
             }
             catch(const std::exception& e){
-                cout << "Value: " << temp->val << " impossible to convert String Value!\n";
-                continue; // debug systemi ile deyis !!!
+                ABS_WARNING(cat::Operations, "ops.ntos_convert_fail", temp->val);
+                continue;
             }
 
             ans->v.push_back(Make_String(n));
         }
-        else cout << "Value type is not a Number Value!\n"; // debug systemi ile deyis !!!
+        else ABS_WARNING(cat::Operations, "ops.ntos_not_number");
     }
 
     if(ans->v.size() == 1) return ans->v[0];
@@ -969,74 +944,68 @@ Value* n_funs::ntos(vector<Value*> args, Env* env){
     return ans;
 }
 
-Value* n_funs::compile(vector<Value*> args, Env* env){
-
+std::shared_ptr<Value> n_funs::compile(vector<std::shared_ptr<Value>> args, Env* env){
+    ABS_PROFILE_SCOPE("compile()");
     vector <ObjectValue*> temp_Argument;
 
-    if(args.size() == 1 && args[0]->getType() == ValueType::List && ((ListValue*)args[0])->consist_of == ValueType::Object){
-        ListValue* temp_List = static_cast<ListValue*>(args[0]);
+    if(args.size() == 1 && args[0]->getType() == ValueType::List && ((ListValue*)args[0].get())->consist_of == ValueType::Object){
+        ListValue* temp_List = static_cast<ListValue*>(args[0].get());
         auto& temp_v = temp_List->v;
         for(const auto& i : temp_v){
-            ObjectValue* x = static_cast<ObjectValue*>(i);
+            ObjectValue* x = static_cast<ObjectValue*>(i.get());
             if(x->properties.count("compiler_path") && x->properties.count("src")
             && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
                 temp_Argument.push_back(x);
             }
             else{
-                cout << "Compile Function: Object structure is wrong!";
-                exit(0); // !!! debug systemi ile deyis
+                ABS_FATAL(cat::Operations, "ops.compile_structure");
             }
         }
     }
     else if(args.size() == 1 && args[0]->getType() == ValueType::Object){
-        ObjectValue* x = static_cast<ObjectValue*>(args[0]);
+        ObjectValue* x = static_cast<ObjectValue*>(args[0].get());
         if(x->properties.count("compiler_path") && x->properties.count("src")
         && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
             temp_Argument.push_back(x);
         }
         else{
-            cout << "Compile Function: Object structure is wrong!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.compile_structure");
         }
     }
     else{
-        cout << "Compile Function: Wrong argument!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.compile_wrong_arg");
     }
 
     auto& manager = Manager::getInstance();
-    ListValue* result = new ListValue;
+    auto result = std::make_shared<ListValue>();
 
     for(const auto& config : temp_Argument){
         // Validate property types
         if(config->properties["compiler_path"]->getType() != ValueType::String ||
            config->properties["out_dir"]->getType() != ValueType::String ||
            config->properties["flag"]->getType() != ValueType::String){
-            cout << "Compile Function: compiler_path, out_dir and flag must be String!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.compile_not_string");
         }
         if(config->properties["src"]->getType() != ValueType::List ||
            config->properties["tracked_src"]->getType() != ValueType::List){
-            cout << "Compile Function: src and tracked_src must be List!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.compile_not_list");
         }
 
-        string compiler_path = static_cast<StringVal*>(config->properties["compiler_path"])->val;
-        string out_dir = static_cast<StringVal*>(config->properties["out_dir"])->val;
-        string flag = static_cast<StringVal*>(config->properties["flag"])->val;
+        string compiler_path = static_cast<StringVal*>(config->properties["compiler_path"].get())->val;
+        string out_dir = static_cast<StringVal*>(config->properties["out_dir"].get())->val;
+        string flag = static_cast<StringVal*>(config->properties["flag"].get())->val;
 
-        ListValue* src_list = static_cast<ListValue*>(config->properties["src"]);
-        ListValue* tracked_list = static_cast<ListValue*>(config->properties["tracked_src"]);
+        ListValue* src_list = static_cast<ListValue*>(config->properties["src"].get());
+        ListValue* tracked_list = static_cast<ListValue*>(config->properties["tracked_src"].get());
 
         if(src_list->consist_of != ValueType::String || tracked_list->consist_of != ValueType::String){
-            cout << "Compile Function: src and tracked_src must consist of Strings!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Operations, "ops.compile_src_not_string");
         }
 
         // Build set of dirty (tracked) sources
         set <string> tracked_set;
-        for(Value* v : tracked_list->v){
-            tracked_set.insert(static_cast<StringVal*>(v)->val);
+        for(const auto& v : tracked_list->v){
+            tracked_set.insert(static_cast<StringVal*>(v.get())->val);
         }
 
         // Ensure out_dir exists
@@ -1051,8 +1020,8 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
         vector <string> cmd_obj_paths;
         vector <uint64_t> cmd_build_hashes;
 
-        for(Value* v : src_list->v){
-            string src_path = static_cast<StringVal*>(v)->val;
+        for(const auto& v : src_list->v){
+            string src_path = static_cast<StringVal*>(v.get())->val;
 
             // Compute object path: out_dir/<basename>.o
             string basename = fs::path(src_path).filename().string();
@@ -1106,10 +1075,9 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
 
             for(size_t i = 0; i < statuses.size(); ++i){
                 if(statuses[i] != 0){
-                    cout << "Compile Error: Failed to compile " << cmd_src_paths[i] << " (status: " << statuses[i] << ")";
-                    exit(0); // !!! debug systemi ile deyis
+                    ABS_FATAL(cat::Operations, "ops.compile_fail", cmd_src_paths[i], statuses[i]);
                 }
-                else cout << "Compile Success: " << cmd_src_paths[i] << " (status: " << statuses[i] << ")\n";
+                else ABS_INFO(cat::Operations, "ops.compile_success", cmd_src_paths[i], statuses[i]);
 
                 // Update object cache
                 Manager::ObjectCacheEntry obj_entry;
@@ -1130,105 +1098,162 @@ Value* n_funs::compile(vector<Value*> args, Env* env){
     return result;
 }
 
-Value* n_funs::link(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::link(vector<std::shared_ptr<Value>> args, Env* env){
+    ABS_PROFILE_SCOPE("link()");
     if(args.size() != 3){
-        cout << "Link Function: The number of args should be 3 (objects list, executable name, compiler path)";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.link_wrong_args");
     }
 
-    if(args[0]->getType() != ValueType::List || ((ListValue*)args[0])->consist_of != ValueType::String){
-        cout << "Link Function: First argument should be a List of Strings (object file paths)!";
-        exit(0); // !!! debug systemi ile deyis
+    if(args[0]->getType() != ValueType::List || ((ListValue*)args[0].get())->consist_of != ValueType::String){
+        ABS_FATAL(cat::Operations, "ops.link_not_list");
     }
     if(args[1]->getType() != ValueType::String){
-        cout << "Link Function: Second argument should be a String (executable name)!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.link_not_string");
     }
     if(args[2]->getType() != ValueType::String){
-        cout << "Link Function: Third argument should be a String (compiler path)!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.link_compiler_not_string");
     }
 
-    ListValue* objects = static_cast<ListValue*>(args[0]);
-    string executable = static_cast<StringVal*>(args[1])->val;
-    string compiler_path = static_cast<StringVal*>(args[2])->val;
+    ListValue* objects = static_cast<ListValue*>(args[0].get());
+    string executable = static_cast<StringVal*>(args[1].get())->val;
+    string compiler_path = static_cast<StringVal*>(args[2].get())->val;
 
     // Build link command: compiler obj1 obj2 ... -o executable
     string cmd = compiler_path;
-    for(Value* v : objects->v){
-        cmd += " " + static_cast<StringVal*>(v)->val;
+    for(const auto& v : objects->v){
+        cmd += " " + static_cast<StringVal*>(v.get())->val;
     }
     cmd += " -o " + executable;
 
     int status = exec(cmd);
     if(status != 0){
-        cout << "Link Error: Failed to link " << executable << " (status: " << status << ")";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.link_fail", executable, status);
     }
-    else cout << "Link Success: " << executable << " (status: " << status << ")\n";
+    else ABS_INFO(cat::Operations, "ops.link_success", executable, status);
 
     return Make_String(executable);
 }
 
-Value* n_funs::run(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::run(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
-        cout << "Run Function: Too many arguments!";
-        exit(0); // !!! debug sistemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.run_too_many");
     }
     if(args[0]->getType() != ValueType::String){
-        cout << "Run Function: Argument should be String!";
-        exit(0); // !!! debug sistemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.run_not_string");
     }
     
-    // ObjectValue* o = new ObjectValue;
+    std::string scriptPath = static_cast<StringVal*>(args[0].get())->val;
+    debug::Debugger::getInstance().setScriptContext(scriptPath);
 
-    ifstream file(((StringVal*)args[0])->val);
+    // Create an isolated environment for the sub-script.
+    // Parent = caller's env so natives (print, compile, link, ...) are accessible.
+    auto scriptEnv = std::make_unique<Env>();
+    scriptEnv->parent = env;
+    InitNatives(scriptEnv.get());
+
+    ifstream file(scriptPath);
     string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
     file.close();
     content += '\n';
     Lexer lexer(content.c_str());
-    Token* tokens = lexer.tokenize();
+    std::vector<Token> tokens = lexer.tokenize();
 
-    Parser* parser = new Parser(tokens);
-    Program* program = parser->produceAST();
+    Parser parser(tokens);
+    std::unique_ptr<Program> program = parser.produceAST();
 
-    // Env* local_env = new Env;
-    // InitNatives(local_env);
-    Value* eval = evaluate(program, env);
+    evaluate(program.get(), scriptEnv.get());
 
-    return env->lookUpVar("Null");
+    // Build the return ObjectValue: a snapshot of the sub-script's variables.
+    auto result = std::make_shared<ObjectValue>();
+    for(auto& [name, val] : scriptEnv->variables){
+        result->properties[name] = val;
+    }
+    // Transfer env ownership so functions stored in the object keep a valid decEnv.
+    result->owning_env.reset(scriptEnv.release());
+
+    debug::Debugger::getInstance().popScriptContext();
+
+    return result;
 }
 
-Value* n_funs::scan(vector<Value*> args, Env* env){
-
-    
-
+std::shared_ptr<Value> n_funs::scan(vector<std::shared_ptr<Value>> args, Env* env){
     return nullptr;
 }
 
-Value* n_funs::set_include(vector<Value*> args, Env* env){
+std::shared_ptr<Value> n_funs::set_include(vector<std::shared_ptr<Value>> args, Env* env){
     if(args.size() != 1){
-        cout << "Set Include Function: The argument should be a string!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.set_include_not_string");
     }
     if(args[0]->getType() != ValueType::String){
-        cout << "Set Include Function: The argument should be a string!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Operations, "ops.set_include_not_string");
     }
 
-    string temp = static_cast<StringVal*>(args[0])->val;
+    string temp = static_cast<StringVal*>(args[0].get())->val;
 
     Manager::getInstance().include_paths.push_back(temp);
 
     return env->lookUpVar("Null");
 }
 
-/* SORT COMPARATORS FOR DEFAULT TYPES*/
-
-bool sort_comps::cmp_less_Number(Value* a, Value* b){
-    return ((NumberVal*)a)->val < ((NumberVal*)b)->val;
+std::shared_ptr<Value> n_funs::set_lang(vector<std::shared_ptr<Value>> args, Env* env){
+    if(args.size() != 1 || args[0]->getType() != ValueType::String){
+        ABS_ERROR(cat::DSL, "debug.unknown_lang", "set_lang() requires a single string argument");
+        return env->lookUpVar("Null");
+    }
+    string langStr = static_cast<StringVal*>(args[0].get())->val;
+    debug::Lang lang = debug::Debugger::langFromString(langStr);
+    debug::Debugger::getInstance().setLanguage(lang);
+    return env->lookUpVar("Null");
 }
 
-bool sort_comps::cmp_less_String(Value* a, Value* b){
-    return ((StringVal*)a)->val < ((StringVal*)b)->val;
+std::shared_ptr<Value> n_funs::debug_level(vector<std::shared_ptr<Value>> args, Env* env){
+    if(args.size() != 1 || args[0]->getType() != ValueType::String){
+        ABS_ERROR(cat::DSL, "debug.invalid_level", "debug_level() requires a single string argument");
+        return env->lookUpVar("Null");
+    }
+    string levelStr = static_cast<StringVal*>(args[0].get())->val;
+    // Uppercase the string for comparison
+    for(auto& c : levelStr) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    debug::Level lvl;
+    if(levelStr == "TRACE")   lvl = debug::Level::Trace;
+    else if(levelStr == "DEBUG")   lvl = debug::Level::Debug;
+    else if(levelStr == "INFO")    lvl = debug::Level::Info;
+    else if(levelStr == "WARNING") lvl = debug::Level::Warning;
+    else if(levelStr == "ERROR")   lvl = debug::Level::Error;
+    else if(levelStr == "FATAL")   lvl = debug::Level::Fatal;
+    else {
+        ABS_WARNING(cat::DSL, "debug.invalid_level", "Unknown debug level \"{0}\", defaulting to INFO", levelStr);
+        lvl = debug::Level::Info;
+    }
+    debug::Debugger::getInstance().setLevel(lvl);
+    return env->lookUpVar("Null");
+}
+
+std::shared_ptr<Value> n_funs::debug_log(vector<std::shared_ptr<Value>> args, Env* env){
+    // This is a passthrough that lets .abs scripts print debug messages
+    // with proper formatting. Usage: debug_log("message")
+    std::string msg;
+    for(size_t i = 0; i < args.size(); ++i){
+        if(i > 0) msg += " ";
+        const auto& v = args[i];
+        switch(v->getType()){
+            case ValueType::Number: msg += std::to_string(static_cast<NumberVal*>(v.get())->val); break;
+            case ValueType::String: msg += static_cast<StringVal*>(v.get())->val; break;
+            case ValueType::Bool:   msg += static_cast<BoolValue*>(v.get())->val ? "true" : "false"; break;
+            case ValueType::Null:   msg += "Null"; break;
+            default:                msg += "(unknown)"; break;
+        }
+    }
+    ABS_TRACE(cat::DSL, "debug.dsl_log", msg);
+    return env->lookUpVar("Null");
+}
+
+/* SORT COMPARATORS FOR DEFAULT TYPES*/
+
+bool sort_comps::cmp_less_Number(std::shared_ptr<Value> a, std::shared_ptr<Value> b){
+    return ((NumberVal*)a.get())->val < ((NumberVal*)b.get())->val;
+}
+
+bool sort_comps::cmp_less_String(std::shared_ptr<Value> a, std::shared_ptr<Value> b){
+    return ((StringVal*)a.get())->val < ((StringVal*)b.get())->val;
 }

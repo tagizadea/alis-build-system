@@ -1,4 +1,6 @@
 #include <lexer.hpp>
+using namespace std;
+#include <debug.hpp>
 
 map <string, TokenType> Keywords = {
     {"if", TokenType::IF},
@@ -53,20 +55,32 @@ map <TokenType, string> rKeywords;
 
 Lexer::Lexer(string source) : source(source), position(0) {}
 
-Token* Lexer::tokenize(){
-    int maxTokens = 2000000;
-    Token* tokens = new Token[maxTokens];
-    int tokenIndex = 0;
+std::vector<Token> Lexer::tokenize(){
+    ABS_PROFILE_FUNC();
+    std::vector<Token> tokens;
+    tokens.reserve(1024);
 
     while(source[position] != '\0'){
-        if(isSpace(source[position])) position++;
-        else if(isAlpha(source[position])) tokens[tokenIndex++] = parseIdentifier();
-        else if(isDigit(source[position])) tokens[tokenIndex++] = parseNumber();
-        else if(source[position] == '\"') tokens[tokenIndex++] = parseString();
-        else if(source[position] == '#') while(source[position++] != '\n');
-        else tokens[tokenIndex++] = parseOperator();
+        if(isSpace(source[position])){
+            if(source[position] == '\n'){
+                ++line;
+                col = 1;
+            }
+            else ++col;
+            position++;
+        }
+        else if(isAlpha(source[position])) tokens.push_back(parseIdentifier());
+        else if(isDigit(source[position])) tokens.push_back(parseNumber());
+        else if(source[position] == '\"') tokens.push_back(parseString());
+        else if(source[position] == '#'){
+            while(source[position] != '\0' && source[position] != '\n'){
+                ++col;
+                position++;
+            }
+        }
+        else tokens.push_back(parseOperator());
     }
-    tokens[tokenIndex++] = {TokenType::EndOfFile, ""};
+    tokens.push_back({TokenType::EndOfFile, "", line, col});
 
     for(pair <string, TokenType> token : Keywords)
         rKeywords[token.second] = token.first;
@@ -75,46 +89,55 @@ Token* Lexer::tokenize(){
 }
 
 Token Lexer::parseIdentifier(){
+    int startLine = line, startCol = col;
     string start = "";
     start += source[position++];
+    ++col;
     while(isAlphaNumeric(source[position])){
         start += source[position];
         position++;
+        ++col;
     }
 
-    /*for(pair <string, TokenType> s : Keywords){
-        if(s.first == start) return {s.second, start};
-    }*/
     if(Keywords.find(start) != Keywords.end())
-        return {Keywords.find(start)->second, start};
+        return {Keywords.find(start)->second, start, startLine, startCol};
 
-    return {TokenType::Identifier, start};
+    return {TokenType::Identifier, start, startLine, startCol};
 }
 
 Token Lexer::parseNumber(){
+    int startLine = line, startCol = col;
     string start = "";
     start += source[position++];
+    ++col;
     while(isDigit(source[position]) || source[position] == '.'){
         start += source[position];
         position++;
+        ++col;
     }
-    return {TokenType::Number, start};
+    return {TokenType::Number, start, startLine, startCol};
 }
 
 Token Lexer::parseString(){
+    int startLine = line, startCol = col;
     position++; // Skip the opening quote
+    ++col;
     string start = "";
     while(source[position] != '\"' && source[position] != '\0'){
         start += source[position];
         position++;
+        ++col;
     }
     position++; // Skip the closing quote
-    return {TokenType::String, start};
+    ++col;
+    return {TokenType::String, start, startLine, startCol};
 }
 
 Token Lexer::parseOperator(){
+    int startLine = line, startCol = col;
     string start = "";
     start += source[position++];
+    ++col;
     if(source[position - 1] == '[' || source[position - 1] == ']' ||
     source[position - 1] == '{' || source[position - 1] == '}' ||
     source[position - 1] == '(' || source[position - 1] == ')') goto moterize;
@@ -124,10 +147,11 @@ Token Lexer::parseOperator(){
           source[position] == '>' || source[position] == '<'){
             if(source[position - 1] == '(' || source[position - 1] == ')') break;
             start += source[position++];
+            ++col;
           }
     moterize:
-    if(Keywords.find(start) != Keywords.end()) return {Keywords[start], start};
-    else return {TokenType::Invalid, start};
+    if(Keywords.find(start) != Keywords.end()) return {Keywords[start], start, startLine, startCol};
+    else return {TokenType::Invalid, start, startLine, startCol};
 }
 
 bool Lexer::isAlpha(char c){

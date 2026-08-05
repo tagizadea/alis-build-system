@@ -1,4 +1,5 @@
 #include <ast.hpp>
+#include <iostream>
 
 NumericLiteral::NumericLiteral(std::string val){
     kind = NodeType::NUMERIC_L;

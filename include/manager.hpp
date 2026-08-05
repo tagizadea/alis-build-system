@@ -13,14 +13,14 @@
 #include <optional>
 #include <any>
 #include <type_traits>
+#include <debug.hpp>
 
-using namespace std;
 namespace fs = std::filesystem;
 
 /// Returns the file size in bytes.
 /// Returns 0 if the file does not exist or cannot be accessed.
 inline uint64_t GetFileSize(const fs::path& path){
-    error_code ec;
+    std::error_code ec;
     auto size = fs::file_size(path, ec);
     return ec ? 0 : static_cast<uint64_t>(size);
 }
@@ -28,33 +28,33 @@ inline uint64_t GetFileSize(const fs::path& path){
 /// Returns the file modification time as nanoseconds since Unix epoch.
 /// Returns 0 if the file does not exist or cannot be accessed.
 inline uint64_t GetFileMTime(const fs::path& path){
-    error_code ec;
+    std::error_code ec;
     auto fileTime = fs::last_write_time(path, ec);
     if(ec) return 0;
     auto systemTime = fs::file_time_type::clock::to_sys(fileTime);
-    auto ns = duration_cast<chrono::nanoseconds>( systemTime.time_since_epoch() );
+    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( systemTime.time_since_epoch() );
     return static_cast<uint64_t>(ns.count());
 }
 
 template<typename T>
-typename enable_if<is_trivially_copyable<T>::value, void>::type
-writeBinary(ostream& os, const T& value){
+typename std::enable_if<std::is_trivially_copyable<T>::value, void>::type
+writeBinary(std::ostream& os, const T& value){
     os.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 
 template<typename T>
-typename enable_if<is_trivially_copyable<T>::value, void>::type
-readBinary(istream &is, T &value){
+typename std::enable_if<std::is_trivially_copyable<T>::value, void>::type
+readBinary(std::istream &is, T &value){
     is.read(reinterpret_cast<char*>(&value), sizeof(T));
 }
 
-inline void writeBinary(ostream &os, const string &s){
+inline void writeBinary(std::ostream &os, const std::string &s){
     size_t size = s.size();
     writeBinary(os, size);
     if(size > 0) os.write(s.data(), size);
 }
 
-inline void readBinary(istream &is, string &s){
+inline void readBinary(std::istream &is, std::string &s){
     size_t size;
     readBinary(is, size);
     s.resize(size);
@@ -62,47 +62,46 @@ inline void readBinary(istream &is, string &s){
 }
 
 template<typename T>
-void writeBinary(ostream &os, const vector<T> &vec){
+void writeBinary(std::ostream &os, const std::vector<T> &vec){
     size_t size = vec.size();
     writeBinary(os, size);
-    if constexpr(is_trivially_copyable<T>::value){
+    if constexpr(std::is_trivially_copyable<T>::value){
         if(size > 0) os.write(reinterpret_cast<const char*>(vec.data()), size * sizeof(T));
     }
     else for(const auto &item : vec) writeBinary(os, item);
 }
 
 template<typename T>
-void readBinary(istream &is, vector<T> &vec){
+void readBinary(std::istream &is, std::vector<T> &vec){
     size_t size;
     readBinary(is, size);
     vec.resize(size);
     if(size > 0){
-        if constexpr(is_trivially_copyable<T>::value) is.read(reinterpret_cast<char*>(vec.data()), size * sizeof(T));
+        if constexpr(std::is_trivially_copyable<T>::value) is.read(reinterpret_cast<char*>(vec.data()), size * sizeof(T));
         else for(auto &item : vec) readBinary(is, item);
     }
 }
 
-const string DEPS_CACHE_FILE_NAME = "dependencies.cache";
-const string FILES_CACHE_FILE_NAME = "files.cache";
-const string OBJS_CACHE_FILE_NAME = "objects.cache";
+const std::string DEPS_CACHE_FILE_NAME = "dependencies.cache";
+const std::string FILES_CACHE_FILE_NAME = "files.cache";
+const std::string OBJS_CACHE_FILE_NAME = "objects.cache";
 
 template<typename Entry, typename Cache>
-void readCache(const string& filename, Cache& cache){
-    const string path = ".abs/" + filename;
+void readCache(const std::string& filename, Cache& cache){
+    const std::string path = ".abs/" + filename;
 
     if(!fs::exists(path)){
         {
-            fstream create(path, ios::out | ios::binary);
+            std::fstream create(path, std::ios::out | std::ios::binary);
             size_t size = 0;
             writeBinary(create, size);
         }
     }
 
-    fstream temp_fstr(path, ios::in | ios::binary);
+    std::fstream temp_fstr(path, std::ios::in | std::ios::binary);
 
     if(!temp_fstr.is_open()){
-        cout << "Manager error: The file \"" << filename << "\" could not be opened!";
-        exit(0);
+        ABS_FATAL(cat::Manager, "manager.cache_open_fail", filename);
     }
 
     size_t size = 0;
@@ -116,14 +115,13 @@ void readCache(const string& filename, Cache& cache){
 }
 
 template<typename Entry, typename Cache>
-void writeCache(const string& filename, const Cache& cache){
-    const string path = ".abs/" + filename;
+void writeCache(const std::string& filename, const Cache& cache){
+    const std::string path = ".abs/" + filename;
 
-    fstream temp_fstr(path, ios::out | ios::binary | ios::trunc);
+    std::fstream temp_fstr(path, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if(!temp_fstr.is_open()){
-        cout << "Manager error: The file \"" << filename << "\" could not be opened!";
-        exit(0);
+        ABS_FATAL(cat::Manager, "manager.cache_open_fail", filename);
     }
 
     size_t size = cache.size();
@@ -146,19 +144,19 @@ class Manager{
     public:
 
     struct FileCacheEntry{
-        string name;
+        std::string name;
         uint64_t size;
         uint64_t mtime;
         uint64_t content_hash;
 
-        void save(ostream &os) const{
+        void save(std::ostream &os) const{
             writeBinary(os, name);
             writeBinary(os, size);
             writeBinary(os, mtime);
             writeBinary(os, content_hash);
         }
 
-        void load(istream &is){
+        void load(std::istream &is){
             readBinary(is, name);
             readBinary(is, size);
             readBinary(is, mtime);
@@ -168,17 +166,17 @@ class Manager{
     };
 
     struct DependencyCacheEntry{
-        string name;
-        vector <string> includes;
+        std::string name;
+        std::vector <std::string> includes;
         uint64_t dependency_hash;
 
-        void save(ostream &os) const{
+        void save(std::ostream &os) const{
             writeBinary(os, name);
             writeBinary(os, includes);
             writeBinary(os, dependency_hash);
         }
 
-        void load(istream &is){
+        void load(std::istream &is){
             readBinary(is, name);
             readBinary(is, includes);
             readBinary(is, dependency_hash);
@@ -186,17 +184,17 @@ class Manager{
     };
 
     struct ObjectCacheEntry{
-        string name;
+        std::string name;
         uint64_t build_hash;
         uint64_t object_size;
 
-        void save(ostream &os) const{
+        void save(std::ostream &os) const{
             writeBinary(os, name);
             writeBinary(os, build_hash);
             writeBinary(os, object_size);
         }
 
-        void load(istream &is){
+        void load(std::istream &is){
             readBinary(is, name);
             readBinary(is, build_hash);
             readBinary(is, object_size);
@@ -209,26 +207,26 @@ class Manager{
     }
 
     // OLD !!!
-    vector <string> sources;
-    unordered_map <string, pair <unsigned int, uint32_t>> tracked_files;
-    map <string, string> deps;
+    std::vector <std::string> sources;
+    std::unordered_map <std::string, std::pair <unsigned int, uint32_t>> tracked_files;
+    std::map <std::string, std::string> deps;
 
-    map <string, optional<string>> defines;
-    vector <string> include_paths;
+    std::map <std::string, std::optional<std::string>> defines;
+    std::vector <std::string> include_paths;
 
     // Caches
-    map <string, FileCacheEntry> FileCache;
-    map <string, DependencyCacheEntry> DependencyCache;
-    map <string, ObjectCacheEntry> ObjectCache;
+    std::map <std::string, FileCacheEntry> FileCache;
+    std::map <std::string, DependencyCacheEntry> DependencyCache;
+    std::map <std::string, ObjectCacheEntry> ObjectCache;
 
 
 
     void init_manager();
     
-    FileCacheEntry track(const string& Source);
-    vector <string> scan_headers(const string& ChangedFile);
-    vector <string> scan_graph(const DependencyCacheEntry& Node, set <string>& color, map <string, vector <string>>& reverse_graph);
-    vector <string> reverse_invalidation(map <string, vector <string>>& reverse_graph, vector <string>& DirtyHeaderNames);
+    FileCacheEntry track(const std::string& Source);
+    std::vector <std::string> scan_headers(const std::string& ChangedFile);
+    std::vector <std::string> scan_graph(const DependencyCacheEntry& Node, std::set <std::string>& color, std::map <std::string, std::vector <std::string>>& reverse_graph);
+    std::vector <std::string> reverse_invalidation(std::map <std::string, std::vector <std::string>>& reverse_graph, std::vector <std::string>& DirtyHeaderNames);
 };
 
 #endif

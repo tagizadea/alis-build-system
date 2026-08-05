@@ -1,5 +1,7 @@
 #include <manager.hpp>
+using namespace std;
 #include <xxhash64.hpp>
+#include <debug.hpp>
 #include <stack>
 
 void Manager::init_manager(){
@@ -20,16 +22,16 @@ void Manager::init_manager(){
     
     fstream about(".abs/about.txt", ios::out);
     if(!about.is_open()){
-        cout << "Manager error: The file \"about\" could not opened!";
-        exit(0); // !!! Debug systemi ile deyis
+        ABS_FATAL(cat::Manager, "manager.about_open_fail");
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 0.9ALPHA";
+    about << "Ali's Build System for C/C++.\nVersion number: 0.10.0";
     about.close();
 
     manager.include_paths.push_back("./");
 }
 
 Manager::FileCacheEntry Manager::track(const string& Source){
+    ABS_PROFILE_FUNC();
     Manager::FileCacheEntry ans;
     ans.content_hash = 0;
     ans.mtime = 0;
@@ -162,6 +164,7 @@ string extractHeaderName(const string& line){
 }
 
 vector<string> Manager::scan_headers(const string& ChangedFile){
+    ABS_PROFILE_FUNC();
     set<string> uniqueHeaders;
     string dephash = "";
     auto& manager = Manager::getInstance();
@@ -260,7 +263,10 @@ vector<string> Manager::scan_headers(const string& ChangedFile){
                 }
             }
             uniqueHeaders.insert(header);
-            dephash += header;
+            // Hash the RESOLVED path, not the raw header name, so two files
+            // including different headers with the same filename produce
+            // different dependency hashes.
+            dephash += resolved;
             entry.includes.push_back(resolved);
         }
 
@@ -306,7 +312,13 @@ vector <string> Manager::scan_graph(const DependencyCacheEntry& Node, set <strin
             reverse_graph[i].push_back(temp_Node.name);
             
             if(color.find(i) == color.end()){
-                Stack.push(manager.DependencyCache[i]);
+                // Use find() instead of operator[] to avoid default-constructing
+                // a DependencyCacheEntry with dependency_hash=0 when the key
+                // doesn't exist yet (which would corrupt the cache).
+                auto dep_it = manager.DependencyCache.find(i);
+                if(dep_it != manager.DependencyCache.end()){
+                    Stack.push(dep_it->second);
+                }
                 color.insert(i);
             
                 if(!IsSourceFile(i)){
@@ -328,6 +340,7 @@ vector <string> Manager::scan_graph(const DependencyCacheEntry& Node, set <strin
 }
 
 vector<string> Manager::reverse_invalidation(map<string, vector<string>>& reverse_graph, vector <string>& DirtyHeaderNames){
+    ABS_PROFILE_FUNC();
     set <string> color_reverse;
 
     for(const string& i : DirtyHeaderNames){
@@ -341,13 +354,16 @@ vector<string> Manager::reverse_invalidation(map<string, vector<string>>& revers
                 const string& temp_Reverse_Node = stack_reverse.top();
                 
 
-                for(const string& s : reverse_graph[temp_Reverse_Node]){
-
-                    if(color_reverse.find(s) == color_reverse.end()){
-                        color_reverse.insert(s);
-                        stack_reverse.push(s);
+                // Use find() instead of operator[] to avoid default-constructing
+                // an empty vector for keys that don't exist in the reverse graph.
+                auto rg_it = reverse_graph.find(temp_Reverse_Node);
+                if(rg_it != reverse_graph.end()){
+                    for(const string& s : rg_it->second){
+                        if(color_reverse.find(s) == color_reverse.end()){
+                            color_reverse.insert(s);
+                            stack_reverse.push(s);
+                        }
                     }
-
                 }
 
                 stack_reverse.pop();

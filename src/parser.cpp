@@ -1,29 +1,37 @@
 #include <parser.hpp>
+using namespace std;
+#include <debug.hpp>
 
 Token Parser::at(){
     return tokens[i];
 }
 
+void Parser::setErrorLocation(){
+    debug::Debugger& dbg = debug::Debugger::getInstance();
+    dbg.setScriptLine(tokens[i].line);
+    dbg.setScriptCol(tokens[i].col);
+}
+
 Token Parser::eat(){
+    setErrorLocation();
     if(tokens[i].type == TokenType::EndOfFile){
-        cout << "Tokenin sonuna geldin! Daha eat olmur!";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Parser, "parser.eof_eat");
     }
     return tokens[i++];
 }
 
 Token Parser::expect(TokenType t, string err){
+    setErrorLocation();
     Token tk = eat();
 
     if(tk.type != t){
-        cout << "Parser Error: " << err << " - Expecting: " << (int)t <<'\n';
-        exit(0);
+        ABS_FATAL(cat::Parser, "parser.expect_error", err, tk.value, (int)t);
     }
 
     return tk;
 }
 
-Stmt* Parser::parse_stmt(){
+std::unique_ptr<Stmt> Parser::parse_stmt(){
     if(at().type == TokenType::Let || at().type == TokenType::Const){
         return parse_var_declaration();
     }
@@ -36,37 +44,35 @@ Stmt* Parser::parse_stmt(){
     return parse_expr();
 }
 
-Stmt* Parser::parse_break(){
+std::unique_ptr<Stmt> Parser::parse_break(){
     eat();
-    BreakStmt* temp = new BreakStmt;
-    return temp;
+    return std::make_unique<BreakStmt>();
 }
 
-Stmt* Parser::parse_continue(){
+std::unique_ptr<Stmt> Parser::parse_continue(){
     eat();
-    ContinueStmt* temp = new ContinueStmt;
-    return temp;
+    return std::make_unique<ContinueStmt>();
 }
 
 
 
-Stmt* Parser::parse_var_declaration(){
+std::unique_ptr<Stmt> Parser::parse_var_declaration(){
     bool const isConst = eat().type == TokenType::Const;
     TokenType last = TokenType::Invalid;
-    VarDeclaration* temp = new VarDeclaration;
+    auto temp = std::make_unique<VarDeclaration>();
     do{
         string const identifier = expect(TokenType::Identifier, "Let or Const declared wrong").value;
         if(at().type == TokenType::SEMICOLON || at().type == TokenType::COMMA){
             if(isConst){
-                cout << "Parser Error: Constant dəyər yoxdur!\n";
-                exit(0); // !!! Debug sistemi ile deyis
+                setErrorLocation();
+                ABS_FATAL(cat::Parser, "parser.const_no_value");
             }
 
             temp->constant = false;
-            if(temp->vars.find(identifier) == temp->vars.end()) temp->vars[identifier] = new NumericLiteral("0");
+            if(temp->vars.find(identifier) == temp->vars.end()) temp->vars[identifier] = std::make_unique<NumericLiteral>("0");
             else{
-                cout << "Parser Error: Eyni adlı bir neçə dəyişən təyin oluna bilməz!";
-                exit(0); // !!! debug systemi ile deyis
+                setErrorLocation();
+                ABS_FATAL(cat::Parser, "parser.duplicate_var");
             }
         }
         else{
@@ -74,62 +80,60 @@ Stmt* Parser::parse_var_declaration(){
             temp->constant = isConst;
             if(temp->vars.find(identifier) == temp->vars.end()) temp->vars[identifier] = parse_expr();
             else{
-                cout << "Parser Error: Eyni adlı bir neçə dəyişən təyin oluna bilməz!";
-                exit(0); // !!! debug systemi ile deyis
+                setErrorLocation();
+                ABS_FATAL(cat::Parser, "parser.duplicate_var");
             }
         }
         last = at().type;
     }
     while(eat().type == TokenType::COMMA);
     if(last != TokenType::SEMICOLON){
-        cout << "Let or Const declared without semicolon";
-        exit(0); // !!! debug sistemi ile deyis
+        setErrorLocation();
+        ABS_FATAL(cat::Parser, "parser.missing_semicolon");
     }
     return temp;
 }
 
-Stmt* Parser::parse_func_declaration(){
+std::unique_ptr<Stmt> Parser::parse_func_declaration(){
     eat();
     string name = expect(TokenType::Identifier, "Function name is missing").value;
-    vector <Expr*> args = parse_args();
-    vector <string> params;
+    std::vector <std::unique_ptr<Expr>> args = parse_args();
+    std::vector <string> params;
 
-    for(Expr* arg : args){
+    for(auto& arg : args){
         if(arg->getKind() != NodeType::IDENTIFIER){
-            cout << "Parameterlər identifier tipində olmalıdır";
-            exit(0); // !!! debug systemi ile deyis
+            setErrorLocation();
+            ABS_FATAL(cat::Parser, "parser.param_not_identifier");
         }
-        params.push_back(((Identifier*)arg)->symbol);
+        params.push_back(((Identifier*)arg.get())->symbol);
     }
 
     expect(TokenType::LBRACK, "Funksiya təyini üçün qarışıq mötərizə açılmayıb");
-    vector <Stmt*> body;
+    std::vector <std::unique_ptr<Stmt>> body;
 
     while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
         body.push_back(parse_stmt());
     }
     expect(TokenType::RBRACK, "Funksiya təyini üçün qarışıq mötərizə bağlanmayıb");
-    FunDeclaration* temp = new FunDeclaration;
-    temp->body = body;
+    auto temp = std::make_unique<FunDeclaration>();
+    temp->body = std::move(body);
     temp->name = name;
     temp->parameters = params;
     return temp;
 }
 
-Expr* Parser::parse_expr(){
-    //return parse_primary_expr();
-    //return parse_additive_expr();
+std::unique_ptr<Expr> Parser::parse_expr(){
     return parse_assignment_expr();
 }
 
-Stmt* Parser::parse_condition_expr(){
+std::unique_ptr<Stmt> Parser::parse_condition_expr(){
     eat();
     expect(TokenType::LPAREN, "IF left parenthesis is missing");
-    Expr* condition = parse_expr();
+    std::unique_ptr<Expr> condition = parse_expr();
     expect(TokenType::RPAREN, "IF right parenthesis is missing");
     expect(TokenType::LBRACK, "IF left bracket is missing");
-    vector <Stmt*> ThenBranch;
-    vector <Stmt*> ElseBranch;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
+    std::vector <std::unique_ptr<Stmt>> ElseBranch;
     while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
         ThenBranch.push_back(parse_stmt());
     }
@@ -154,146 +158,145 @@ Stmt* Parser::parse_condition_expr(){
         if(f) expect(TokenType::RBRACK, "Else ucun bracket baglanmalidir");
     }
 
-    CondExpr* temp = new CondExpr;
-    temp->condition = condition;
-    temp->ElseBranch = ElseBranch;
-    temp->ThenBranch = ThenBranch;
+    auto temp = std::make_unique<CondExpr>();
+    temp->condition = std::move(condition);
+    temp->ElseBranch = std::move(ElseBranch);
+    temp->ThenBranch = std::move(ThenBranch);
     return temp;
 }
 
-Stmt* Parser::parse_while(){
+std::unique_ptr<Stmt> Parser::parse_while(){
     eat();
     expect(TokenType::LPAREN, "WHILE left parenthesis is missing");
-    Expr* condition = parse_expr();
+    std::unique_ptr<Expr> condition = parse_expr();
     expect(TokenType::RPAREN, "WHILE right parenthesis is missing");
     expect(TokenType::LBRACK, "WHILE left bracket is missing");
-    vector <Stmt*> ThenBranch;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
     while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
         ThenBranch.push_back(parse_stmt());
     }
     expect(TokenType::RBRACK, "WHILE right bracket is missing");
-    WhileStmt* temp = new WhileStmt;
-    temp->condition = condition;
-    temp->ThenBranch = ThenBranch;
+    auto temp = std::make_unique<WhileStmt>();
+    temp->condition = std::move(condition);
+    temp->ThenBranch = std::move(ThenBranch);
     return temp;
 }
 
-Stmt* Parser::parse_for(){
+std::unique_ptr<Stmt> Parser::parse_for(){
     eat();
     expect(TokenType::LPAREN, "FOR left parenthesis is missing");
-    Stmt* it_dec = parse_stmt();
+    std::unique_ptr<Stmt> it_dec = parse_stmt();
 
     if(it_dec->getKind() != NodeType::VAR_D) expect(TokenType::SEMICOLON, "FOR semicolon is missing");
 
-    Expr* condition = parse_expr();
+    std::unique_ptr<Expr> condition = parse_expr();
     expect(TokenType::SEMICOLON, "FOR semicolon is missing");
 
-    Expr* operation = parse_expr();
+    std::unique_ptr<Expr> operation = parse_expr();
 
     expect(TokenType::RPAREN, "FOR right parenthesis is missing");
     expect(TokenType::LBRACK, "FOR left bracket is missing");
-    vector <Stmt*> ThenBranch;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
     while(TokenType::EndOfFile != at().type && TokenType::RBRACK != at().type){
         ThenBranch.push_back(parse_stmt());
     }
     expect(TokenType::RBRACK, "FOR right bracket is missing");
-    ForStmt* temp = new ForStmt;
-    temp->iterator_dec = it_dec;
-    temp->condition = condition;
-    temp->operation = operation;
-    temp->ThenBranch = ThenBranch;
+    auto temp = std::make_unique<ForStmt>();
+    temp->iterator_dec = std::move(it_dec);
+    temp->condition = std::move(condition);
+    temp->operation = std::move(operation);
+    temp->ThenBranch = std::move(ThenBranch);
     return temp;
 }
 
-Expr* Parser::parse_assignment_expr(){
-    //Expr* left = parse_additive_expr();
-    Expr* left = parse_object_expr();
+std::unique_ptr<Expr> Parser::parse_assignment_expr(){
+    std::unique_ptr<Expr> left = parse_object_expr();
 
     if(at().type == TokenType::ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        temp->assignexpr = left;
-        temp->value = val;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(val);
         return temp;
     }
 
     if(at().type == TokenType::PLUS_ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        BinaryExpr* temp_b = new BinaryExpr;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        auto temp_b = std::make_unique<BinaryExpr>();
 
-        temp_b->left = left;
-        temp_b->right = val;
+        temp_b->left = left->clone();
+        temp_b->right = std::move(val);
         temp_b->op = "+";
         
-        temp->assignexpr = left;
-        temp->value = temp_b;
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(temp_b);
         
         return temp;
     }
 
     if(at().type == TokenType::MINUS_ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        BinaryExpr* temp_b = new BinaryExpr;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        auto temp_b = std::make_unique<BinaryExpr>();
 
-        temp_b->left = left;
-        temp_b->right = val;
+        temp_b->left = left->clone();
+        temp_b->right = std::move(val);
         temp_b->op = "-";
         
-        temp->assignexpr = left;
-        temp->value = temp_b;
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(temp_b);
         
         return temp;
     }
 
     if(at().type == TokenType::MULT_ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        BinaryExpr* temp_b = new BinaryExpr;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        auto temp_b = std::make_unique<BinaryExpr>();
 
-        temp_b->left = left;
-        temp_b->right = val;
+        temp_b->left = left->clone();
+        temp_b->right = std::move(val);
         temp_b->op = "*";
         
-        temp->assignexpr = left;
-        temp->value = temp_b;
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(temp_b);
         
         return temp;
     }
 
     if(at().type == TokenType::DIV_ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        BinaryExpr* temp_b = new BinaryExpr;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        auto temp_b = std::make_unique<BinaryExpr>();
 
-        temp_b->left = left;
-        temp_b->right = val;
+        temp_b->left = left->clone();
+        temp_b->right = std::move(val);
         temp_b->op = "/";
         
-        temp->assignexpr = left;
-        temp->value = temp_b;
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(temp_b);
         
         return temp;
     }
 
     if(at().type == TokenType::MOD_ASSIGN){
         eat();
-        Expr* val = parse_assignment_expr();
-        AssignExpr* temp = new AssignExpr;
-        BinaryExpr* temp_b = new BinaryExpr;
+        std::unique_ptr<Expr> val = parse_assignment_expr();
+        auto temp = std::make_unique<AssignExpr>();
+        auto temp_b = std::make_unique<BinaryExpr>();
 
-        temp_b->left = left;
-        temp_b->right = val;
+        temp_b->left = left->clone();
+        temp_b->right = std::move(val);
         temp_b->op = "%";
         
-        temp->assignexpr = left;
-        temp->value = temp_b;
+        temp->assignexpr = std::move(left);
+        temp->value = std::move(temp_b);
         
         return temp;
     }
@@ -301,203 +304,198 @@ Expr* Parser::parse_assignment_expr(){
     return left;
 }
 
-Expr *Parser::parse_list_expr(){
+std::unique_ptr<Expr> Parser::parse_list_expr(){
     if(at().type != TokenType::LBRACE) return parse_logical_expr();
 
     eat();
-    vector <ElementLiteral*> v;
+    std::vector <std::unique_ptr<ElementLiteral>> v;
 
     unsigned int key = 0;
     while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACE){
-        ///cout << "BURA GELDI\n";///
-        //string key = expect(TokenType::Identifier, "ObjectLiteral key is not found").value;
-        Expr* val = parse_expr();
+        std::unique_ptr<Expr> val = parse_expr();
         if(at().type == TokenType::COMMA){
             eat();
-            ElementLiteral* temp = new ElementLiteral;
+            auto temp = std::make_unique<ElementLiteral>();
             temp->key = key++;
-            temp->val = val;
-            v.push_back(temp);
+            temp->val = std::move(val);
+            v.push_back(std::move(temp));
             continue;
         }
         else if(at().type == TokenType::RBRACE){
-            ElementLiteral* temp = new ElementLiteral;
+            auto temp = std::make_unique<ElementLiteral>();
             temp->key = key++;
-            temp->val = val;
-            v.push_back(temp);
+            temp->val = std::move(val);
+            v.push_back(std::move(temp));
             continue;
         }
     }
 
     expect(TokenType::RBRACE, "Brace bağlanmayıb");
-    ListLiteral* temp = new ListLiteral;
-    temp->properties = v;
+    auto temp = std::make_unique<ListLiteral>();
+    temp->properties = std::move(v);
     return temp;
 }
 
-Expr* Parser::parse_object_expr(){
+std::unique_ptr<Expr> Parser::parse_object_expr(){
     if(at().type != TokenType::LBRACK) return parse_list_expr();
     
     eat();
-    vector <PropertyLiteral*> v;
+    std::vector <std::unique_ptr<PropertyLiteral>> v;
     
     while(at().type != TokenType::EndOfFile && at().type != TokenType::RBRACK){
-        ///cout << "BURA GELDI\n";///
         string key = expect(TokenType::Identifier, "ObjectLiteral key is not found").value;
         int j;
         for(j = i;tokens[j].value != "{";--j); // Eyni adli local deyisen sistemi lazimdir
         if(tokens[j-1].type == TokenType::ASSIGN){
             string varname = tokens[j-2].value;
             if(key == varname){
-                cout << "Parser Error: name of key cannot be same as parent object";
-                exit(0); // debug systemi ile deyis
+                setErrorLocation();
+                ABS_FATAL(cat::Parser, "parser.key_same_as_object");
             }
         }
         if(at().type == TokenType::COMMA){
             eat();
-            PropertyLiteral* temp = new PropertyLiteral;
+            auto temp = std::make_unique<PropertyLiteral>();
             temp->key = key;
             temp->val = nullptr;
-            v.push_back(temp);
+            v.push_back(std::move(temp));
             continue;
         }
         else if(at().type == TokenType::RBRACK){
-            PropertyLiteral* temp = new PropertyLiteral;
+            auto temp = std::make_unique<PropertyLiteral>();
             temp->key = key;
             temp->val = nullptr;
-            v.push_back(temp);
+            v.push_back(std::move(temp));
             continue;
         }
 
         expect(TokenType::COLON, "ObjectLiteral colon is missing");
-        Expr* value = parse_expr();
+        std::unique_ptr<Expr> value = parse_expr();
 
-        PropertyLiteral* temp = new PropertyLiteral;
+        auto temp = std::make_unique<PropertyLiteral>();
         temp->key = key;
-        temp->val = value;
-        v.push_back(temp);
+        temp->val = std::move(value);
+        v.push_back(std::move(temp));
         if(at().type == TokenType::RBRACK) continue;
         expect(TokenType::COMMA, "ObjectLiteral comma is missing");
     }
 
     expect(TokenType::RBRACK, "Bracket bağlanmayıb");
-    ObjectLiteral* temp = new ObjectLiteral;
-    temp->properties = v;
+    auto temp = std::make_unique<ObjectLiteral>();
+    temp->properties = std::move(v);
     return temp;
 }
 
-Expr* Parser::parse_additive_expr(){
-    Expr* left = parse_mult_expr();
+std::unique_ptr<Expr> Parser::parse_additive_expr(){
+    std::unique_ptr<Expr> left = parse_mult_expr();
     
     while(at().value == "+" || at().value == "-"){
         string op = eat().value;
-        Expr* right = parse_mult_expr();
-        BinaryExpr* binop = new BinaryExpr;
-        binop->left = left;
+        std::unique_ptr<Expr> right = parse_mult_expr();
+        auto binop = std::make_unique<BinaryExpr>();
+        binop->left = std::move(left);
         binop->op = op;
-        binop->right = right;
-        left = binop;
+        binop->right = std::move(right);
+        left = std::move(binop);
     }
 
     return left;
 }
 
-Expr* Parser::parse_unary_expr(){
+std::unique_ptr<Expr> Parser::parse_unary_expr(){
     if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
-        UnaryExpr* temp = new UnaryExpr;
+        auto temp = std::make_unique<UnaryExpr>();
         temp->left = true;
         temp->plus = eat().type == TokenType::UNARY_PLUS;
-        Expr* r = parse_primary_expr();
+        std::unique_ptr<Expr> r = parse_primary_expr();
         if(r->getKind() != NodeType::IDENTIFIER){
-            cout << "Unary Expr need identifier!";
-            exit(0); // !!! debug systemi ile deyis
+            setErrorLocation();
+            ABS_FATAL(cat::Parser, "parser.unary_needs_identifier");
         }
-        temp->identifier = r;
+        temp->identifier = std::move(r);
         return temp;
     }
     
-    Expr* right = parse_primary_expr();
+    std::unique_ptr<Expr> right = parse_primary_expr();
     if(at().type == TokenType::UNARY_PLUS || at().type == TokenType::UNARY_MINUS){
-        UnaryExpr* temp = new UnaryExpr;
+        auto temp = std::make_unique<UnaryExpr>();
         temp->left = false;
         temp->plus = eat().type == TokenType::UNARY_PLUS;
         if(right->getKind() != NodeType::IDENTIFIER){
-            cout << "Unary Expr need identifier!";
-            exit(0); // !!! debug systemi ile deyis
+            setErrorLocation();
+            ABS_FATAL(cat::Parser, "parser.unary_needs_identifier");
         }
-        temp->identifier = right;
+        temp->identifier = std::move(right);
         return temp;
     }
     
     return right;
 }
 
-Expr* Parser::parse_boolean_expr(){
-    Expr* left = parse_additive_expr();
+std::unique_ptr<Expr> Parser::parse_boolean_expr(){
+    std::unique_ptr<Expr> left = parse_additive_expr();
     
     while(at().value == ">" || at().value == "<" || at().value == ">=" || at().value == "<=" || 
           at().value == "==" || at().value == "!="){
         string op = eat().value;
-        Expr* right = parse_additive_expr();
-        BinaryExpr* binop = new BinaryExpr;
-        binop->left = left;
+        std::unique_ptr<Expr> right = parse_additive_expr();
+        auto binop = std::make_unique<BinaryExpr>();
+        binop->left = std::move(left);
         binop->op = op;
-        binop->right = right;
-        left = binop;
+        binop->right = std::move(right);
+        left = std::move(binop);
     }
 
 
     return left;
 }
 
-Expr* Parser::parse_logical_expr(){
-    Expr* left = parse_boolean_expr();
+std::unique_ptr<Expr> Parser::parse_logical_expr(){
+    std::unique_ptr<Expr> left = parse_boolean_expr();
     
     while(at().value == "&&" || at().value == "||"){
         string op = eat().value;
-        Expr* right = parse_boolean_expr();
-        BinaryExpr* binop = new BinaryExpr;
-        binop->left = left;
+        std::unique_ptr<Expr> right = parse_boolean_expr();
+        auto binop = std::make_unique<BinaryExpr>();
+        binop->left = std::move(left);
         binop->op = op;
-        binop->right = right;
-        left = binop;
+        binop->right = std::move(right);
+        left = std::move(binop);
     }
 
     return left;
 }
 
-Expr* Parser::parse_mult_expr(){
-    // Expr* left = parse_primary_expr();
-    Expr* left = parse_call_member_expr();
+std::unique_ptr<Expr> Parser::parse_mult_expr(){
+    std::unique_ptr<Expr> left = parse_call_member_expr();
     
     while(at().value == "*" || at().value == "/" || at().value == "%"){
         string op = eat().value;
-        Expr* right = parse_call_member_expr();
-        BinaryExpr* binop = new BinaryExpr;
-        binop->left = left;
+        std::unique_ptr<Expr> right = parse_call_member_expr();
+        auto binop = std::make_unique<BinaryExpr>();
+        binop->left = std::move(left);
         binop->op = op;
-        binop->right = right;
-        left = binop;
+        binop->right = std::move(right);
+        left = std::move(binop);
     }
 
     return left;
 }
 
-Expr* Parser::parse_call_member_expr(){
-    Expr* member = parse_member_expr();
+std::unique_ptr<Expr> Parser::parse_call_member_expr(){
+    std::unique_ptr<Expr> member = parse_member_expr();
     
-    if(at().type == TokenType::LPAREN) return parse_call_expr(member);
+    if(at().type == TokenType::LPAREN) return parse_call_expr(std::move(member));
     
     return member;
 }
 
-Expr* Parser::parse_member_expr(){
-    // Expr* object = parse_primary_expr();
-    Expr* object = parse_unary_expr();
+std::unique_ptr<Expr> Parser::parse_member_expr(){
+    std::unique_ptr<Expr> object = parse_unary_expr();
 
     while(at().type == TokenType::DOT || at().type == TokenType::LBRACE){
         Token op = eat();
-        Expr* property;
+        std::unique_ptr<Expr> property;
         bool isComputed;
 
         if(op.type == TokenType::DOT){
@@ -505,8 +503,8 @@ Expr* Parser::parse_member_expr(){
             property = parse_primary_expr();
 
             if(property->getKind() != NodeType::IDENTIFIER){
-                cout << "Parse Error: Noqte identifier olmadan islenenmez";
-                exit(0); // !!! Debug systemi ile deyis
+                setErrorLocation();
+                ABS_FATAL(cat::Parser, "parser.dot_needs_identifier");
             }
         }
         else{
@@ -515,38 +513,37 @@ Expr* Parser::parse_member_expr(){
             expect(TokenType::RBRACE, "Kvadrat mötərizə bağlanmayıb");
         }
 
-        MemberExpr* temp = new MemberExpr;
+        auto temp = std::make_unique<MemberExpr>();
         temp->computed = isComputed;
-        temp->property = property;
-        temp->object = object;
-        //delete object; // bunu cox dusunmemisem
-        object = temp;
+        temp->property = std::move(property);
+        temp->object = std::move(object);
+        object = std::move(temp);
     }
 
     return object;
 }
 
-Expr* Parser::parse_call_expr(Expr* call){
-    CallExpr* call_expr = new CallExpr;
-    call_expr->callexpr = call;
+std::unique_ptr<Expr> Parser::parse_call_expr(std::unique_ptr<Expr> call){
+    auto call_expr = std::make_unique<CallExpr>();
+    call_expr->callexpr = std::move(call);
     call_expr->args = parse_args();
     
     if(at().type == TokenType::LPAREN)
-        call_expr = (CallExpr*)parse_call_expr(call_expr);
+        call_expr = std::unique_ptr<CallExpr>(static_cast<CallExpr*>(parse_call_expr(std::move(call_expr)).release()));
 
     return call_expr;
 }
 
-vector<Expr*> Parser::parse_args(){
+std::vector<std::unique_ptr<Expr>> Parser::parse_args(){
     expect(TokenType::LPAREN, "Mötərizə açılmalı idi :')");
-    vector <Expr*> v;
+    std::vector <std::unique_ptr<Expr>> v;
     if(at().type != TokenType::RPAREN) v = parse_args_list();
     expect(TokenType::RPAREN, "Mötərizə bağlanmalı idi :')");
     return v;
 }
 
-vector<Expr*> Parser::parse_args_list(){
-    vector <Expr*> v;
+std::vector<std::unique_ptr<Expr>> Parser::parse_args_list(){
+    std::vector <std::unique_ptr<Expr>> v;
     v.push_back(parse_assignment_expr());
 
     while(at().type != TokenType::EndOfFile && at().type == TokenType::COMMA){
@@ -557,68 +554,62 @@ vector<Expr*> Parser::parse_args_list(){
     return v;
 }
 
-Expr* Parser::parse_primary_expr(){
+std::unique_ptr<Expr> Parser::parse_primary_expr(){
     const TokenType tk = at().type;
 
     if(tk == TokenType::Identifier){
-        Expr* temp = new Identifier(eat().value);
-        return temp;
+        return std::make_unique<Identifier>(eat().value);
     }
     else if(tk == TokenType::NOT){
         eat();
-        NotExpr* temp = new NotExpr;
-        //temp->val = parse_expr();
-        temp->val = new Identifier(expect(TokenType::Identifier, "not identifiersiz yazilanmaz").value);
+        auto temp = std::make_unique<NotExpr>();
+        temp->val = std::make_unique<Identifier>(expect(TokenType::Identifier, "not identifiersiz yazilanmaz").value);
         return temp;
     }
     else if(tk == TokenType::Number){
-        Expr* temp = new NumericLiteral(eat().value);
-        //temp->kind = NodeType::NUMERIC_L;
-        //cout << (int)temp->kind << '\n'; DEBUG CODE
-        return temp;
+        return std::make_unique<NumericLiteral>(eat().value);
     }
     else if(tk == TokenType::String){
-        Expr* temp = new StringLiteral(eat().value);
-        return temp;
+        return std::make_unique<StringLiteral>(eat().value);
     }
     else if(tk == TokenType::LPAREN){
         eat();
-        Expr* temp = parse_expr();
+        std::unique_ptr<Expr> temp = parse_expr();
         expect(TokenType::RPAREN, "Mötərizə bağlanmayıb!");
         return temp;
     }
     else if(tk == TokenType::MINUS){
         eat();
-        Expr* temp = parse_primary_expr();
+        std::unique_ptr<Expr> temp = parse_primary_expr();
         if(temp->getKind() != NodeType::NUMERIC_L){
-            cout << "Parser Error: Minus operator without number";
-            exit(0); // debug sistemi ile deyis
+            setErrorLocation();
+            ABS_FATAL(cat::Parser, "parser.minus_without_number");
         }
-        NumericLiteral* num = (NumericLiteral*)temp;
+        NumericLiteral* num = (NumericLiteral*)temp.get();
         num->val = -(num->val);
-        return num;
+        return temp;
     }
     else if(tk == TokenType::PLUS){
         eat();
-        Expr* temp = parse_primary_expr();
+        std::unique_ptr<Expr> temp = parse_primary_expr();
         if(temp->getKind() != NodeType::NUMERIC_L){
-            cout << "Parser Error: Plus operator without number";
-            exit(0); // debug sistemi ile deyis
+            setErrorLocation();
+            ABS_FATAL(cat::Parser, "parser.plus_without_number");
         }
         return temp;
     }
     else{
-        std::cout << "Bilinmeyen xeta! : parse_pr_expr - " << at().value; // !!! asert ile deyis
-        exit(0);
-        return new Expr();
+        setErrorLocation();
+        ABS_FATAL(cat::Parser, "parser.unknown_expr", at().value);
+        return nullptr;
     }
 }
 
-Program* Parser::produceAST(){
-    Program* program = new Program;
+std::unique_ptr<Program> Parser::produceAST(){
+    ABS_PROFILE_FUNC();
+    auto program = std::make_unique<Program>();
     while(tokens[i].type != TokenType::EndOfFile){
         program->body.push_back(parse_stmt());
-        //++i; // temp
     }
 
     return program;

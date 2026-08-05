@@ -7,6 +7,7 @@
 #include <parser.hpp>
 #include <eval.hpp>
 #include <manager.hpp>
+#include <debug.hpp>
 using namespace std;
 namespace fs = filesystem;
 
@@ -17,6 +18,10 @@ vector <string> files;
 
 int main(int argc, char* argv[]){
     
+#if defined(ABS_PROFILE) && ABS_PROFILE
+    std::atexit([](){ debug::Debugger::getInstance().dumpProfile(); });
+#endif
+
     cout << "Ali's Build System ALPHA!\n";
     Manager::getInstance().init_manager();
     
@@ -57,12 +62,14 @@ int main(int argc, char* argv[]){
 
     if(argc == 2) MainFile = argv[1];
 
+    debug::Debugger::getInstance().setScriptContext(MainFile);
+
     ifstream file(MainFile);
     string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
     file.close();
     content += '\n';
     Lexer lexer(content.c_str());
-    Token* tokens = lexer.tokenize();
+    std::vector<Token> tokens = lexer.tokenize();
 
     // Printing Lexer for debug
     // cout << "Lexer:\n";
@@ -72,8 +79,8 @@ int main(int argc, char* argv[]){
     // }
     // cout << '\n';
     
-    Parser* parser = new Parser(tokens);
-    Program* program = parser->produceAST();
+    Parser parser(tokens);
+    std::unique_ptr<Program> program = parser.produceAST();
 
     // Printing AST for debug
     // cout << "AST:\n";
@@ -82,7 +89,7 @@ int main(int argc, char* argv[]){
     // Printing Evalutation for debug
     Env* env = new Env;
     InitNatives(env);
-    Value* eval = evaluate(program, env);
+    std::shared_ptr<Value> eval = evaluate(program.get(), env);
     //cout << "\nEVALUATION:\n";
     //print_eval(eval, 0);
 

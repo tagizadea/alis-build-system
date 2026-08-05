@@ -4,9 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-
-
-#include <iostream> // temp
+#include <memory>
 
 enum class NodeType{
     NONE,
@@ -45,7 +43,7 @@ class Stmt{
 class Program : public Stmt{
     NodeType kind = NodeType::PROGRAM;
     public:
-    std::vector <Stmt*> body;
+    std::vector <std::unique_ptr<Stmt>> body;
     NodeType getKind() const override{
         return kind;
     }
@@ -55,6 +53,11 @@ class Program : public Stmt{
 
 class Expr : public Stmt{
     public:
+    // Clone for assignment targets (Identifier, MemberExpr). Returns nullptr
+    // for non-assignable expressions.
+    virtual std::unique_ptr<Expr> clone() const{
+        return nullptr;
+    }
 };
 
 class VarDeclaration : public Stmt{
@@ -63,10 +66,7 @@ class VarDeclaration : public Stmt{
 
     bool constant = false;
 
-    std::unordered_map <std::string, Expr*> vars;
-
-    // std::string identifier;
-    // Expr* val;
+    std::unordered_map <std::string, std::unique_ptr<Expr>> vars;
 
     NodeType getKind() const override{
         return kind;
@@ -79,7 +79,7 @@ class FunDeclaration : public Stmt{
 
     std::vector <std::string> parameters;
     std::string name;
-    std::vector <Stmt*> body;
+    std::vector <std::unique_ptr<Stmt>> body;
 
     NodeType getKind() const override{
         return kind;
@@ -91,8 +91,8 @@ class AssignExpr : public Expr{
     NodeType kind = NodeType::ASSIGNEXPR;
     
     public:
-    Expr* assignexpr;
-    Expr* value;
+    std::unique_ptr<Expr> assignexpr;
+    std::unique_ptr<Expr> value;
 
     NodeType getKind() const override{
         return kind;
@@ -106,9 +106,9 @@ class CondExpr : public Stmt{
     
     public:
 
-    Expr* condition;
-    std::vector <Stmt*> ThenBranch;
-    std::vector <Stmt*> ElseBranch;
+    std::unique_ptr<Expr> condition;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
+    std::vector <std::unique_ptr<Stmt>> ElseBranch;
 
     NodeType getKind() const override{
         return kind;
@@ -122,8 +122,8 @@ class WhileStmt : public Stmt{
     
     public:
 
-    Expr* condition;
-    std::vector <Stmt*> ThenBranch;
+    std::unique_ptr<Expr> condition;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
 
     NodeType getKind() const override{
         return kind;
@@ -137,10 +137,10 @@ class ForStmt : public Stmt{
     
     public:
 
-    Stmt* iterator_dec;
-    Expr* condition;
-    Expr* operation;
-    std::vector <Stmt*> ThenBranch;
+    std::unique_ptr<Stmt> iterator_dec;
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Expr> operation;
+    std::vector <std::unique_ptr<Stmt>> ThenBranch;
 
     NodeType getKind() const override{
         return kind;
@@ -175,8 +175,8 @@ class ContinueStmt : public Stmt{
 class BinaryExpr : public Expr{
     NodeType kind = NodeType::BINARYEXPR;
     public:
-    Expr* left;
-    Expr* right;
+    std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> right;
     std::string op = "";
 
     NodeType getKind() const override{
@@ -187,7 +187,7 @@ class BinaryExpr : public Expr{
 class NotExpr : public Expr{
     NodeType kind = NodeType::NOTEXPR;
     public:
-    Expr* val;
+    std::unique_ptr<Expr> val;
 
     NodeType getKind() const override{
         return kind;
@@ -199,11 +199,13 @@ class Identifier : public Expr{
     public:
     std::string symbol = "";
     Identifier(std::string val){
-        NodeType kind = NodeType::IDENTIFIER;
         this->symbol = val;
     }
     NodeType getKind() const override{
         return kind;
+    }
+    std::unique_ptr<Expr> clone() const override{
+        return std::make_unique<Identifier>(symbol);
     }
 };
 
@@ -213,7 +215,7 @@ class UnaryExpr : public Expr{
 
     bool left;
     bool plus;
-    Expr* identifier;
+    std::unique_ptr<Expr> identifier;
 
     NodeType getKind() const override{
         return kind;
@@ -249,7 +251,7 @@ class PropertyLiteral : public Expr{
     public:
 
     std::string key;
-    Expr* val = nullptr;
+    std::unique_ptr<Expr> val;
 
     NodeType getKind() const override{
         return kind;
@@ -261,7 +263,7 @@ class ObjectLiteral : public Expr{
     NodeType kind = NodeType::OBJECT_L;
     public:
 
-    std::vector <PropertyLiteral*> properties;
+    std::vector <std::unique_ptr<PropertyLiteral>> properties;
 
     NodeType getKind() const override{
         return kind;
@@ -273,7 +275,7 @@ class ElementLiteral : public Expr{
     public:
 
     unsigned long long key;
-    Expr* val = nullptr;
+    std::unique_ptr<Expr> val;
 
     NodeType getKind() const override{
         return kind;
@@ -284,7 +286,7 @@ class ListLiteral : public Expr{
     NodeType kind = NodeType::LIST_L;
     public:
 
-    std::vector <ElementLiteral*> properties;
+    std::vector <std::unique_ptr<ElementLiteral>> properties;
 
     NodeType getKind() const override{
         return kind;
@@ -295,12 +297,19 @@ class MemberExpr : public Expr{
     NodeType kind = NodeType::MEMBEREXPR;
     public:
 
-    Expr* object = nullptr;
-    Expr* property = nullptr;
+    std::unique_ptr<Expr> object;
+    std::unique_ptr<Expr> property;
     bool computed;
 
     NodeType getKind() const override{
         return kind;
+    }
+    std::unique_ptr<Expr> clone() const override{
+        auto temp = std::make_unique<MemberExpr>();
+        temp->computed = computed;
+        temp->object = object ? object->clone() : nullptr;
+        temp->property = property ? property->clone() : nullptr;
+        return temp;
     }
 };
 
@@ -308,8 +317,8 @@ class CallExpr : public Expr{
     NodeType kind = NodeType::CALLEXPR;
     public:
 
-    std::vector <Expr*> args;
-    Expr* callexpr = nullptr;
+    std::vector <std::unique_ptr<Expr>> args;
+    std::unique_ptr<Expr> callexpr;
 
     NodeType getKind() const override{
         return kind;

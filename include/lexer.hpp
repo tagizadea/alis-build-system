@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-using namespace std;
 
 enum class TokenType{
     Identifier, ASSIGN, IF, ELSE, WHILE, Number, PLUS, MINUS, UNARY_PLUS, UNARY_MINUS, 
@@ -13,19 +12,21 @@ enum class TokenType{
     MULTIPLY, DIVIDE, MOD, LPAREN, RPAREN, LBRACK, RBRACK, LBRACE, RBRACE, String, EndOfFile, Invalid
 };
 
-extern map <string, TokenType> Keywords;
-extern map <TokenType, string> rKeywords;
+extern std::map <std::string, TokenType> Keywords;
+extern std::map <TokenType, std::string> rKeywords;
 
 struct Token{
     TokenType type;
-    string value;
+    std::string value;
+    int line = 1;
+    int col = 1;
 };
 
 class Lexer{
 public:
-    Lexer(string source);
+    Lexer(std::string source);
 
-    Token* tokenize();
+    std::vector<Token> tokenize();
 
 private:
     Token parseIdentifier();
@@ -38,7 +39,9 @@ private:
     bool isAlphaNumeric(char c);
     bool isSpace(char c);
 
-    string source;
+    std::string source;
     int position;
+    int line = 1;
+    int col = 1;
 };
 #endif // LEXER

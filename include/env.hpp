@@ -7,26 +7,28 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <operations.hpp>
+#include <memory>
 
 class Env{
     private:
-    vector <Env*> children;
+    std::vector <std::unique_ptr<Env>> children;
     
     public:
-    unordered_map <string, Value*> variables;
-    unordered_set <string> constants;
+    std::unordered_map <std::string, std::shared_ptr<Value>> variables;
+    std::unordered_set <std::string> constants;
     Env* parent = nullptr;
-    Value* declareVar(string name, Value* val, bool isConst);
-    Value* assignVar(string name, Value* val);
-    Env* resolve(string name);
-    Value* lookUpVar(string name);
+    int loop_depth = 0;
+    std::shared_ptr<Value> declareVar(std::string name, std::shared_ptr<Value> val, bool isConst);
+    std::shared_ptr<Value> assignVar(std::string name, std::shared_ptr<Value> val);
+    Env* resolve(std::string name);
+    std::shared_ptr<Value> lookUpVar(std::string name);
 };
 
-NumberVal* Make_Number(long double val);
-StringVal* Make_String(std::string val);
-BoolValue* Make_Bool(bool b);
-NullVal* Make_Null();
-NativeFuncVal* Make_NFunc(FunctionCall call);
+std::shared_ptr<NumberVal> Make_Number(long double val);
+std::shared_ptr<StringVal> Make_String(std::string val);
+std::shared_ptr<BoolValue> Make_Bool(bool b);
+std::shared_ptr<NullVal> Make_Null();
+std::shared_ptr<NativeFuncVal> Make_NFunc(FunctionCall call);
 
 void InitNatives(Env* env);
 

@@ -1,15 +1,17 @@
 #include <eval.hpp>
+using namespace std;
+#include <debug.hpp>
 #include <cmath>
 
-Value* eval_program(Program* program, Env* env){
+std::shared_ptr<Value> eval_program(Program* program, Env* env){
     if(program->body.empty()) return env->lookUpVar("Null");
     
-    Value* last;
+    std::shared_ptr<Value> last;
     
     for(int i=0;i<program->body.size();++i){
         NodeType kind = program->body[i]->getKind();
         if(kind != NodeType::NUMERIC_L && kind != NodeType::STRING_L) 
-            last = evaluate(program->body[i], env);
+            last = evaluate(program->body[i].get(), env);
     }
 
     return last;
@@ -19,193 +21,151 @@ bool isInteger(long double num) {
     return num == std::floor(num);
 }
 
-Value* eval_bin_expr(BinaryExpr* binop, Env* env){
-    Value* lhs = evaluate(binop->left, env);
-    Value* rhs = evaluate(binop->right, env);
-
-    // Burada memory leak problemi var. Gerek duzgun check olsun
-
-    // bool id_l = binop->left->getKind() != NodeType::IDENTIFIER;
-    // bool id_r = binop->right->getKind() != NodeType::IDENTIFIER;
+std::shared_ptr<Value> eval_bin_expr(BinaryExpr* binop, Env* env){
+    std::shared_ptr<Value> lhs = evaluate(binop->left.get(), env);
+    std::shared_ptr<Value> rhs = evaluate(binop->right.get(), env);
 
     if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::String){
         if(binop->op == "+"){
-            StringVal* temp = new StringVal;
-            StringVal* nl = (StringVal*)lhs;
-            StringVal* nr = (StringVal*)rhs;
+            auto temp = std::make_shared<StringVal>();
+            StringVal* nl = (StringVal*)lhs.get();
+            StringVal* nr = (StringVal*)rhs.get();
             temp->val = nl->val + nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
     }
 
     if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
-        StringVal* temp = new StringVal;
-        StringVal* nl = (StringVal*)lhs;
-        NumberVal* nr = (NumberVal*)rhs;
+        auto temp = std::make_shared<StringVal>();
+        StringVal* nl = (StringVal*)lhs.get();
+        NumberVal* nr = (NumberVal*)rhs.get();
         string s = "";
         for(int i=0;i<nr->val;++i) s += nl->val;
         temp->val = s;
-        // if(id_l) delete lhs;
-        // if(id_r) delete rhs;
         return temp;
     }
-    else if(lhs->getType() == ValueType::String && rhs->getType() == ValueType::Number && binop->op == "*"){
-        StringVal* temp = new StringVal;
-        NumberVal* nl = (NumberVal*)lhs;
-        StringVal* nr = (StringVal*)rhs;
+    else if(lhs->getType() == ValueType::Number && rhs->getType() == ValueType::String && binop->op == "*"){
+        auto temp = std::make_shared<StringVal>();
+        NumberVal* nl = (NumberVal*)lhs.get();
+        StringVal* nr = (StringVal*)rhs.get();
         string s = "";
         for(int i=0;i<nl->val;++i) s += nr->val;
         temp->val = s;
-        // if(id_l) delete lhs;
-        // if(id_r) delete rhs;
         return temp;
     }
 
     if(lhs->getType() == ValueType::Bool && rhs->getType() == ValueType::Bool){
         if(binop->op == "&&"){
-            BoolValue* temp = new BoolValue;
-            BoolValue* nl = (BoolValue*)lhs;
-            BoolValue* nr = (BoolValue*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            BoolValue* nl = (BoolValue*)lhs.get();
+            BoolValue* nr = (BoolValue*)rhs.get();
             temp->val = nl->val && nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "||"){
-            BoolValue* temp = new BoolValue;
-            BoolValue* nl = (BoolValue*)lhs;
-            BoolValue* nr = (BoolValue*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            BoolValue* nl = (BoolValue*)lhs.get();
+            BoolValue* nr = (BoolValue*)rhs.get();
             temp->val = nl->val || nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
-            BoolValue* temp = new BoolValue;
-            BoolValue* nl = (BoolValue*)lhs;
-            BoolValue* nr = (BoolValue*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            BoolValue* nl = (BoolValue*)lhs.get();
+            BoolValue* nr = (BoolValue*)rhs.get();
             temp->val = nl->val == nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
-            BoolValue* temp = new BoolValue;
-            BoolValue* nl = (BoolValue*)lhs;
-            BoolValue* nr = (BoolValue*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            BoolValue* nl = (BoolValue*)lhs.get();
+            BoolValue* nr = (BoolValue*)rhs.get();
             temp->val = nl->val != nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
     }
 
     if(lhs->getType() == ValueType::Number && rhs->getType() == ValueType::Number){
         if(binop->op == "+"){
-            NumberVal* temp = new NumberVal;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<NumberVal>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val + nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "-"){
-            NumberVal* temp = new NumberVal;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<NumberVal>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val - nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "*"){
-            NumberVal* temp = new NumberVal;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<NumberVal>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val * nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "/"){
-            NumberVal* temp = new NumberVal;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<NumberVal>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val / nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "%"){
-            NumberVal* temp = new NumberVal;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<NumberVal>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             if(!isInteger(nl->val) || !isInteger(nr->val)){
-                cout << "Evaluation Error: Kesr ededlerin MOD-u tapilmir!";
-                exit(0); // !!! Debug systemi ile deyis
+                ABS_FATAL(cat::Eval, "eval.mod_not_integer");
             }
             long long left = nl->val;
             long long right = nr->val;
             temp->val = left % right;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">"){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val > nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<"){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val < nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == ">="){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val >= nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "<="){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val <= nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "=="){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val == nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
         if(binop->op == "!="){
-            BoolValue* temp = new BoolValue;
-            NumberVal* nl = (NumberVal*)lhs;
-            NumberVal* nr = (NumberVal*)rhs;
+            auto temp = std::make_shared<BoolValue>();
+            NumberVal* nl = (NumberVal*)lhs.get();
+            NumberVal* nr = (NumberVal*)rhs.get();
             temp->val = nl->val != nr->val;
-            // if(id_l) delete lhs;
-            // if(id_r) delete rhs;
             return temp;
         }
     }
@@ -213,280 +173,245 @@ Value* eval_bin_expr(BinaryExpr* binop, Env* env){
     return env->lookUpVar("Null");
 }
 
-Value* eval_object_expr(ObjectLiteral* obj, Env* env){
-    ObjectValue* object = new ObjectValue;
+std::shared_ptr<Value> eval_object_expr(ObjectLiteral* obj, Env* env){
+    auto object = std::make_shared<ObjectValue>();
 
-    for(const PropertyLiteral* i : obj->properties){
+    for(const auto& i : obj->properties){
 
-        Value* val = (i->val == nullptr) ? (env->lookUpVar(i->key)) : (evaluate(i->val, env));
+        std::shared_ptr<Value> val = (i->val == nullptr) ? (env->lookUpVar(i->key)) : (evaluate(i->val.get(), env));
 
         object->properties[i->key] = val;
     }
     return object;
 }
 
-Value* eval_call_expr(CallExpr* expr, Env* env){ // memory leak
-    vector <Value*> args;
+std::shared_ptr<Value> eval_call_expr(CallExpr* expr, Env* env){
+    std::vector <std::shared_ptr<Value>> args;
     
-    for(Expr* i : expr->args){
-        args.push_back(evaluate(i, env));
+    for(const auto& i : expr->args){
+        args.push_back(evaluate(i.get(), env));
     }
 
-    Value* fn = evaluate(expr->callexpr, env);
+    std::shared_ptr<Value> fn = evaluate(expr->callexpr.get(), env);
 
     if(fn->getType() == ValueType::NFUNC){
-        Value* result;
-        NativeFuncVal* nfn = (NativeFuncVal*)fn;
+        NativeFuncVal* nfn = (NativeFuncVal*)fn.get();
         if(nfn->list){
-            for(Value* i : nfn->call.args) args.push_back(i);
+            for(const auto& i : nfn->call.args) args.push_back(i);
         }
-        result = nfn->call.funAddr(args, env);
-        return result;
+        return nfn->call.funAddr(args, env);
     }
     else if(fn->getType() == ValueType::FUNC){
-        FunctionVal* func = (FunctionVal*)fn;
+        FunctionVal* func = (FunctionVal*)fn.get();
         if(args.size() != func->params.size()){
-            cout << "Evaluation Error: Some arguments are missing for function named \"" << func->name << '\"';
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Eval, "eval.missing_args", func->name);
         }
-        Env* scope = new Env;
+        auto scope = std::make_unique<Env>();
         scope->parent = func->decEnv;
         for(int i = 0; i < func->params.size(); ++i){
             scope->declareVar(func->params[i], args[i], false);
         }
         if(func->body.empty()) return env->lookUpVar("Null");
-        Value* ret;
-        for(Stmt* i : func->body){
-            ret = evaluate(i, scope);
+        std::shared_ptr<Value> ret;
+        for(const auto& i : func->body){
+            ret = evaluate(i.get(), scope.get());
         }
-        if(ret->getType() != ValueType::FUNC) delete scope; /// funksiyaVal return eleyende problem olur
         return ret;
     }
-    cout << "Evaluation Error: Cannot call value that is not a function";
-    exit(0); // !!! Debug systemi ile deyis
+    ABS_FATAL(cat::Eval, "eval.call_non_function");
     return nullptr;
 }
 
-Value* eval_ident(Identifier* idn, Env* env){
-    Value* val = env->lookUpVar(idn->symbol);
-    return val;
+std::shared_ptr<Value> eval_ident(Identifier* idn, Env* env){
+    return env->lookUpVar(idn->symbol);
 }
 
-Value* eval_var_declaration(VarDeclaration* var_d, Env* env){
-    // if(var_d->val->getKind() == NodeType::BREAK || var_d->val->getKind() == NodeType::CONTINUE){
-    //     cout << "Evaluation Error: Break or Continue cannot be assigned!";
-    //     exit(0); // !!! Debug systemi ile deyis
-    // }
-    // Value* value = (var_d->val != nullptr && var_d->val != NULL) ? (evaluate(var_d->val, env)) : (env->lookUpVar("Null"));
-    // return env->declareVar(var_d->identifier, value, var_d->constant);
-    Value* temp;
-    for(pair <string, Expr*> i : var_d->vars){
+std::shared_ptr<Value> eval_var_declaration(VarDeclaration* var_d, Env* env){
+    std::shared_ptr<Value> temp;
+    for(auto& i : var_d->vars){
         if(i.second->getKind() == NodeType::BREAK || i.second->getKind() == NodeType::CONTINUE){
-            cout << "Evaluation Error: Break or Continue cannot be assigned!";
-            exit(0); // !!! Debug systemi ile deyis
+            ABS_FATAL(cat::Eval, "eval.assign_break_continue");
         }
-        Value* value = (i.second != nullptr && i.second != NULL) ? (evaluate(i.second, env)) : (env->lookUpVar("Null"));
+        std::shared_ptr<Value> value = (i.second != nullptr) ? (evaluate(i.second.get(), env)) : (env->lookUpVar("Null"));
         temp = env->declareVar(i.first, value, var_d->constant);
     }
 
     return temp;
 }
 
-Value* eval_var_assignment(AssignExpr* as, Env* env){
-    // Member Expr elave olunmalidir
-    
+std::shared_ptr<Value> eval_var_assignment(AssignExpr* as, Env* env){
     if(as->assignexpr->getKind() == NodeType::MEMBEREXPR){
-        MemberExpr* temp = (MemberExpr*)as->assignexpr;
-        Value* obj_v = evaluate(temp->object, env);
+        MemberExpr* temp = (MemberExpr*)as->assignexpr.get();
+        std::shared_ptr<Value> obj_v = evaluate(temp->object.get(), env);
         switch(obj_v->getType()){
             case ValueType::Object :
             if(temp->property->getKind() == NodeType::IDENTIFIER && temp->object->getKind() == NodeType::IDENTIFIER){
-                Identifier* property_key = (Identifier*)temp->property;
-                Identifier* obj_key = (Identifier*)temp->object;;
-                ObjectValue* obj = (ObjectValue*)obj_v;
+                Identifier* property_key = (Identifier*)temp->property.get();
+                Identifier* obj_key = (Identifier*)temp->object.get();
+                auto obj = std::static_pointer_cast<ObjectValue>(obj_v);
                 obj = obj->clone();
                 env->assignVar(obj_key->symbol, obj);
-                obj->properties[property_key->symbol] = evaluate(as->value, env);
+                obj->properties[property_key->symbol] = evaluate(as->value.get(), env);
             }
             break;
         case ValueType::List :
             if(temp->property->getKind() == NodeType::NUMERIC_L && temp->object->getKind() == NodeType::IDENTIFIER){
-                NumberVal* index = (NumberVal*)evaluate(temp->property, env);
-                Identifier* key = (Identifier*)temp->object;
-                ListValue* l = (ListValue*)obj_v;
+                NumberVal* index = (NumberVal*)evaluate(temp->property.get(), env).get();
+                Identifier* key = (Identifier*)temp->object.get();
+                auto l = std::static_pointer_cast<ListValue>(obj_v);
                 if(index->val >= 0 && index->val < l->v.size()){
                     l = l->clone();
                     env->assignVar(key->symbol, l);
-                    l->v[index->val] = evaluate(as->value, env);
+                    l->v[index->val] = evaluate(as->value.get(), env);
                 }
             }
             break;
         default:
-            cout << "Evaluation Error: Assignment can accept only ObjectValue and ListValue as MemberExpr!";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Eval, "eval.assign_member_type");
         }
         return env->lookUpVar("Null");
     }
 
     if(as->assignexpr->getKind() != NodeType::IDENTIFIER){
-        cout << "Evaluation Error: Assignmentdə sol identifier işlənməyib!";
-        exit(0); // !!! Debug ile deyis
+        ABS_FATAL(cat::Eval, "eval.assign_left_not_identifier");
     }
     if(as->value->getKind() == NodeType::BREAK || as->value->getKind() == NodeType::CONTINUE){
-        cout << "Evaluation Error: Assignmentdə sag break ve ya continue olanmaz!";
-        exit(0); // !!! Debug ile deyis
+        ABS_FATAL(cat::Eval, "eval.assign_right_break_continue");
     }
-    string varname = ((Identifier*)(as->assignexpr))->symbol;
-    return env->assignVar(varname, evaluate(as->value, env));
+    string varname = ((Identifier*)(as->assignexpr.get()))->symbol;
+    return env->assignVar(varname, evaluate(as->value.get(), env));
 }
 
-Value* eval_condition(CondExpr* cond, Env* env){
-    Value* condition = evaluate(cond->condition, env);
+std::shared_ptr<Value> eval_condition(CondExpr* cond, Env* env){
+    std::shared_ptr<Value> condition = evaluate(cond->condition.get(), env);
     
     if(condition->getType() != ValueType::Bool){
-        cout << "Evaluation Error: IF condition must be boolean value";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Eval, "eval.if_not_bool");
     }
 
-    BoolValue* temp = (BoolValue*)condition;
-    Env* scope = new Env;
+    BoolValue* temp = (BoolValue*)condition.get();
+    auto scope = std::make_unique<Env>();
     scope->parent = env;
     if(temp->val){
-        //result = evaluate(cond->ThenBranch, env);
-        for(Stmt* i : cond->ThenBranch){
-            Value* res;
-            res = evaluate(i, scope);
+        for(const auto& i : cond->ThenBranch){
+            std::shared_ptr<Value> res;
+            res = evaluate(i.get(), scope.get());
             if(res->getType() == ValueType::Break || res->getType() == ValueType::Continue) return res;
         }
     }
     else{
-        for(Stmt* i : cond->ElseBranch){
-            Value* res;
-            res = evaluate(i, scope);
+        for(const auto& i : cond->ElseBranch){
+            std::shared_ptr<Value> res;
+            res = evaluate(i.get(), scope.get());
             if(res->getType() == ValueType::Break || res->getType() == ValueType::Continue) return res;
         }
     }
-    // else evaluate(cond->ElseBranch, scope);
-    delete scope;
     return env->lookUpVar("Null");
 }
 
-bool loop = false;
-
-Value* eval_while(WhileStmt* wh, Env* env){
-    Value* condition = evaluate(wh->condition, env);
-    loop = true;
+std::shared_ptr<Value> eval_while(WhileStmt* wh, Env* env){
+    std::shared_ptr<Value> condition = evaluate(wh->condition.get(), env);
+    ++env->loop_depth;
     if(condition->getType() != ValueType::Bool){
-        cout << "Evaluation Error: WHILE condition must be boolean value";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Eval, "eval.while_not_bool");
     }
 
-    BoolValue* temp = (BoolValue*)condition;
+    BoolValue* temp = (BoolValue*)condition.get();
 
-    
     while(temp->val){
-        Env* scope = new Env;
+        auto scope = std::make_unique<Env>();
         scope->parent = env;
+        scope->loop_depth = env->loop_depth;
         bool br = false;
-        for(Stmt* i : wh->ThenBranch){
-            Value* res;
-            res = evaluate(i, scope);
+        for(const auto& i : wh->ThenBranch){
+            std::shared_ptr<Value> res;
+            res = evaluate(i.get(), scope.get());
             if(res->getType() == ValueType::Break){
                 br = true;
-                delete res;
                 break;
             }
             if(res->getType() == ValueType::Continue){
-                delete res;
                 break;
             }
         }
         if(br) break;
-        condition = evaluate(wh->condition, env); // MEMORY ISSUE ola biler
-        temp = (BoolValue*)condition;
-        delete scope;
+        condition = evaluate(wh->condition.get(), env);
+        temp = (BoolValue*)condition.get();
     }
-    loop = false;
+    --env->loop_depth;
     return env->lookUpVar("Null");
 }
 
-Value* eval_for(ForStmt* fr, Env* env){
-    loop = true;
-    Env* scope = new Env;
+std::shared_ptr<Value> eval_for(ForStmt* fr, Env* env){
+    ++env->loop_depth;
+    auto scope = std::make_unique<Env>();
     scope->parent = env;
+    scope->loop_depth = env->loop_depth;
 
-    Value* it = evaluate(fr->iterator_dec, scope);
+    evaluate(fr->iterator_dec.get(), scope.get());
 
-    Value* condition = evaluate(fr->condition, scope);
+    std::shared_ptr<Value> condition = evaluate(fr->condition.get(), scope.get());
 
     if(condition->getType() != ValueType::Bool){
-        cout << "Evaluation Error: FOR condition must be boolean value";
-        exit(0); // !!! debug systemi ile deyis
+        ABS_FATAL(cat::Eval, "eval.for_not_bool");
     }
 
-    BoolValue* temp = (BoolValue*)condition;
+    BoolValue* temp = (BoolValue*)condition.get();
 
     while(temp->val){
-        Env* scope_d = new Env;
-        scope_d->parent = scope;
+        auto scope_d = std::make_unique<Env>();
+        scope_d->parent = scope.get();
+        scope_d->loop_depth = scope->loop_depth;
 
         bool br = false;
-        for(Stmt* i : fr->ThenBranch){
-            Value* res;
-            res = evaluate(i, scope_d);
+        for(const auto& i : fr->ThenBranch){
+            std::shared_ptr<Value> res;
+            res = evaluate(i.get(), scope_d.get());
             if(res->getType() == ValueType::Break){
                 br = true;
-                delete res;
                 break;
             }
             if(res->getType() == ValueType::Continue){
-                delete res;
                 break;
             }
         }
         if(br) break;
-        Value* operation = evaluate(fr->operation, scope);
-        condition = evaluate(fr->condition, scope);
-        temp = (BoolValue*)condition;
-        delete scope_d;
+        evaluate(fr->operation.get(), scope.get());
+        condition = evaluate(fr->condition.get(), scope.get());
+        temp = (BoolValue*)condition.get();
     }
-    delete scope;
-    loop = false;
+    --env->loop_depth;
     return env->lookUpVar("Null");
 }
 
-Value* eval_member_val_expr(MemberExpr* me, Env* env){
+std::shared_ptr<Value> eval_member_val_expr(MemberExpr* me, Env* env){
     if(me->property == nullptr) return env->lookUpVar("Null");
 
-    Value* obj_v = evaluate(me->object, env);
+    std::shared_ptr<Value> obj_v = evaluate(me->object.get(), env);
 
     if(obj_v->getType() == ValueType::List){
-        ListValue* list = (ListValue*)obj_v;
+        auto list = std::static_pointer_cast<ListValue>(obj_v);
         if(me->computed){
-            // NumericLiteral* i = (NumericLiteral*)me->property;
-            Value* i = evaluate(me->property, env);
+            std::shared_ptr<Value> i = evaluate(me->property.get(), env);
             if(i->getType() != ValueType::Number){
-                cout << "Index should be numeric! INPUT: " << (int)i->getType();
-                exit(0); // !!! debug sistemi ile deyis
+                ABS_FATAL(cat::Eval, "eval.index_not_numeric", (int)i->getType());
             }
             try{
-                return list->v.at( int(((NumberVal*)i)->val) );
+                return list->v.at( int(((NumberVal*)i.get())->val) );
             }
             catch(const std::exception& e){
-                std::cerr << e.what() << '\n'; 
-                exit(0); // !!! debug systemi ile deyis
+                ABS_FATAL(cat::Eval, "eval.index_out_of_bounds", e.what());
             }
         }
         else{
-            string name = ((Identifier*)me->property)->symbol;
-            NativeFuncVal* tnf = ListVecNFuncs[0];
+            string name = ((Identifier*)me->property.get())->symbol;
+            std::shared_ptr<NativeFuncVal> tnf = ListVecNFuncs[0];
             if(name == "size") tnf = ListVecNFuncs[0];
             else if(name == "push") tnf = ListVecNFuncs[1];
             else if(name == "pop") tnf = ListVecNFuncs[2];
             else if(name == "sort") tnf = ListVecNFuncs[3];
             else{
-                cout << "Unknown list function!";
-                exit(0); // !!! debug systemi ile deyis
+                ABS_FATAL(cat::Eval, "eval.unknown_list_func");
             }
             tnf->list = true;
             tnf->call.args.clear();
@@ -496,37 +421,37 @@ Value* eval_member_val_expr(MemberExpr* me, Env* env){
         }
     }
 
-    //cout << "NODETYPE: " << (int)me->property->getKind(); //
     if(obj_v->getType() == ValueType::Object){
         if(me->property->getKind() == NodeType::IDENTIFIER){
-            Identifier* key = (Identifier*)me->property;
-            ObjectValue* obj = (ObjectValue*)obj_v;
+            Identifier* key = (Identifier*)me->property.get();
+            auto obj = std::static_pointer_cast<ObjectValue>(obj_v);
             return obj->properties[key->symbol];
         }
-        else if(me->property->getKind() == NodeType::CALLEXPR){ // parserde ele bunu
-            cout << "Evaluation Error: CallExpr objectdə çağırıla bilməz";
-            exit(0);
+        else if(me->property->getKind() == NodeType::CALLEXPR){
+            ABS_FATAL(cat::Eval, "eval.call_in_object");
         }
     }
     
-    return evaluate(me->property, env);
+    return evaluate(me->property.get(), env);
 }
 
-Value* eval_func_declaration(FunDeclaration* fn, Env* env){
-    FunctionVal* fn_val = new FunctionVal;
+std::shared_ptr<Value> eval_func_declaration(FunDeclaration* fn, Env* env){
+    auto fn_val = std::make_shared<FunctionVal>();
     fn_val->name = fn->name;
     fn_val->params = fn->parameters;
     fn_val->decEnv = env;
-    fn_val->body = fn->body;
+    // Transfer ownership of the function body AST nodes to the FunctionVal.
+    // This lets the function outlive the Program that was parsed (e.g. via run()).
+    fn_val->body = std::move(fn->body);
     return env->declareVar(fn->name, fn_val, true);
 }
 
-Value* eval_list_expr(ListLiteral* l, Env* env){
-    ListValue* list_val = new ListValue;
-    vector <Value*> v(l->properties.size());
+std::shared_ptr<Value> eval_list_expr(ListLiteral* l, Env* env){
+    auto list_val = std::make_shared<ListValue>();
+    std::vector <std::shared_ptr<Value>> v(l->properties.size());
     for(int i=0;i<l->properties.size();++i){
-        ElementLiteral* el = l->properties[i];
-        v[el->key] = evaluate(el->val, env);
+        ElementLiteral* el = l->properties[i].get();
+        v[el->key] = evaluate(el->val.get(), env);
 
         int val_id = (int)v[i]->getType();
         if(list_val->mapTypeCounter[val_id] == 0) ++list_val->distinc_types;
@@ -538,14 +463,14 @@ Value* eval_list_expr(ListLiteral* l, Env* env){
     return list_val;
 }
 
-Value* eval_unary_val_expr(UnaryExpr* l, Env* env){
-    NumberVal* temp = (NumberVal*)(evaluate(l->identifier, env));
+std::shared_ptr<Value> eval_unary_val_expr(UnaryExpr* l, Env* env){
+    auto temp = std::static_pointer_cast<NumberVal>(evaluate(l->identifier.get(), env));
     if(l->left){
         if(l->plus) ++temp->val;
         else --temp->val;
     }
     else{
-        NumberVal* result = new NumberVal;
+        auto result = std::make_shared<NumberVal>();
         result->val = temp->val;
 
         if(l->plus) ++temp->val;
@@ -557,28 +482,27 @@ Value* eval_unary_val_expr(UnaryExpr* l, Env* env){
     return temp;
 }
 
-// Burda mem_valsory leak var | Garbage collector ya da smart_pointers ya da custom check mexanizm olmalidi ki, deyer deyisene assign olmursa islenenden sonra sil
-Value*  evaluate(Stmt* astNode, Env* env){
+std::shared_ptr<Value> evaluate(Stmt* astNode, Env* env){
+    ABS_PROFILE_SCOPE("evaluate");
     if(astNode->getKind() == NodeType::NUMERIC_L){ //
         NumericLiteral* childObj = (NumericLiteral*)astNode;
-        NumberVal* temp = new NumberVal;
+        auto temp = std::make_shared<NumberVal>();
         temp->val = childObj->val;
         return temp;
     }
     else if(astNode->getKind() == NodeType::NOTEXPR){ //
         NotExpr* childObj = (NotExpr*)astNode;
-        Value* val = evaluate(childObj->val, env);
+        std::shared_ptr<Value> val = evaluate(childObj->val.get(), env);
         if(val->getType() != ValueType::Bool){
-            cout << "Evaluation Error: Not operation yalnız bool dəyərlər ilə işlənir";
-            exit(0); // !!! debug systemi ile deyis
+            ABS_FATAL(cat::Eval, "eval.not_not_bool");
         }
-        BoolValue* temp = new BoolValue;
-        temp->val = !((BoolValue*)val)->val;
+        auto temp = std::make_shared<BoolValue>();
+        temp->val = !((BoolValue*)val.get())->val;
         return temp;
     }
     else if(astNode->getKind() == NodeType::STRING_L){
         StringLiteral* childObj = (StringLiteral*)astNode;
-        StringVal* temp = new StringVal;
+        auto temp = std::make_shared<StringVal>();
         temp->val = childObj->val;
         return temp;
     }
@@ -639,21 +563,18 @@ Value*  evaluate(Stmt* astNode, Env* env){
         return eval_unary_val_expr(childObj, env);
     }
     else if(astNode->getKind() == NodeType::CONTINUE){ // SAFE
-        if(!loop){
-            cout << "Eval Error: Continue cannot be used without loop!\n"; // !!! assert ile evezle
-            exit(0);
+        if(env->loop_depth <= 0){
+            ABS_FATAL(cat::Eval, "eval.continue_outside_loop");
         }
-        return new ContinueVal;
+        return std::make_shared<ContinueVal>();
     }
     else if(astNode->getKind() == NodeType::BREAK){ // SAFE
-        if(!loop){
-            cout << "Eval Error: Break cannot be used without loop!\n"; // !!! assert ile evezle
-            exit(0);
+        if(env->loop_depth <= 0){
+            ABS_FATAL(cat::Eval, "eval.break_outside_loop");
         }
-        return new BreakVal;
+        return std::make_shared<BreakVal>();
     }
     else{
-        cout << "Eval Error: Unknown type!\n"; // !!! assert ile evezle
-        exit(0);
+        ABS_FATAL(cat::Eval, "eval.unknown_type");
     }
 }

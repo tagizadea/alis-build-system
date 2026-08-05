@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 class Stmt;
 class Env;
@@ -110,15 +111,19 @@ class ObjectValue : public Value{
     ValueType type = ValueType::Object;
     public:
 
-    std::unordered_map <std::string, Value*> properties;
+    std::unordered_map <std::string, std::shared_ptr<Value>> properties;
+    // Keeps the declaration environment alive so functions stored in this
+    // object (e.g. from run()) have a valid decEnv when called later.
+    std::shared_ptr<Env> owning_env;
 
     ValueType getType() const override{
         return this->type;
     }
 
-    ObjectValue* clone(){
-        ObjectValue* temp = new ObjectValue;
-        for(std::pair <std::string, Value*> i : this->properties) temp->properties[i.first] = i.second;
+    std::shared_ptr<ObjectValue> clone(){
+        auto temp = std::make_shared<ObjectValue>();
+        for(auto& i : this->properties) temp->properties[i.first] = i.second;
+        temp->owning_env = this->owning_env;
         return temp;
     }
 };
@@ -129,13 +134,13 @@ class ListValue : public Value{
     ValueType type = ValueType::List;
     public:
 
-    std::vector <Value*> v;
+    std::vector <std::shared_ptr<Value>> v;
     ValueType consist_of = ValueType::None;
     int mapTypeCounter[10];
     int distinc_types = 0;
 
-    ListValue* clone(){
-        ListValue* temp = new ListValue;
+    std::shared_ptr<ListValue> clone(){
+        auto temp = std::make_shared<ListValue>();
         temp->consist_of = this->consist_of;
         temp->distinc_types = this->distinc_types;
         temp->v.resize(this->v.size());
@@ -150,9 +155,9 @@ class ListValue : public Value{
 };
 
 struct FunctionCall{
-    std::vector <Value*> args;
+    std::vector <std::shared_ptr<Value>> args;
     Env* env;
-    Value* (*funAddr)(std::vector<Value*>, Env*);
+    std::shared_ptr<Value> (*funAddr)(std::vector<std::shared_ptr<Value>>, Env*);
 };
 
 
@@ -179,7 +184,9 @@ class FunctionVal : public Value{
     std::string name;
     std::vector <std::string> params;
     Env* decEnv;
-    std::vector <Stmt*> body;
+    // Owns the function body AST nodes. This way a function can outlive
+    // the Program that was parsed (e.g. functions returned via run()).
+    std::vector <std::unique_ptr<Stmt>> body;
 
     ValueType getType() const override{
         return this->type;

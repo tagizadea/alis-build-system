@@ -1,10 +1,11 @@
 #include <env.hpp>
+using namespace std;
 #include <operations.hpp>
+#include <debug.hpp>
 
-Value* Env::declareVar(string name, Value *val, bool isConst){
+std::shared_ptr<Value> Env::declareVar(string name, std::shared_ptr<Value> val, bool isConst){
     if(variables.find(name) != variables.end()){
-        cout << "Declare Error: There is already variable " << name;
-        exit(0);
+        ABS_FATAL(cat::Env, "env.declare_duplicate", name);
     }
 
     variables[name] = val;
@@ -13,13 +14,11 @@ Value* Env::declareVar(string name, Value *val, bool isConst){
     return val;
 }
 
-Value* Env::assignVar(string name, Value *val){
+std::shared_ptr<Value> Env::assignVar(string name, std::shared_ptr<Value> val){
     Env* en = this->resolve(name);
     if(en->constants.find(name) != en->constants.end()){
-        cout << "Assign Error: Constant deyer assign olanmaz! - " << name;
-        exit(0); // !!! Debug systemi ile deyis
+        ABS_FATAL(cat::Env, "env.assign_const", name);
     }
-    // if(en->variables.find(name) != en->variables.end()) delete en->variables[name]; BUG
     en->variables[name] = val;
     return val;
 }
@@ -28,42 +27,41 @@ Env* Env::resolve(string name){
     if(variables.find(name) != variables.end()) return this;
 
     if(this->parent == nullptr){
-        cout << "Variable Resolve Error: " << name << " does not exist";
-        exit(0); // !!! Debug systemi ile deyis
+        ABS_FATAL(cat::Env, "env.resolve_not_found", name);
     }
 
     return this->parent->resolve(name);
 }
 
-Value* Env::lookUpVar(string name){
+std::shared_ptr<Value> Env::lookUpVar(string name){
     Env* en = this->resolve(name);
     return en->variables[name];
 }
 
-NumberVal* Make_Number(long double val){
-    NumberVal* num = new NumberVal;
+std::shared_ptr<NumberVal> Make_Number(long double val){
+    auto num = std::make_shared<NumberVal>();
     num->val = val;
     return num;
 }
 
-StringVal* Make_String(std::string val){
-    StringVal* st = new StringVal;
+std::shared_ptr<StringVal> Make_String(std::string val){
+    auto st = std::make_shared<StringVal>();
     st->val = val;
     return st;
 }
 
-BoolValue* Make_Bool(bool b){
-    BoolValue* val = new BoolValue;
+std::shared_ptr<BoolValue> Make_Bool(bool b){
+    auto val = std::make_shared<BoolValue>();
     val->val = b;
     return val;
 }
 
-NullVal* Make_Null(){
-    return new NullVal;
+std::shared_ptr<NullVal> Make_Null(){
+    return std::make_shared<NullVal>();
 }
 
-NativeFuncVal* Make_NFunc(FunctionCall call){
-    NativeFuncVal* fun = new NativeFuncVal;
+std::shared_ptr<NativeFuncVal> Make_NFunc(FunctionCall call){
+    auto fun = std::make_shared<NativeFuncVal>();
     fun->call = call;
     return fun;
 }
@@ -84,11 +82,10 @@ void InitNatives(Env* env){
     #else
         env->declareVar("HOSTNAME", Make_String("UNKNOWN"), true);
     #endif
-    // env->declareVar("CC", Make_String("g++"), false);
 
     // Numbers
     env->declareVar("SALAM", Make_Number(10), true);
-    env->declareVar("ZERO", new NumberVal, true);
+    env->declareVar("ZERO", std::make_shared<NumberVal>(), true);
 
     // Bools
     env->declareVar("true", Make_Bool(true), true);
@@ -129,6 +126,12 @@ void InitNatives(Env* env){
     env->declareVar("compile", Make_NFunc(temp), true);
     temp.funAddr = n_funs::link;
     env->declareVar("link", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::set_lang;
+    env->declareVar("set_lang", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::debug_level;
+    env->declareVar("debug_level", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::debug_log;
+    env->declareVar("debug_log", Make_NFunc(temp), true);
     
     // Native Vector Functions
     ListVecNFuncs.resize(4); // Increase each time when adding new method

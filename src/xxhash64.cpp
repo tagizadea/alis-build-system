@@ -1,4 +1,5 @@
 #include <xxhash64.hpp>
+#include <debug.hpp>
 #include <cstring>
 #include <fstream>
 #include <stdexcept>
@@ -114,6 +115,7 @@ namespace xxh64{
 
     // File hashing
     uint64_t hash_file(const std::string& path, uint64_t seed){
+        ABS_PROFILE_FUNC();
         std::ifstream f(path, std::ios::binary);
         if (!f)
             throw std::runtime_error("cannot open file");
