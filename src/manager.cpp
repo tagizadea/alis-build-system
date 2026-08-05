@@ -289,9 +289,10 @@ vector<string> Manager::scan_headers(const string& ChangedFile){
 }
 
 bool IsSourceFile(const string& name){
-    string s = "";
-    for(int i = name.size() - 1; i >= 0 && name[i] != '.'; --i) s += name[i];
-    return (s == "c" || s == "xxc" || s == "ppc" || s == "cc" || s == "C");
+    string ext = fs::path(name).extension().string();
+    // Normalize to lowercase for case-insensitive comparison.
+    for(char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return ext == ".c" || ext == ".cc" || ext == ".cpp" || ext == ".cxx" || ext == ".c++";
 }
 
 vector <string> Manager::scan_graph(const DependencyCacheEntry& Node, set <string>& color, map <string, vector <string>>& reverse_graph){

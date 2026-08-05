@@ -58,6 +58,7 @@ namespace n_funs{
     std::shared_ptr<Value> set_lang(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> debug_level(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> debug_log(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> glob(std::vector <std::shared_ptr<Value>> args, Env* env);
 
 }
 

@@ -132,6 +132,8 @@ void InitNatives(Env* env){
     env->declareVar("debug_level", Make_NFunc(temp), true);
     temp.funAddr = n_funs::debug_log;
     env->declareVar("debug_log", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::glob;
+    env->declareVar("glob", Make_NFunc(temp), true);
     
     // Native Vector Functions
     ListVecNFuncs.resize(4); // Increase each time when adding new method

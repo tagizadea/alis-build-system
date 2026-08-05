@@ -1260,6 +1260,43 @@ std::shared_ptr<Value> n_funs::debug_log(vector<std::shared_ptr<Value>> args, En
     return env->lookUpVar("Null");
 }
 
+std::shared_ptr<Value> n_funs::glob(vector<std::shared_ptr<Value>> args, Env* env){
+    if(args.size() != 2) ABS_FATAL(cat::Operations, "ops.glob_wrong_args");
+    if(args[0]->getType() != ValueType::String || args[1]->getType() != ValueType::String){
+        ABS_FATAL(cat::Operations, "ops.glob_not_string");
+    }
+
+    string dir = static_cast<StringVal*>(args[0].get())->val;
+    string ext = static_cast<StringVal*>(args[1].get())->val;
+
+    if(ext.empty() || ext[0] != '.') ext = "." + ext;
+    for(char& c : ext) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+
+    auto result = make_shared<ListValue>();
+
+    error_code ec;
+    if(!fs::is_directory(dir, ec)) return result;
+
+    for(const auto& entry : fs::directory_iterator(dir, ec)){
+        if(ec) break;
+        if(!entry.is_regular_file(ec)) continue;
+
+        string path = entry.path().string();
+        string fileExt = entry.path().extension().string();
+        for(char& c : fileExt) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+
+        if(fileExt == ext){
+            result->v.push_back(Make_String(path));
+        }
+    }
+
+    result->consist_of = ValueType::String;
+    result->distinc_types = 1;
+    result->mapTypeCounter[(int)ValueType::String] = result->v.size();
+
+    return result;
+}
+
 /* SORT COMPARATORS FOR DEFAULT TYPES*/
 
 bool sort_comps::cmp_less_Number(std::shared_ptr<Value> a, std::shared_ptr<Value> b){

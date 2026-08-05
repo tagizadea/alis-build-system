@@ -464,6 +464,10 @@ Debugger::Debugger() : impl_(new Impl){
     registerMessage("ops.run_not_string",        Lang::AZ, "run() arqumenti sətir olmalıdır (skript yolu)");
     registerMessage("ops.set_include_not_string", Lang::EN, "set_include() argument must be a string");
     registerMessage("ops.set_include_not_string", Lang::AZ, "set_include() arqumenti sətir olmalıdır");
+    registerMessage("ops.glob_wrong_args",        Lang::EN, "glob() expects 2 arguments (directory, extension)");
+    registerMessage("ops.glob_wrong_args",        Lang::AZ, "glob() 2 arqument gözləyir (qovluq, genişlənmə)");
+    registerMessage("ops.glob_not_string",        Lang::EN, "glob() arguments must be strings");
+    registerMessage("ops.glob_not_string",        Lang::AZ, "glob() arqumentləri sətir olmalıdır");
 
     // ---- Manager ----
     registerMessage("manager.cache_open_fail",   Lang::EN, "Could not open cache file \"{0}\"");
