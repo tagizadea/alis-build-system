@@ -585,52 +585,64 @@ std::shared_ptr<Value> n_funs::vector_sort(vector<std::shared_ptr<Value>> args, 
     return env->lookUpVar("Null");
 }
 
-std::shared_ptr<Value> n_funs::print(vector<std::shared_ptr<Value>> args, Env* env){ // naive print fun
-    queue <pair <vector <std::shared_ptr<Value>> , string> > q;
-    q.push({args, ""});
-    while(!q.empty()){
-        vector <std::shared_ptr<Value>> v = q.front().first;
-        string tab_s = q.front().second;
-
-        for(int i=0;i<v.size();++i){
-            if(v[i]->getType() == ValueType::Object){
-                ObjectValue* temp = (ObjectValue*)v[i].get();
-                cout << tab_s << "Object\n";
-    
-                for(auto& j : temp->properties){
-                    q.push({{j.second}, tab_s + "    " + "Key: \"" + j.first + "\" Value: \n"});
-                }
+// Recursive helper: prints a single value to the stream.
+static void printValue(const std::shared_ptr<Value>& v, std::ostream& os){
+    if(v == nullptr){
+        os << "Null";
+        return;
+    }
+    switch(v->getType()){
+        case ValueType::Number:
+            os << static_cast<NumberVal*>(v.get())->val;
+            break;
+        case ValueType::String:
+            os << static_cast<StringVal*>(v.get())->val;
+            break;
+        case ValueType::Bool:
+            os << (static_cast<BoolValue*>(v.get())->val ? "True" : "False");
+            break;
+        case ValueType::Null:
+            os << "Null";
+            break;
+        case ValueType::List:{
+            ListValue* list = static_cast<ListValue*>(v.get());
+            os << '[';
+            for(size_t i = 0; i < list->v.size(); ++i){
+                if(i > 0) os << ", ";
+                printValue(list->v[i], os);
             }
-            else if(v[i]->getType() == ValueType::List){
-                ListValue* temp = (ListValue*)v[i].get();
-                cout << tab_s << "List";
-    
-                for(int j = 0; j < temp->v.size(); ++j){
-                    if(j == 0) q.push({{temp->v[j]}, tab_s + "    "});
-                    else q.push({{temp->v[j]}, tab_s + " "});
-                }
-                cout << "\n";
-            }
-            else if(v[i]->getType() == ValueType::Number){
-                NumberVal* temp = (NumberVal*)v[i].get();
-                cout << tab_s << temp->val;
-            }
-            else if(v[i]->getType() == ValueType::Bool){
-                BoolValue* temp = (BoolValue*)v[i].get();
-                if(temp->val) cout << tab_s << "True";
-                else cout << tab_s << "False";
-            }
-            else if(v[i]->getType() == ValueType::String){
-                StringVal* temp = (StringVal*)v[i].get();
-                cout << tab_s << temp->val;
-            }
-            else if(v[i]->getType() == ValueType::Null){
-                NullVal* temp = (NullVal*)v[i].get();
-                cout << tab_s << temp->val;
-            }
+            os << ']';
+            break;
         }
+        case ValueType::Object:{
+            ObjectValue* obj = static_cast<ObjectValue*>(v.get());
+            os << '{';
+            bool first = true;
+            for(const auto& [key, val] : obj->properties){
+                if(!first) os << ", ";
+                first = false;
+                os << key << ": ";
+                printValue(val, os);
+            }
+            os << '}';
+            break;
+        }
+        case ValueType::NFUNC:
+            os << "<native function>";
+            break;
+        case ValueType::FUNC:
+            os << "<function " << static_cast<FunctionVal*>(v.get())->name << ">";
+            break;
+        default:
+            os << "<unknown>";
+            break;
+    }
+}
 
-        q.pop();
+std::shared_ptr<Value> n_funs::print(vector<std::shared_ptr<Value>> args, Env* env){
+    for(size_t i = 0; i < args.size(); ++i){
+        if(i > 0) std::cout << ' ';
+        printValue(args[i], std::cout);
     }
     return env->lookUpVar("Null");
 }
