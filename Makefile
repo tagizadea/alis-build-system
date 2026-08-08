@@ -14,10 +14,12 @@ ABS_PROFILE ?= 0
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     EXPORT_FLAG = -Wl,-export_dynamic
-else
+else ifeq ($(UNAME_S),Linux)
     EXPORT_FLAG = -rdynamic
+else
+    EXPORT_FLAG =
 endif
 
 all:
-	g++-15 ${src} -o main -I./include -std=c++20 -g ${EXPORT_FLAG} -DLANG=\"${ABS_LANG}\" -DABS_PROFILE=${ABS_PROFILE}
+	g++ ${src} -o main -I./include -std=c++20 -g ${EXPORT_FLAG} -DLANG=\"${ABS_LANG}\" -DABS_PROFILE=${ABS_PROFILE}
 	./main
