@@ -1,5 +1,4 @@
 #include <operations.hpp>
-using namespace std;
 #include <debug.hpp>
 #include <chrono>
 #include <ctime>
@@ -17,6 +16,8 @@ using namespace std;
 #include <sys/types.h>
 #include <dlfcn.h>
 #endif
+
+using namespace std;
 
 vector <shared_ptr<NativeFuncVal>> ListVecNFuncs;
 
