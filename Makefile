@@ -44,9 +44,11 @@ WARNINGS ?= 0
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
-	EXPORT_FLAG := -Wl,-export_dynamic
+    EXPORT_FLAG = -Wl,-export_dynamic
+else ifeq ($(UNAME_S),Linux)
+    EXPORT_FLAG = -rdynamic
 else
-	EXPORT_FLAG := -rdynamic
+    EXPORT_FLAG =
 endif
 
 # ------------------------------------------------------------
