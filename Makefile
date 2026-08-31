@@ -44,11 +44,75 @@ WARNINGS ?= 0
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
-    EXPORT_FLAG = -Wl,-export_dynamic
+	EXPORT_FLAG := -Wl,-export_dynamic
 else
-    EXPORT_FLAG = -rdynamic
+	EXPORT_FLAG := -rdynamic
 endif
 
-all:
-	g++-15 ${src} -o main -I./include -std=c++20 -g ${EXPORT_FLAG} -DLANG=\"${ABS_LANG}\" -DABS_PROFILE=${ABS_PROFILE}
-	./main
+# ------------------------------------------------------------
+# Compiler flags
+# ------------------------------------------------------------
+
+CPPFLAGS := \
+	-I./include \
+	-DLANG=\"$(ABS_LANG)\" \
+	-DABS_PROFILE=$(ABS_PROFILE)
+
+CXXFLAGS := \
+	-std=c++20 \
+	-g \
+	-MMD \
+	-MP
+
+ifeq ($(WARNINGS),1)
+	CXXFLAGS += -Wall -Wextra -Wpedantic
+endif
+
+# ------------------------------------------------------------
+# Linker flags
+# ------------------------------------------------------------
+
+LDFLAGS := $(EXPORT_FLAG)
+
+# ------------------------------------------------------------
+# Build
+# ------------------------------------------------------------
+
+.PHONY: all
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	@mkdir -p $(@D)
+	$(CXX) $(OBJ) $(LDFLAGS) -o $@
+
+bin/%.o: src/%.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+# Automatically generated header dependencies
+-include $(DEP)
+
+# ------------------------------------------------------------
+# Run
+# ------------------------------------------------------------
+
+.PHONY: run
+run: $(TARGET)
+	./$(TARGET)
+
+# Preserve original "build + run" behavior
+.PHONY: start
+start: all
+	./$(TARGET)
+
+# ------------------------------------------------------------
+# Cleanup
+# ------------------------------------------------------------
+
+.PHONY: clean
+clean:
+	$(RM) -r bin
+	$(RM) -r $(TARGET)
+
+.PHONY: rebuild
+rebuild: clean all
