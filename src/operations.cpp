@@ -266,7 +266,7 @@ void print_stmt(Stmt* stmt, int tab){
     for(int i = 0; i < tab; ++i) tab_s += "    ";
     if(NodeType::PROGRAM == kind){
         cout << tab_s << "Type: Program";
-        Program* childObj = dynamic_cast<Program*>(stmt);
+        Program* childObj = static_cast<Program*>(stmt);
         cout << tab_s << "{\n";
         for(int i = 0; i < childObj->body.size();++i){
             print_stmt(childObj->body[i].get(), tab + 1);
@@ -276,7 +276,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::FUN_D == kind){
         cout << tab_s << "Type: FunctionDeclaration\n";
-        FunDeclaration* childObj = dynamic_cast<FunDeclaration*>(stmt);
+        FunDeclaration* childObj = static_cast<FunDeclaration*>(stmt);
         cout << tab_s << "Name: " << childObj->name << '\n';
         cout << tab_s << "Params: ";
         for(string &s : childObj->parameters) cout << s << ' ';
@@ -288,7 +288,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::CONDEXPR == kind){
         cout << tab_s << "Type: ConditionExpr\n";
-        CondExpr* childObj = dynamic_cast<CondExpr*>(stmt);
+        CondExpr* childObj = static_cast<CondExpr*>(stmt);
         cout << tab_s << "Condition:\n";
         print_stmt(childObj->condition.get(), tab + 1);
         cout << tab_s << "Then{\n";
@@ -303,7 +303,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::WHILE_LOOP == kind){
         cout << tab_s << "Type: WHILE\n";
-        WhileStmt* childObj = dynamic_cast<WhileStmt*>(stmt);
+        WhileStmt* childObj = static_cast<WhileStmt*>(stmt);
         cout << tab_s << "Condition:\n";
         print_stmt(childObj->condition.get(), tab + 1);
         cout << tab_s << "Then{\n";
@@ -314,7 +314,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::FOR_LOOP == kind){
         cout << tab_s << "Type: FOR\n";
-        ForStmt* childObj = dynamic_cast<ForStmt*>(stmt);
+        ForStmt* childObj = static_cast<ForStmt*>(stmt);
         cout << tab_s << "ITERATOR:\n";
         print_stmt(childObj->iterator_dec.get(), tab + 1);
         cout << tab_s << "Condition:\n";
@@ -335,7 +335,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::BINARYEXPR == kind){
         cout << tab_s << "Type: BinaryExpr\n";
-        BinaryExpr* childObj = dynamic_cast<BinaryExpr*>(stmt);
+        BinaryExpr* childObj = static_cast<BinaryExpr*>(stmt);
         print_stmt(childObj->left.get(), tab + 1);
         cout << tab_s << "Operator: " << childObj->op << '\n';
         print_stmt(childObj->right.get(), tab + 1);
@@ -343,36 +343,36 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::NOTEXPR == kind){
         cout << tab_s << "Type: NotExpr\n";
-        NotExpr* childObj = dynamic_cast<NotExpr*>(stmt);
+        NotExpr* childObj = static_cast<NotExpr*>(stmt);
         cout << tab_s << "Value:\n";
         print_stmt(childObj->val.get(), tab + 1);
         cout << '\n';
     }
     else if(NodeType::NUMERIC_L == kind){
         cout << tab_s  << "Type: NumericLiteral\n";
-        NumericLiteral* childObj = dynamic_cast<NumericLiteral*>(stmt);
+        NumericLiteral* childObj = static_cast<NumericLiteral*>(stmt);
         cout << tab_s  << "Value: " << childObj->val << '\n';
     }
     else if(NodeType::STRING_L == kind){
         cout << tab_s << "Type: StringLiteral\n";
-        StringLiteral* childObj = dynamic_cast<StringLiteral*>(stmt);
+        StringLiteral* childObj = static_cast<StringLiteral*>(stmt);
         cout << tab_s << "Value: " << childObj->val << '\n';
     }
     else if(NodeType::OBJECT_L == kind){
         cout << tab_s << "Type: ObjectLiteral";
-        ObjectLiteral* childObj = dynamic_cast<ObjectLiteral*>(stmt);
+        ObjectLiteral* childObj = static_cast<ObjectLiteral*>(stmt);
         cout << "{\n";
         for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i].get(), tab + 1);
         cout << tab_s << "}\n";
     }
     else if(NodeType::LIST_L == kind){
         cout << tab_s << "Type: ListLiteral{\n";
-        ListLiteral* childObj = dynamic_cast<ListLiteral*>(stmt);
+        ListLiteral* childObj = static_cast<ListLiteral*>(stmt);
         for(int i=0;i<childObj->properties.size();++i) print_stmt(childObj->properties[i].get(), tab + 1);
     }
     else if(NodeType::ELEMENT_L == kind){
         cout << tab_s << "Type: ElementLiteral\n";
-        ElementLiteral* childObj = dynamic_cast<ElementLiteral*>(stmt);
+        ElementLiteral* childObj = static_cast<ElementLiteral*>(stmt);
         cout << tab_s << "Index: " << childObj->key << '\n';
         cout << tab_s << "Value:\n";
         if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
@@ -381,7 +381,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::PROPERTY_L == kind){
         cout << tab_s << "Type: PropertyLiteral\n";
-        PropertyLiteral* childObj = dynamic_cast<PropertyLiteral*>(stmt);
+        PropertyLiteral* childObj = static_cast<PropertyLiteral*>(stmt);
         cout << tab_s << "Key: "<<childObj->key << '\n';
         cout << tab_s << "Value:\n";
         if(childObj->val == nullptr) cout << tab_s << "Undefined value!";
@@ -390,7 +390,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::VAR_D == kind){
         cout << tab_s << "Type: VariableDeclaration\n";
-        VarDeclaration* childObj = dynamic_cast<VarDeclaration*>(stmt);
+        VarDeclaration* childObj = static_cast<VarDeclaration*>(stmt);
         cout << tab_s << "Is_Const: " << (int)childObj->constant << '\n';
         for(auto& i : childObj->vars){
             cout << tab_s << "Variable_Name: " << i.first << '\n';
@@ -402,7 +402,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::ASSIGNEXPR == kind){
         cout << tab_s << "Type: AssignmentExpr\n";
-        AssignExpr* childObj = dynamic_cast<AssignExpr*>(stmt);
+        AssignExpr* childObj = static_cast<AssignExpr*>(stmt);
         print_stmt(childObj->assignexpr.get(), tab + 1);
         cout << tab_s << "Value:\n";
         print_stmt(childObj->value.get(), tab + 1);
@@ -410,7 +410,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::UNARYEXPR == kind){
         cout << tab_s << "Type: UnaryExpr\n";
-        UnaryExpr* childObj = dynamic_cast<UnaryExpr*>(stmt);
+        UnaryExpr* childObj = static_cast<UnaryExpr*>(stmt);
         cout << tab_s << "LEFT: " << ((childObj->left) ? ("TRUE") : ("FALSE")) << '\n';
         cout << tab_s << "OP: " << ((childObj->plus) ? ("++") : ("--")) << '\n';
         cout << tab_s << "Identifier:\n";
@@ -419,12 +419,12 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::IDENTIFIER == kind){
         cout << tab_s  << "Type: Identifier\n";
-        Identifier* childObj = dynamic_cast<Identifier*>(stmt);
+        Identifier* childObj = static_cast<Identifier*>(stmt);
         cout << tab_s << "Name: " << childObj->symbol << '\n';
     }
     else if(NodeType::MEMBEREXPR == kind){
         cout << tab_s << "Type: MemberExpr\n";
-        MemberExpr* childObj = dynamic_cast<MemberExpr*>(stmt);
+        MemberExpr* childObj = static_cast<MemberExpr*>(stmt);
         cout << tab_s << "IsComputed: " << (int)childObj->computed << '\n';
         cout << tab_s << "ObjectValue:\n";
         if(childObj->object == nullptr) cout << tab_s << "Undefined value";
@@ -436,7 +436,7 @@ void print_stmt(Stmt* stmt, int tab){
     }
     else if(NodeType::CALLEXPR == kind){
         cout << tab_s << "Type: CallExpr\n";
-        CallExpr* childObj = dynamic_cast<CallExpr*>(stmt);
+        CallExpr* childObj = static_cast<CallExpr*>(stmt);
         cout << tab_s << "Args:{\n";
         for(int i=0; i < childObj->args.size();++i){
             print_stmt(childObj->args[i].get(), tab + 1);

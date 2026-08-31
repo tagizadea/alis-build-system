@@ -11,7 +11,6 @@
 #include <set>
 #include <map>
 #include <optional>
-#include <any>
 #include <type_traits>
 #include <debug.hpp>
 #include <portable.hpp>

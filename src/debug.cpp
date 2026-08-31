@@ -63,7 +63,7 @@ Lang Debugger::langFromString(const std::string& s){
     std::string up = s;
     std::transform(up.begin(), up.end(), up.begin(),
         [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
-    if(up == "AZ" || up == "AZERBAIJANI" || up == "AZERBAYCAN") return Lang::AZ;
+    if(up == "AZ" || up == "AZERBAIJANI" || up == "AZERBAYCAN" || up == "AZƏRBAYCAN") return Lang::AZ;
     return Lang::EN;
 }
 
@@ -280,8 +280,7 @@ void Debugger::memAlloc(std::size_t bytes){
     if(!impl_->memTrackingEnabled) return;
     impl_->allocBytes += bytes;
     ++impl_->allocCount;
-    if(impl_->allocBytes - impl_->freeBytes > impl_->peakBytes)
-        impl_->peakBytes = impl_->allocBytes - impl_->freeBytes;
+    if(impl_->allocBytes - impl_->freeBytes > impl_->peakBytes) impl_->peakBytes = impl_->allocBytes - impl_->freeBytes;
 }
 
 void Debugger::memFree(std::size_t bytes){
