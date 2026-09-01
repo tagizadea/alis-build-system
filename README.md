@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" alt="Icon" width="128">
+</p>
+
 # Ali's Build System (ABS)
 
 A custom build system for C/C++ projects with its own scripting language (`.abs`). ABS lets you define your build workflow as a script — track source files, detect changes, compile in parallel, and link — all from a single declarative script.

@@ -35,5 +35,8 @@ test/
 *.abs
 main
 
+# ABS own build output
+build/
+
 # Debug Folder LLDB
 main.dSYM
