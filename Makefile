@@ -4,7 +4,7 @@
 
 TARGET := main
 
-CXX := g++-15
+CXX := g++-16
 
 SRC := \
 	src/ast.cpp \

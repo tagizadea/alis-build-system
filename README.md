@@ -57,7 +57,7 @@ ABS looks for a `.abs` file in the current directory. The default is `main.abs`,
 
 ### 2. Tracking Sources
 
-The `track()` function registers source files and detects which ones changed:
+The `track()` function registers source files and detects which ones changed. Pass the files either as a list or as variadic arguments:
 
 ```abs
 let dirty = track(["src/main.cpp", "src/manager.cpp", "src/operations.cpp"]);
@@ -65,9 +65,11 @@ let dirty = track(["src/main.cpp", "src/manager.cpp", "src/operations.cpp"]);
 
 `track()` returns a list of files that need recompilation (dirty files). It also scans all `#include` directives to build a dependency graph. If a header changes, `track()` uses **reverse invalidation** to find every source file that depends on it — even transitively.
 
+> **Note:** a first-ever call returns all registered files as dirty; on later runs only changed files (or files affected by changed headers) are returned. Empty input (`track()` or `track([])`) returns an empty list.
+
 ### 3. Compiling
 
-The `compile()` function compiles source files into object files:
+The `compile()` function compiles source files into object files. It takes a single object argument (or a list of them):
 
 ```abs
 let objs = compile({
@@ -78,6 +80,8 @@ let objs = compile({
     flag: "-std=c++20 -I./include"
 });
 ```
+
+All five keys (`compiler_path`, `src`, `tracked_src`, `out_dir`, `flag`) are required, and both `src` and `tracked_src` must be lists of strings.
 
 **How it decides what to compile:**
 
@@ -101,55 +105,63 @@ The `link()` function links object files into an executable:
 let exe = link(objs, "myapp", "g++-15");
 ```
 
-- `objs` — list of object file paths (from `compile()`)
+- `objs` — list of object file paths (from `compile()`), all strings
 - `myapp` — name of the output executable
-- `g++-15` — compiler/linker to use
+- `g++-15` — compiler/linker to use (must exist on `PATH`)
 
-`link()` returns the executable path.
+`link()` links with `<compiler> <obj1> <obj2> ... -o <name>` and returns the executable path.
 
 ---
 
 ## The ABS Language
 
-ABS is a small scripting language with:
+ABS is a small scripting language. Key syntax rules:
+
+- `let` / `const` declarations **require** a trailing semicolon.
+- Expression statements (function calls, assignments, member calls) take **no** semicolon.
+- Functions have **no `return` keyword** — the last expression in the body is the return value.
+- Blocks (`if`/`else`, `for`, `while`, `fn`) use `{` ... `}` braces.
+- Comments start with `#` and run to end of line.
+- String literals do **not** support escape sequences (`\"`, `\n`, …) — avoid them inside strings.
 
 ```abs
-# Variables
+# Variables (semicolon required)
 let x = 5;
 const y = "hello";
+let a = 1, b = 2, c = 3;
 
-# Functions
+# Functions (implicit return: last expression is the return value)
 fn add(a, b) {
-    a + b;
+    a + b
 }
 
 # Conditionals
 if (x > 3) {
-    print("x is big");
+    print("x is big")
 } else {
-    print("x is small");
+    print("x is small")
 }
 
 # Loops
 for (let i = 0; i < 10; ++i) {
-    print(i, " ");
+    print(i, " ")
 }
 
 while (x > 0) {
-    x = x - 1;
+    x = x - 1
 }
 
 # Lists
 let list = [1, 2, 3];
-list.push(4);
-print(list.size());
+list.push(4)
+print(list.size())
 
 # Objects
 let config = {
     compiler_path: "g++-15",
     flag: "-O2"
 };
-print(config.compiler_path);
+print(config.compiler_path)
 ```
 
 ---
@@ -167,12 +179,12 @@ print(config.compiler_path);
 | `set_include(path)` | Add an include search path |
 | `define(name, value?)` | Define a preprocessor macro |
 | `print(...)` | Print values |
-| `type(value)` | Get the type of a value |
+| `type(value)` | Get the type of a value: `"Number"`, `"String"`, `"List"`, `"Object"`, `"Bool"`, `"Func"`, `"NativeFunc"`, `"Null"` |
 | `StoN(str)` | Convert string to number |
 | `NtoS(num)` | Convert number to string |
 | `floor(num)` | Floor a number |
 | `max(list)` / `min(list)` | Max/min of a list |
-| `system(cmd)` | Run a shell command |
+| `system(cmd)` | Run a shell command, returns its exit status (or `Null` on failure) |
 | `timeNow()` | Current time (minutes since midnight) |
 | `set_lang("EN"/"AZ")` | Change debug message language at runtime |
 | `debug_level("INFO")` | Set debug output severity threshold |
@@ -228,6 +240,8 @@ print(my_function(), endl) # "Hello from plugin!"
 ```
 
 Plugins are placed in `.abs/plugins/` (created automatically on first run).
+
+> **Note:** a plugin `.so`/`.dylib` compiled against one interpreter build may need recompiling after you rebuild `main`, since the C++ ABI of `Env`/`Value` can change between revisions.
 
 ---
 
