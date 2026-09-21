@@ -120,7 +120,7 @@ const y = "hello";
 
 # Functions
 fn add(a, b) {
-    return a + b;
+    a + b;
 }
 
 # Conditionals

@@ -22,7 +22,7 @@ int main(int argc, char* argv[]){
     atexit([](){ debug::Debugger::getInstance().dumpProfile(); });
 #endif
 
-    cout << "Ali's Build System ALPHA!\n";
+    cout << "Ali's Build System BETA!\n";
     Manager::getInstance().init_manager();
     
     // Manager::getInstance().sources.push_back("./test/test.cpp");
