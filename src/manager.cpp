@@ -11,9 +11,9 @@ void Manager::init_manager(){
     if(!fs::is_directory(".abs")) fs::create_directory(".abs");
     if(!fs::is_directory(".abs/plugins")) fs::create_directory(".abs/plugins");
 
-    readCache<DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, DependencyCache);
-    readCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, FileCache);
-    readCache<ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, ObjectCache);
+    readCache<DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, CacheType::DependencyCache, DependencyCache);
+    readCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, CacheType::FileCache, FileCache);
+    readCache<ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, CacheType::ObjectCache, ObjectCache);
 
     // int nese_count = 0;
     // for(auto& i : DependencyCache){
@@ -25,7 +25,7 @@ void Manager::init_manager(){
     if(!about.is_open()){
         ABS_FATAL(cat::Manager, "manager.about_open_fail");
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 1.0.0-beta";
+    about << "Ali's Build System for C/C++.\nVersion number: 1.1.0-beta";
     about.close();
 
     manager.include_paths.push_back("./");
@@ -264,9 +264,6 @@ vector<string> Manager::scan_headers(const string& ChangedFile){
                 }
             }
             uniqueHeaders.insert(header);
-            // Hash the RESOLVED path, not the raw header name, so two files
-            // including different headers with the same filename produce
-            // different dependency hashes.
             dephash += resolved;
             entry.includes.push_back(resolved);
         }
