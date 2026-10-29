@@ -822,8 +822,8 @@ shared_ptr<Value> n_funs::Ntrack(vector<shared_ptr<Value>> args, Env* env){
     l->distinc_types = 1;
     l->mapTypeCounter[(int)ValueType::String] = src.size() + reversed_files.size();
 
-    writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
-    writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
+    // writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
+    // writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
     
     return l;
 }
@@ -1104,6 +1104,8 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
     result->distinc_types = 1;
     result->mapTypeCounter[(int)ValueType::String] = result->v.size();
 
+    writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, manager.FileCache);
+    writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, manager.DependencyCache);
     writeCache<Manager::ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, manager.ObjectCache);
 
     return result;
