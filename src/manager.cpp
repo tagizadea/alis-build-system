@@ -1,8 +1,8 @@
 #include <manager.hpp>
-using namespace std;
 #include <xxhash64.hpp>
 #include <debug.hpp>
 #include <stack>
+using namespace std;
 
 void Manager::init_manager(){
 
