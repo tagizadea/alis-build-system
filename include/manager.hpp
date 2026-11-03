@@ -110,7 +110,7 @@ const std::string OBJS_CACHE_FILE_NAME = "objects.cache";
 //  bytes name           value
 
 //   [4]  Magic        0x41425343 ("ABSC")
-//   [2]  Version       uint16 = 1
+//   [2]  Version       uint16 = 2
 //   [1]  CacheType     uint8  (0=File, 1=Dependency, 2=Object)
 //   [1]  Flags         uint8  (reserved, must be 0)
 //   [4]  EntryCount    uint32
@@ -120,7 +120,7 @@ const std::string OBJS_CACHE_FILE_NAME = "objects.cache";
 
 constexpr uint32_t CACHE_MAGIC = 0x41425343; // "ABSC"
 constexpr uint32_t CACHE_TAIL  = 0x5441494C; // "TAIL"
-constexpr uint16_t CACHE_VERSION = 1;
+constexpr uint16_t CACHE_VERSION = 2;
 
 enum class CacheType : uint8_t{
     FileCache = 0,
@@ -257,19 +257,22 @@ class Manager{
 
     struct DependencyCacheEntry{
         std::string name;
-        std::vector <std::string> includes;
-        uint64_t dependency_hash;
+        std::vector <std::string> includes;   // unresolved: '"name', '<name' or '#MACRO'
+        uint64_t dependency_hash;             // content hash of the file when it was scanned
+        std::vector <std::string> macros;     // header-name #defines, flat name/value pairs
 
         void save(std::ostream &os) const{
             writeBinary(os, name);
             writeBinary(os, includes);
             writeBinary(os, dependency_hash);
+            writeBinary(os, macros);
         }
 
         void load(std::istream &is){
             readBinary(is, name);
             readBinary(is, includes);
             readBinary(is, dependency_hash);
+            readBinary(is, macros);
         }
     };
 
@@ -314,9 +317,9 @@ class Manager{
     void init_manager();
     
     FileCacheEntry track(const std::string& Source);
-    std::vector <std::string> scan_headers(const std::string& ChangedFile);
-    std::vector <std::string> scan_graph(const DependencyCacheEntry& Node, std::set <std::string>& color, std::map <std::string, std::vector <std::string>>& reverse_graph);
-    std::vector <std::string> reverse_invalidation(std::map <std::string, std::vector <std::string>>& reverse_graph, std::vector <std::string>& DirtyHeaderNames);
+    bool scan_headers(const std::string& File, DependencyCacheEntry& Entry);
+    std::vector <std::string> scan_graph(const std::vector <std::string>& Sources);
+    std::set <std::string> reverse_invalidation(const std::unordered_map <std::string, std::vector <std::string>>& reverse_graph, const std::vector <std::string>& ChangedFiles);
 };
 
 #endif

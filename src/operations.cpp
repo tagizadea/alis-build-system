@@ -771,8 +771,6 @@ shared_ptr<Value> n_funs::system(vector<shared_ptr<Value>> args, Env* env){
 shared_ptr<Value> n_funs::Ntrack(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("track()");
     auto l = make_shared<ListValue>();
-    vector <string> src, headers, DirtyHeaderNames,reversed_files;
-    map <string, vector <string>> reverse_graph;
 
     auto& manager = Manager::getInstance();
 
@@ -796,31 +794,14 @@ shared_ptr<Value> n_funs::Ntrack(vector<shared_ptr<Value>> args, Env* env){
         }
     }
     
-    for(const auto& i : manager.sources){
-        auto temp_entry = manager.track(i);
-        if(temp_entry.mtime != 0) src.push_back(temp_entry.name);
-    }
+    // Changed sources plus every source that (transitively) includes a changed header
+    vector <string> dirty = manager.scan_graph(manager.sources);
 
-    for(const auto& i : src){
-        vector <string> temp_list = manager.scan_headers(i);
-        headers.insert(headers.end(), temp_list.begin(), temp_list.end());
-    }
-
-    set <string> color;
-
-    for(const auto& i : manager.DependencyCache){
-        vector <string> temp_list;
-        if(color.find(i.first) == color.end()) temp_list = manager.scan_graph(i.second, color, reverse_graph);
-        DirtyHeaderNames.insert(DirtyHeaderNames.end(), temp_list.begin(), temp_list.end());
-    }
-
-    reversed_files = manager.reverse_invalidation(reverse_graph, DirtyHeaderNames);
-
-    for(string s : reversed_files)  l->v.push_back(Make_String(s));
+    for(const string& s : dirty) l->v.push_back(Make_String(s));
 
     l->consist_of = ValueType::String;
     l->distinc_types = 1;
-    l->mapTypeCounter[(int)ValueType::String] = src.size() + reversed_files.size();
+    l->mapTypeCounter[(int)ValueType::String] = dirty.size();
 
     // writeCache<Manager::FileCacheEntry>(FILES_CACHE_FILE_NAME, CacheType::FileCache, manager.FileCache);
     // writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, CacheType::DependencyCache, manager.DependencyCache);

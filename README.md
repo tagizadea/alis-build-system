@@ -6,7 +6,7 @@
 
 A custom build system for C/C++ projects with its own scripting language (`.abs`). ABS lets you define your build workflow as a script — track source files, detect changes, compile in parallel, and link — all from a single declarative script.
 
-> **Status:** v1.0.0-beta — all core features implemented
+> **Status:** v1.1.7-beta — all core features implemented
 
 ---
 
@@ -64,6 +64,8 @@ let dirty = track(["src/main.cpp", "src/manager.cpp", "src/operations.cpp"]);
 ```
 
 `track()` returns a list of files that need recompilation (dirty files). It also scans all `#include` directives to build a dependency graph. If a header changes, `track()` uses **reverse invalidation** to find every source file that depends on it — even transitively.
+
+The header scan is conservative: it follows `#include`s in every `#ifdef` / `#ifndef` / `#if` branch, because an extra dependency only costs a rebuild while a missed one gives a stale build. Only branches that are dead for certain (`#if 0`, or the branches after an `#if 1`) are skipped. Quoted includes are looked up next to the including file first, then in the `set_include()` paths. `#include MACRO` works when the macro is set with `define()` or with a `#define NAME "header.h"` in a scanned file.
 
 > **Note:** a first-ever call returns all registered files as dirty; on later runs only changed files (or files affected by changed headers) are returned. Empty input (`track()` or `track([])`) returns an empty list.
 
