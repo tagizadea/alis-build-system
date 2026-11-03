@@ -6,7 +6,7 @@
 
 A custom build system for C/C++ projects with its own scripting language (`.abs`). ABS lets you define your build workflow as a script — track source files, detect changes, compile in parallel, and link — all from a single declarative script.
 
-> **Status:** v1.1.7-beta — all core features implemented
+> **Status:** v1.2.0-beta — all core features implemented
 
 ---
 

@@ -2,6 +2,7 @@
 #include <xxhash64.hpp>
 #include <debug.hpp>
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <string_view>
 #include <unordered_set>
@@ -28,7 +29,7 @@ void Manager::init_manager(){
     if(!about.is_open()){
         ABS_FATAL(cat::Manager, "manager.about_open_fail");
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 1.1.7-beta";
+    about << "Ali's Build System for C/C++.\nVersion number: 1.2.0-beta";
     about.close();
 
     manager.include_paths.push_back("./");
@@ -94,6 +95,67 @@ Manager::FileCacheEntry Manager::track(const string& Source){
 
     // writeCache<FileCacheEntry>(FILES_CACHE_FILE_NAME, FileCache);
     return ans;
+}
+
+// Locates an executable like execvp/CreateProcess would: a name with a
+// directory part is used as-is, a bare name is searched on PATH.
+fs::path Manager::find_executable(const string& Name){
+    error_code ec;
+    auto isExecutable = [&](const fs::path& p){
+        if(!fs::is_regular_file(p, ec)) return false;
+#ifdef _WIN32
+        return true;
+#else
+        fs::perms perms = fs::status(p, ec).permissions();
+        return (perms & (fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec)) != fs::perms::none;
+#endif
+    };
+
+    fs::path direct(Name);
+    if(direct.has_parent_path()) return isExecutable(direct) ? direct : fs::path();
+
+    const char* env_path = getenv("PATH");
+    if(!env_path) return fs::path();
+
+#ifdef _WIN32
+    const char sep = ';';
+    const vector<string> exts = {"", ".exe"};
+#else
+    const char sep = ':';
+    const vector<string> exts = {""};
+#endif
+
+    string paths(env_path);
+    size_t start = 0;
+    while(start <= paths.size()){
+        size_t end = paths.find(sep, start);
+        if(end == string::npos) end = paths.size();
+        string dir = paths.substr(start, end - start);
+        if(dir.empty()) dir = ".";
+        for(const string& ext : exts){
+            fs::path candidate = fs::path(dir) / (Name + ext);
+            if(isExecutable(candidate)) return candidate;
+        }
+        start = end + 1;
+    }
+    return fs::path();
+}
+
+// Changes when the compiler changes: another name, another install found on
+// PATH, or an in-place upgrade (same name, new binary). Symlinks are resolved,
+// so Homebrew's g++-16 -> Cellar/gcc/<version>/... also picks up the version.
+uint64_t Manager::compiler_hash(const string& Compiler){
+    string identity = Compiler;
+    fs::path exe = find_executable(Compiler);
+    if(!exe.empty()){
+        error_code ec;
+        fs::path real = fs::canonical(exe, ec);
+        if(ec) real = exe;
+        identity += '\0' + real.generic_string();
+        identity += '\0' + to_string(GetFileSize(real));
+        identity += '\0' + to_string(GetFileMTime(real));
+    }
+    return xxh64::hash_string(identity);
 }
 
 // Nfunc kimi de olsun, compile cagirsin ve cagiranda trackeddaki cppleri de tapib gondersin

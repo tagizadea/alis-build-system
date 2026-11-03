@@ -317,6 +317,8 @@ class Manager{
     void init_manager();
     
     FileCacheEntry track(const std::string& Source);
+    fs::path find_executable(const std::string& Name);
+    uint64_t compiler_hash(const std::string& Compiler);
     bool scan_headers(const std::string& File, DependencyCacheEntry& Entry);
     std::vector <std::string> scan_graph(const std::vector <std::string>& Sources);
     std::set <std::string> reverse_invalidation(const std::unordered_map <std::string, std::vector <std::string>>& reverse_graph, const std::vector <std::string>& ChangedFiles);

@@ -1003,8 +1003,8 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
         // Ensure out_dir exists
         fs::create_directories(out_dir);
 
-        // Hash of flags - so changing flags triggers recompile
-        uint64_t flags_hash = xxh64::hash_string(flag);
+        // Hash of compiler + flags - so switching or upgrading the compiler, or changing flags, triggers recompile
+        uint64_t flags_hash = xxh64::hash_string(flag, manager.compiler_hash(compiler_path));
 
         // Collect compile commands and their metadata for parallel execution
         vector <string> commands;
