@@ -52,6 +52,7 @@ namespace n_funs{
     std::shared_ptr<Value> ntos(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> compile(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> link(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> archive(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> run(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> scan(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> set_include(std::vector <std::shared_ptr<Value>> args, Env* env);
@@ -60,6 +61,13 @@ namespace n_funs{
     std::shared_ptr<Value> debug_log(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> glob(std::vector <std::shared_ptr<Value>> args, Env* env);
     std::shared_ptr<Value> load_plugin(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> exists(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> mkdir(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> copy(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> remove(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> read_file(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> write_file(std::vector <std::shared_ptr<Value>> args, Env* env);
+    std::shared_ptr<Value> exit(std::vector <std::shared_ptr<Value>> args, Env* env);
 
 }
 

@@ -16,8 +16,17 @@
 #include <debug.hpp>
 #include <portable.hpp>
 #include <xxhash64.hpp>
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 
 namespace fs = std::filesystem;
+
+/// Content hash of a file, or 0 if it can't be read.
+inline uint64_t HashFileOrZero(const fs::path& path){
+    try{ return xxh64::hash_file(path.string()); }
+    catch(...){ return 0; }
+}
 
 /// Returns the file size in bytes.
 /// Returns 0 if the file does not exist or cannot be accessed.
@@ -30,12 +39,25 @@ inline uint64_t GetFileSize(const fs::path& path){
 /// Returns the file modification time as nanoseconds since Unix epoch.
 /// Returns 0 if the file does not exist or cannot be accessed.
 inline uint64_t GetFileMTime(const fs::path& path){
+#ifdef _WIN32
     std::error_code ec;
     auto fileTime = fs::last_write_time(path, ec);
     if(ec) return 0;
     auto systemTime = fs::file_time_type::clock::to_sys(fileTime);
     auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( systemTime.time_since_epoch() );
     return static_cast<uint64_t>(ns.count());
+#else
+    // stat() directly: some standard libraries (libstdc++ on macOS) round
+    // last_write_time to whole seconds, which hides two writes in one second
+    struct stat st;
+    if(::stat(path.c_str(), &st) != 0) return 0;
+    #ifdef __APPLE__
+        const struct timespec& ts = st.st_mtimespec;
+    #else
+        const struct timespec& ts = st.st_mtim;
+    #endif
+    return static_cast<uint64_t>(ts.tv_sec) * 1000000000ULL + static_cast<uint64_t>(ts.tv_nsec);
+#endif
 }
 
 template<typename T>
@@ -110,7 +132,7 @@ const std::string OBJS_CACHE_FILE_NAME = "objects.cache";
 //  bytes name           value
 
 //   [4]  Magic        0x41425343 ("ABSC")
-//   [2]  Version       uint16 = 2
+//   [2]  Version       uint16 = 3
 //   [1]  CacheType     uint8  (0=File, 1=Dependency, 2=Object)
 //   [1]  Flags         uint8  (reserved, must be 0)
 //   [4]  EntryCount    uint32
@@ -120,7 +142,7 @@ const std::string OBJS_CACHE_FILE_NAME = "objects.cache";
 
 constexpr uint32_t CACHE_MAGIC = 0x41425343; // "ABSC"
 constexpr uint32_t CACHE_TAIL  = 0x5441494C; // "TAIL"
-constexpr uint16_t CACHE_VERSION = 2;
+constexpr uint16_t CACHE_VERSION = 3;
 
 enum class CacheType : uint8_t{
     FileCache = 0,
@@ -280,17 +302,20 @@ class Manager{
         std::string name;
         uint64_t build_hash;
         uint64_t object_size;
+        uint64_t output_hash = 0;   // content hash of the built file, so link/archive see every rebuild
 
         void save(std::ostream &os) const{
             writeBinary(os, name);
             writeBinary(os, build_hash);
             writeBinary(os, object_size);
+            writeBinary(os, output_hash);
         }
 
         void load(std::istream &is){
             readBinary(is, name);
             readBinary(is, build_hash);
             readBinary(is, object_size);
+            readBinary(is, output_hash);
         }
     };
     
@@ -312,16 +337,34 @@ class Manager{
     std::map <std::string, DependencyCacheEntry> DependencyCache;
     std::map <std::string, ObjectCacheEntry> ObjectCache;
 
+    // Every source found dirty during this run (normalized paths), so compile()
+    // still rebuilds them when the script calls track() and compile() separately
+    std::set <std::string> dirty_sources;
 
+    struct CompileCommand{
+        std::string file;
+        std::string output;
+        std::vector <std::string> arguments;
+    };
+    // compile_commands.json entries of this run, keyed by object path
+    std::map <std::string, CompileCommand> compile_commands;
 
     void init_manager();
-    
+
     FileCacheEntry track(const std::string& Source);
     fs::path find_executable(const std::string& Name);
     uint64_t compiler_hash(const std::string& Compiler);
     bool scan_headers(const std::string& File, DependencyCacheEntry& Entry);
     std::vector <std::string> scan_graph(const std::vector <std::string>& Sources);
     std::set <std::string> reverse_invalidation(const std::unordered_map <std::string, std::vector <std::string>>& reverse_graph, const std::vector <std::string>& ChangedFiles);
+    bool is_dirty(const std::string& Source);
+    std::string object_path(const std::string& OutDir, const std::string& Source);
+    void add_compile_command(const std::string& Source, const std::string& Object, const std::vector <std::string>& Arguments);
+    void write_compile_commands();
+    uint64_t inputs_hash(const std::vector <std::string>& Files, uint64_t Seed);
+    std::vector <std::string> flag_inputs(const std::vector <std::string>& FlagArgs);
+    bool output_up_to_date(const std::string& Output, uint64_t Hash);
+    void record_output(const std::string& Output, uint64_t Hash);
 };
 
 #endif

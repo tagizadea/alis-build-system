@@ -445,8 +445,24 @@ Debugger::Debugger() : impl_(new Impl){
     registerMessage("ops.compile_fail",          Lang::AZ, "{0} faylı kompilyasiya oluna bilmədi (status: {1})");
     registerMessage("ops.compile_success",       Lang::EN, "Compiled {0} (status: {1})");
     registerMessage("ops.compile_success",       Lang::AZ, "{0} kompilyasiya olundu (status: {1})");
-    registerMessage("ops.link_wrong_args",       Lang::EN, "link() expects 3 arguments (objects list, executable name, compiler path)");
-    registerMessage("ops.link_wrong_args",       Lang::AZ, "link() 3 arqument gözləyir (obyektlər siyahısı, icra adı, kompilyator yolu)");
+    registerMessage("ops.link_wrong_args",       Lang::EN, "link() expects 3 or 4 arguments (objects list, output name, compiler path, optional flags)");
+    registerMessage("ops.link_wrong_args",       Lang::AZ, "link() 3 və ya 4 arqument gözləyir (obyektlər siyahısı, çıxış adı, kompilyator yolu, istəyə bağlı flaqlar)");
+    registerMessage("ops.link_flags_not_string", Lang::EN, "link(): fourth argument must be a string (linker flags)");
+    registerMessage("ops.link_flags_not_string", Lang::AZ, "link(): dördüncü arqument sətir olmalıdır (linker flaqları)");
+    registerMessage("ops.link_up_to_date",       Lang::EN, "{0} is up to date");
+    registerMessage("ops.link_up_to_date",       Lang::AZ, "{0} artıq aktualdır");
+    registerMessage("ops.archive_wrong_args",    Lang::EN, "archive() expects 3 arguments (objects list, library name, archiver path)");
+    registerMessage("ops.archive_wrong_args",    Lang::AZ, "archive() 3 arqument gözləyir (obyektlər siyahısı, kitabxana adı, arxivləyici yolu)");
+    registerMessage("ops.archive_not_list",      Lang::EN, "archive(): first argument must be a list of object file paths");
+    registerMessage("ops.archive_not_list",      Lang::AZ, "archive(): ilk arqument obyekt fayl yolları siyahısı olmalıdır");
+    registerMessage("ops.archive_not_string",    Lang::EN, "archive(): library name and archiver path must be strings");
+    registerMessage("ops.archive_not_string",    Lang::AZ, "archive(): kitabxana adı və arxivləyici yolu sətir olmalıdır");
+    registerMessage("ops.archive_fail",          Lang::EN, "Failed to create library {0} (status: {1})");
+    registerMessage("ops.archive_fail",          Lang::AZ, "{0} kitabxanası yaradıla bilmədi (status: {1})");
+    registerMessage("ops.archive_success",       Lang::EN, "Created library {0} (status: {1})");
+    registerMessage("ops.archive_success",       Lang::AZ, "{0} kitabxanası yaradıldı (status: {1})");
+    registerMessage("ops.archive_up_to_date",    Lang::EN, "{0} is up to date");
+    registerMessage("ops.archive_up_to_date",    Lang::AZ, "{0} artıq aktualdır");
     registerMessage("ops.link_not_list",         Lang::EN, "link(): first argument must be a list of object file paths");
     registerMessage("ops.link_not_list",         Lang::AZ, "link(): ilk arqument obyekt fayl yolları siyahısı olmalıdır");
     registerMessage("ops.link_not_string",       Lang::EN, "link(): second argument must be a string (executable name)");
@@ -477,12 +493,28 @@ Debugger::Debugger() : impl_(new Impl){
     registerMessage("ops.plugin_load_fail",       Lang::AZ, "Plagin yüklənə bilmədi: {0}");
     registerMessage("ops.plugin_no_init",         Lang::EN, "Plugin \"{0}\" does not export abs_plugin_init");
     registerMessage("ops.plugin_no_init",         Lang::AZ, "\"{0}\" plagini abs_plugin_init funksiyasını ixrac etmir");
+    registerMessage("ops.compile_commands_not_bool", Lang::EN, "compile() second argument must be a boolean (write compile_commands.json)");
+    registerMessage("ops.compile_commands_not_bool", Lang::AZ, "compile() ikinci arqumenti boolean olmalıdır (compile_commands.json yazmaq)");
+    registerMessage("ops.fs_wrong_args",          Lang::EN, "{0}() expects arguments {1}");
+    registerMessage("ops.fs_wrong_args",          Lang::AZ, "{0}() bu arqumentləri gözləyir: {1}");
+    registerMessage("ops.fs_not_string",          Lang::EN, "{0}() arguments must be strings");
+    registerMessage("ops.fs_not_string",          Lang::AZ, "{0}() arqumentləri sətir olmalıdır");
+    registerMessage("ops.fs_fail",                Lang::EN, "{0}() failed for \"{1}\": {2}");
+    registerMessage("ops.fs_fail",                Lang::AZ, "{0}() \"{1}\" üçün uğursuz oldu: {2}");
+    registerMessage("ops.remove_refused",         Lang::EN, "remove() refused to delete \"{0}\": it is the project folder, one of its parents or the filesystem root");
+    registerMessage("ops.remove_refused",         Lang::AZ, "remove() \"{0}\" silməkdən imtina etdi: bu layihə qovluğu, onun valideyn qovluğu və ya fayl sisteminin kökündür");
+    registerMessage("ops.exit_not_number",        Lang::EN, "exit() expects an optional number (exit status)");
+    registerMessage("ops.exit_not_number",        Lang::AZ, "exit() istəyə bağlı bir ədəd gözləyir (çıxış statusu)");
 
     // ---- Manager ----
     registerMessage("manager.cache_open_fail",   Lang::EN, "Could not open cache file \"{0}\"");
     registerMessage("manager.cache_open_fail",   Lang::AZ, "\"{0}\" keş faylı açıla bilmədi");
     registerMessage("manager.about_open_fail",   Lang::EN, "Could not open the 'about' file");
     registerMessage("manager.about_open_fail",   Lang::AZ, "'about' faylı açıla bilmədi");
+    registerMessage("manager.compile_commands_fail",    Lang::EN, "Could not write compile_commands.json");
+    registerMessage("manager.compile_commands_fail",    Lang::AZ, "compile_commands.json yazıla bilmədi");
+    registerMessage("manager.compile_commands_written", Lang::EN, "Wrote {0} entries to compile_commands.json");
+    registerMessage("manager.compile_commands_written", Lang::AZ, "compile_commands.json faylına {0} qeyd yazıldı");
 
     // ---- Env ----
     registerMessage("env.declare_duplicate",     Lang::EN, "Variable \"{0}\" is already declared");

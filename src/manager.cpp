@@ -2,6 +2,7 @@
 #include <xxhash64.hpp>
 #include <debug.hpp>
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string_view>
@@ -29,7 +30,7 @@ void Manager::init_manager(){
     if(!about.is_open()){
         ABS_FATAL(cat::Manager, "manager.about_open_fail");
     }
-    about << "Ali's Build System for C/C++.\nVersion number: 1.2.0-beta";
+    about << "Ali's Build System for C/C++.\nVersion number: 1.3.0-beta";
     about.close();
 
     manager.include_paths.push_back("./");
@@ -139,6 +140,84 @@ fs::path Manager::find_executable(const string& Name){
         start = end + 1;
     }
     return fs::path();
+}
+
+// Fingerprint of build inputs. Files ABS built itself (objects, libraries)
+// use the content hash stored when they were built, so every rebuild counts,
+// even one in the same second with the same size. Other files fall back to
+// size + modification time.
+uint64_t Manager::inputs_hash(const vector<string>& Files, uint64_t Seed){
+    auto& manager = Manager::getInstance();
+    string identity;
+    for(const string& f : Files){
+        identity += f + '\0';
+        auto obj_it = manager.ObjectCache.find(f);
+        if(obj_it != manager.ObjectCache.end() && obj_it->second.output_hash != 0){
+            identity += to_string(obj_it->second.output_hash) + '\0';
+        }
+        else{
+            identity += to_string(GetFileSize(f)) + '\0';
+            identity += to_string(GetFileMTime(f)) + '\0';
+        }
+    }
+    return xxh64::hash_string(identity, Seed);
+}
+
+// Files a link reads besides its objects: flag arguments that are existing
+// files (build/libcore.a, stm32.ld), -T<script>, and -l<name> found in a -L
+// folder. System libraries outside -L folders are ignored, like system headers.
+vector<string> Manager::flag_inputs(const vector<string>& FlagArgs){
+    vector<string> files, lib_dirs, libs;
+    error_code ec;
+
+    for(size_t i = 0; i < FlagArgs.size(); ++i){
+        const string& arg = FlagArgs[i];
+        if(arg.rfind("-L", 0) == 0){
+            string dir = (arg.size() > 2) ? arg.substr(2) : (i + 1 < FlagArgs.size() ? FlagArgs[++i] : "");
+            if(!dir.empty()) lib_dirs.push_back(dir);
+        }
+        else if(arg.rfind("-l", 0) == 0 && arg.size() > 2) libs.push_back(arg.substr(2));
+        else if(arg.rfind("-T", 0) == 0 && arg.size() > 2 && fs::is_regular_file(arg.substr(2), ec)) files.push_back(arg.substr(2));
+        else if(!arg.empty() && arg[0] != '-' && fs::is_regular_file(arg, ec)) files.push_back(arg);
+    }
+
+    for(const string& lib : libs){
+        // -l:name.a means that exact file name
+        vector<string> names;
+        if(lib[0] == ':') names.push_back(lib.substr(1));
+        else for(const char* ext : {".a", ".so", ".dylib", ".lib"}) names.push_back("lib" + lib + ext);
+
+        for(const string& dir : lib_dirs){
+            for(const string& name : names){
+                fs::path candidate = fs::path(dir) / name;
+                if(fs::is_regular_file(candidate, ec)) files.push_back(candidate.generic_string());
+            }
+        }
+    }
+    return files;
+}
+
+bool Manager::output_up_to_date(const string& Output, uint64_t Hash){
+    auto& manager = Manager::getInstance();
+    auto obj_it = manager.ObjectCache.find(Output);
+    if(obj_it == manager.ObjectCache.end() || obj_it->second.build_hash != Hash) return false;
+    error_code ec;
+#ifdef _WIN32
+    // The linker adds .exe when the name has no extension
+    if(fs::exists(Output + ".exe", ec)) return true;
+#endif
+    return fs::exists(Output, ec);
+}
+
+// Remembers how Output was built (stored next to the object hashes).
+void Manager::record_output(const string& Output, uint64_t Hash){
+    auto& manager = Manager::getInstance();
+    fs::path built(Output);
+#ifdef _WIN32
+    if(!fs::exists(built) && fs::exists(Output + ".exe")) built = Output + ".exe";
+#endif
+    manager.ObjectCache[Output] = {Output, Hash, GetFileSize(built), HashFileOrZero(built)};
+    writeCache<ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, CacheType::ObjectCache, manager.ObjectCache);
 }
 
 // Changes when the compiler changes: another name, another install found on
@@ -606,9 +685,90 @@ vector<string> Manager::scan_graph(const vector<string>& Sources){
     unordered_set<string> added;
     for(const string& s : Sources){
         string node = normalizePath(s);
-        if(affected.count(node) && added.insert(node).second) dirty.push_back(s);
+        if(affected.count(node) && added.insert(node).second){
+            dirty.push_back(s);
+            manager.dirty_sources.insert(node);
+        }
     }
     return dirty;
+}
+
+bool Manager::is_dirty(const string& Source){
+    return Manager::getInstance().dirty_sources.count(normalizePath(Source)) > 0;
+}
+
+// Mirrors the source's folders inside out_dir and keeps its extension, so
+// src/a/util.cpp and src/b/util.cpp (or main.c and main.cpp) get separate
+// objects: build/src/a/util.cpp.o. ".." becomes "__" to stay inside out_dir.
+string Manager::object_path(const string& OutDir, const string& Source){
+    fs::path rel;
+    for(const auto& part : fs::path(Source).lexically_normal().relative_path()){
+        if(part == "..") rel /= "__";
+        else if(part != "." && !part.empty()) rel /= part;
+    }
+    return (fs::path(OutDir) / rel).lexically_normal().generic_string() + ".o";
+}
+
+void Manager::add_compile_command(const string& Source, const string& Object, const vector<string>& Arguments){
+    Manager::getInstance().compile_commands[Object] = {Source, Object, Arguments};
+}
+
+namespace{
+
+string jsonEscape(const string& s){
+    string out;
+    out.reserve(s.size() + 2);
+    for(char c : s){
+        switch(c){
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:
+                if(static_cast<unsigned char>(c) < 0x20){
+                    char buf[8];
+                    snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out += buf;
+                }
+                else out += c;
+        }
+    }
+    return out;
+}
+
+} // namespace
+
+// Writes every compile command recorded this run to ./compile_commands.json,
+// the format clangd, VS Code, CLion and other tools read.
+void Manager::write_compile_commands(){
+    auto& manager = Manager::getInstance();
+    string directory = jsonEscape(fs::current_path().generic_string());
+
+    string json = "[\n";
+    bool first = true;
+    for(const auto& [object, cmd] : manager.compile_commands){
+        if(!first) json += ",\n";
+        first = false;
+        json += "  {\n    \"directory\": \"" + directory + "\",\n";
+        json += "    \"file\": \"" + jsonEscape(cmd.file) + "\",\n";
+        json += "    \"output\": \"" + jsonEscape(cmd.output) + "\",\n";
+        json += "    \"arguments\": [";
+        for(size_t i = 0; i < cmd.arguments.size(); ++i){
+            if(i) json += ", ";
+            json += "\"" + jsonEscape(cmd.arguments[i]) + "\"";
+        }
+        json += "]\n  }";
+    }
+    json += "\n]\n";
+
+    ofstream out("compile_commands.json", ios::binary | ios::trunc);
+    if(!out.is_open()){
+        ABS_ERROR(cat::Manager, "manager.compile_commands_fail");
+        return;
+    }
+    out << json;
+    ABS_INFO(cat::Manager, "manager.compile_commands_written", manager.compile_commands.size());
 }
 
 set<string> Manager::reverse_invalidation(const unordered_map<string, vector<string>>& reverse_graph, const vector<string>& ChangedFiles){

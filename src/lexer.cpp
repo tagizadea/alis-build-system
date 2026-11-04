@@ -124,6 +124,21 @@ Token Lexer::parseString(){
     ++col;
     string start = "";
     while(source[position] != '\"' && source[position] != '\0'){
+        // Escapes: \" \\ \n \t \r. Any other backslash is kept as written.
+        if(source[position] == '\\' && source[position + 1] != '\0'){
+            char next = source[position + 1];
+            switch(next){
+                case '"':  start += '"';  break;
+                case '\\': start += '\\'; break;
+                case 'n':  start += '\n'; break;
+                case 't':  start += '\t'; break;
+                case 'r':  start += '\r'; break;
+                default:   start += '\\'; start += next; break;
+            }
+            position += 2;
+            col += 2;
+            continue;
+        }
         start += source[position];
         position++;
         ++col;

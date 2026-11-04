@@ -6,7 +6,7 @@
 
 A custom build system for C/C++ projects with its own scripting language (`.abs`). ABS lets you define your build workflow as a script — track source files, detect changes, compile in parallel, and link — all from a single declarative script.
 
-> **Status:** v1.2.0-beta — all core features implemented
+> **Status:** v1.3.0-beta — all core features implemented
 
 ---
 
@@ -77,23 +77,27 @@ The `compile()` function compiles source files into object files. It takes a sin
 let objs = compile({
     compiler_path: "g++-15",
     src: ["src/main.cpp", "src/manager.cpp", "src/operations.cpp"],
-    tracked_src: dirty,          # files that must be recompiled
+    tracked_src: dirty,          # optional: files that must be recompiled
     out_dir: "build",            # where .o files go
     flag: "-std=c++20 -I./include"
-});
+}, true);                        # optional: also write compile_commands.json
 ```
 
-All five keys (`compiler_path`, `src`, `tracked_src`, `out_dir`, `flag`) are required, and both `src` and `tracked_src` must be lists of strings.
+`compiler_path`, `src`, `out_dir` and `flag` are required. `tracked_src` is optional: leave it out and `compile()` runs `track()` on `src` itself, so the simplest build is a single call. `src` and `tracked_src` must be lists of strings.
+
+Object files mirror the source path inside `out_dir` and keep the source extension (`src/net/util.cpp` → `build/src/net/util.cpp.o`), so files with the same name in different folders, or `main.c` and `main.cpp`, never overwrite each other.
 
 **How it decides what to compile:**
 
 | Condition | Action |
 |-----------|--------|
-| File is in `tracked_src` (dirty) | Always compile |
+| File is in `tracked_src`, or `track()` found it dirty earlier in this run | Always compile |
 | Object file exists AND `build_hash` matches cache | Skip (up-to-date) |
-| Object file missing OR hash changed OR flags changed | Compile |
+| Object file missing OR hash changed OR flags changed OR compiler changed | Compile |
 
-The `build_hash` combines the source file's content hash with a hash of the compiler flags — so changing flags (e.g. `-O2` → `-O0`) triggers a recompile even if the source didn't change.
+The `build_hash` combines the source file's content hash with a hash of the compiler flags and the compiler itself (its name, the real path it resolves to on `PATH`, and that binary's size and modification time). Changing flags (e.g. `-O2` → `-O0`), switching compilers or upgrading one in place all trigger a recompile even if the source didn't change.
+
+**IDE support:** pass `true` as the last argument and `compile()` writes `compile_commands.json` to the project folder, listing every source of every `compile(..., true)` call in the run. clangd, VS Code, CLion and other tools pick it up automatically.
 
 **Parallel compilation:** All files that need compiling are compiled **simultaneously**, limited by the number of CPU cores (`std::thread::hardware_concurrency()`).
 
@@ -101,17 +105,53 @@ The `build_hash` combines the source file's content hash with a hash of the comp
 
 ### 4. Linking
 
-The `link()` function links object files into an executable:
+The `link()` function links object files into an executable (or a shared library):
 
 ```abs
-let exe = link(objs, "myapp", "g++-15");
+let exe = link(objs, "build/myapp", "g++-16");
+let exe = link(objs, "build/myapp", "g++-16", "build/libcore.a -lpthread");   # with flags
 ```
 
-- `objs` — list of object file paths (from `compile()`), all strings
-- `myapp` — name of the output executable
-- `g++-15` — compiler/linker to use (must exist on `PATH`)
+- `objs` — list of object file paths (from `compile()`), all strings. Static libraries can go here too.
+- `build/myapp` — name of the output file
+- `g++-16` — compiler/linker to use (must exist on `PATH`)
+- flags *(optional)* — extra linker arguments: libraries, `-L`/`-l`, linker scripts, `-shared`, …
 
-`link()` links with `<compiler> <obj1> <obj2> ... -o <name>` and returns the executable path.
+`link()` runs `<compiler> <obj1> <obj2> ... -o <name> <flags>` and returns the output path. Flags come **after** the objects, because GNU ld only uses a library for the objects listed before it.
+
+**Incremental:** `link()` skips the link when nothing changed. It relinks when an object or library is rebuilt, when the object list, flags or linker change, or when a library or linker script named in the flags changes (files in the flags, `-T<script>`, and `-l<name>` found in a `-L` folder). System libraries outside `-L` folders are not tracked, like system headers.
+
+### 5. Libraries
+
+There is no separate library target; libraries are just outputs you name yourself.
+
+**Static library** — `archive(objs, name, archiver)` bundles objects into a library and returns its path:
+
+```abs
+let core = compile({ compiler_path: "g++-16", src: glob("lib", ".cpp"), out_dir: "build/lib", flag: "-O2 -Iinclude" });
+let libcore = archive(core, "build/libcore.a", "ar");
+
+let app = compile({ compiler_path: "g++-16", src: glob("app", ".cpp"), out_dir: "build/app", flag: "-O2 -Iinclude" });
+link(app, "build/app", "g++-16", libcore + " -lpthread")
+```
+
+`archive()` rebuilds the library from scratch when its inputs change (so objects of deleted sources don't linger inside) and skips the work otherwise. Use any ar-style archiver (`ar`, `llvm-ar`, `arm-none-eabi-ar`); `lib` / `llvm-lib` get MSVC's `/OUT:` syntax automatically.
+
+**Shared library** — compile with `-fPIC` and link with `-shared`:
+
+```abs
+let objs = compile({ compiler_path: "g++-16", src: glob("lib", ".cpp"), out_dir: "build/shared", flag: "-O2 -fPIC -Iinclude" });
+link(objs, "build/libcore.so", "g++-16", "-shared")
+```
+
+**Embedded firmware** — linker script and target flags go in the flags, post-processing through `system()`:
+
+```abs
+link(objs, "build/fw.elf", "arm-none-eabi-gcc", "-T stm32f4.ld -mcpu=cortex-m4 -mthumb -Wl,--gc-sections")
+system("arm-none-eabi-objcopy -O binary build/fw.elf build/fw.bin")
+```
+
+Library *detection* (finding installed libraries and their flags) is left to plugins and the planned package manager: without package metadata, ABS can't know which file, headers, flags or dependencies a library needs, so you name them explicitly.
 
 ---
 
@@ -124,7 +164,7 @@ ABS is a small scripting language. Key syntax rules:
 - Functions have **no `return` keyword** — the last expression in the body is the return value.
 - Blocks (`if`/`else`, `for`, `while`, `fn`) use `{` ... `}` braces.
 - Comments start with `#` and run to end of line.
-- String literals do **not** support escape sequences (`\"`, `\n`, …) — avoid them inside strings.
+- String literals support the escapes `\"`, `\\`, `\n`, `\t` and `\r`; any other backslash is kept as written. Use forward slashes in Windows paths (`"C:/tools/gcc"`), since `"C:\tools"` would turn `\t` into a tab.
 
 ```abs
 # Variables (semicolon required)
@@ -174,8 +214,16 @@ print(config.compiler_path)
 |----------|-------------|
 | `track(...)` | Register source files, detect changes, return dirty files |
 | `compile(config)` | Compile sources to object files (parallel, cached) |
-| `link(objects, name, compiler)` | Link object files into an executable |
+| `link(objects, name, compiler, flags?)` | Link objects into an executable or shared library (skips when up to date) |
+| `archive(objects, name, archiver)` | Bundle objects into a static library (skips when up to date) |
 | `glob(dir, ext)` | Find all files with a given extension in a directory |
+| `exists(path)` | `true` if a file or folder exists |
+| `mkdir(path)` | Create a folder and any missing parents |
+| `copy(from, to)` | Copy a file or a whole folder, overwriting; a file copied onto a folder goes inside it |
+| `remove(path)` | Delete a file or a folder with its contents; returns `false` if it didn't exist. Refuses the project folder, its parents and the root |
+| `read_file(path)` | Read a file into a string |
+| `write_file(path, text)` | Write a file, creating folders as needed. Skips the write when the content is unchanged (returns `false`), so generated headers don't cause rebuilds |
+| `exit(code?)` | Stop the script with an exit status (default `0`) |
 | `load_plugin(name)` | Load a compiled plugin from `.abs/plugins/` |
 | `run(script)` | Run another ABS script, returns its environment as an object |
 | `set_include(path)` | Add an include search path |
@@ -272,7 +320,7 @@ ABS stores its state in the `.abs/` directory:
 |------|----------|
 | `.abs/files.cache` | File metadata (content hash, mtime, size) |
 | `.abs/dependencies.cache` | Include dependency graph |
-| `.abs/objects.cache` | Object file build hashes |
+| `.abs/objects.cache` | Build hashes of object files, libraries and executables |
 | `.abs/plugins/` | Compiled plugin libraries |
 
 If you change the build system itself or suspect stale cache, delete the `.abs/` directory to start fresh:

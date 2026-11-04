@@ -75,10 +75,10 @@ void InitNatives(Env* env){
         env->declareVar("HOSTNAME", Make_String("LINUX"), true);
     #elif defined(__APPLE__) && defined(__MACH__)
         env->declareVar("HOSTNAME", Make_String("APPLE"), true);
-    #elif defined(__unix__) // all unices not caught above
-        env->declareVar("HOSTNAME", Make_String("UNIX"), true);
     #elif defined(__FreeBSD__)
         env->declareVar("HOSTNAME", Make_String("FREEBSD"), true);
+    #elif defined(__unix__) // all unices not caught above
+        env->declareVar("HOSTNAME", Make_String("UNIX"), true);
     #else
         env->declareVar("HOSTNAME", Make_String("UNKNOWN"), true);
     #endif
@@ -126,6 +126,8 @@ void InitNatives(Env* env){
     env->declareVar("compile", Make_NFunc(temp), true);
     temp.funAddr = n_funs::link;
     env->declareVar("link", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::archive;
+    env->declareVar("archive", Make_NFunc(temp), true);
     temp.funAddr = n_funs::set_lang;
     env->declareVar("set_lang", Make_NFunc(temp), true);
     temp.funAddr = n_funs::debug_level;
@@ -136,6 +138,20 @@ void InitNatives(Env* env){
     env->declareVar("glob", Make_NFunc(temp), true);
     temp.funAddr = n_funs::load_plugin;
     env->declareVar("load_plugin", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::exists;
+    env->declareVar("exists", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::mkdir;
+    env->declareVar("mkdir", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::copy;
+    env->declareVar("copy", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::remove;
+    env->declareVar("remove", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::read_file;
+    env->declareVar("read_file", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::write_file;
+    env->declareVar("write_file", Make_NFunc(temp), true);
+    temp.funAddr = n_funs::exit;
+    env->declareVar("exit", Make_NFunc(temp), true);
     
     // Native Vector Functions
     ListVecNFuncs.resize(4); // Increase each time when adding new method

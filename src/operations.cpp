@@ -940,15 +940,28 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("compile()");
     vector <ObjectValue*> temp_Argument;
 
+    // Optional last argument: write compile_commands.json
+    bool write_commands = false;
+    if(args.size() == 2){
+        if(args[1]->getType() != ValueType::Bool){
+            ABS_FATAL(cat::Operations, "ops.compile_commands_not_bool");
+        }
+        write_commands = static_cast<BoolValue*>(args[1].get())->val;
+        args.pop_back();
+    }
+
+    // tracked_src is optional: without it compile() runs track() on src itself
+    auto hasRequiredKeys = [](ObjectValue* x){
+        return x->properties.count("compiler_path") && x->properties.count("src")
+            && x->properties.count("out_dir") && x->properties.count("flag");
+    };
+
     if(args.size() == 1 && args[0]->getType() == ValueType::List && ((ListValue*)args[0].get())->consist_of == ValueType::Object){
         ListValue* temp_List = static_cast<ListValue*>(args[0].get());
         auto& temp_v = temp_List->v;
         for(const auto& i : temp_v){
             ObjectValue* x = static_cast<ObjectValue*>(i.get());
-            if(x->properties.count("compiler_path") && x->properties.count("src")
-            && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
-                temp_Argument.push_back(x);
-            }
+            if(hasRequiredKeys(x)) temp_Argument.push_back(x);
             else{
                 ABS_FATAL(cat::Operations, "ops.compile_structure");
             }
@@ -956,10 +969,7 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
     }
     else if(args.size() == 1 && args[0]->getType() == ValueType::Object){
         ObjectValue* x = static_cast<ObjectValue*>(args[0].get());
-        if(x->properties.count("compiler_path") && x->properties.count("src")
-        && x->properties.count("tracked_src") && x->properties.count("out_dir") && x->properties.count("flag")){
-            temp_Argument.push_back(x);
-        }
+        if(hasRequiredKeys(x)) temp_Argument.push_back(x);
         else{
             ABS_FATAL(cat::Operations, "ops.compile_structure");
         }
@@ -978,8 +988,9 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
            config->properties["flag"]->getType() != ValueType::String){
             ABS_FATAL(cat::Operations, "ops.compile_not_string");
         }
+        bool has_tracked = config->properties.count("tracked_src") > 0;
         if(config->properties["src"]->getType() != ValueType::List ||
-           config->properties["tracked_src"]->getType() != ValueType::List){
+           (has_tracked && config->properties["tracked_src"]->getType() != ValueType::List)){
             ABS_FATAL(cat::Operations, "ops.compile_not_list");
         }
 
@@ -988,16 +999,25 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
         string flag = static_cast<StringVal*>(config->properties["flag"].get())->val;
 
         ListValue* src_list = static_cast<ListValue*>(config->properties["src"].get());
-        ListValue* tracked_list = static_cast<ListValue*>(config->properties["tracked_src"].get());
+        ListValue* tracked_list = has_tracked ? static_cast<ListValue*>(config->properties["tracked_src"].get()) : nullptr;
 
-        if(src_list->consist_of != ValueType::String || tracked_list->consist_of != ValueType::String){
+        // Empty lists are fine, otherwise every element must be a string
+        if((!src_list->v.empty() && src_list->consist_of != ValueType::String) ||
+           (tracked_list && !tracked_list->v.empty() && tracked_list->consist_of != ValueType::String)){
             ABS_FATAL(cat::Operations, "ops.compile_src_not_string");
         }
 
         // Build set of dirty (tracked) sources
         set <string> tracked_set;
-        for(const auto& v : tracked_list->v){
-            tracked_set.insert(static_cast<StringVal*>(v.get())->val);
+        if(tracked_list){
+            for(const auto& v : tracked_list->v){
+                tracked_set.insert(static_cast<StringVal*>(v.get())->val);
+            }
+        }
+        else{
+            vector <string> srcs;
+            for(const auto& v : src_list->v) srcs.push_back(static_cast<StringVal*>(v.get())->val);
+            for(const string& s : manager.scan_graph(srcs)) tracked_set.insert(s);
         }
 
         // Ensure out_dir exists
@@ -1015,11 +1035,8 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
         for(const auto& v : src_list->v){
             string src_path = static_cast<StringVal*>(v.get())->val;
 
-            // Compute object path: out_dir/<basename>.o
-            string basename = fs::path(src_path).filename().string();
-            size_t dot = basename.find_last_of('.');
-            if(dot != string::npos) basename = basename.substr(0, dot);
-            string obj_path = out_dir + "/" + basename + ".o";
+            // Object path mirrors the source path: out_dir/src/a/util.cpp.o
+            string obj_path = manager.object_path(out_dir, src_path);
 
             // Compute build hash = content_hash + flags_hash
             uint64_t content_hash = 0;
@@ -1036,7 +1053,7 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
 
             bool need_compile = false;
 
-            if(tracked_set.count(src_path)){
+            if(tracked_set.count(src_path) || manager.is_dirty(src_path)){
                 // Dirty file - must compile
                 need_compile = true;
             }
@@ -1050,8 +1067,12 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
                 }
             }
 
+            string cmd = compiler_path + " -c " + src_path + " -o " + obj_path + " " + flag;
+            if(write_commands) manager.add_compile_command(src_path, obj_path, splitCommand(cmd));
+
             if(need_compile){
-                string cmd = compiler_path + " -c " + src_path + " -o " + obj_path + " " + flag;
+                error_code ec;
+                fs::create_directories(fs::path(obj_path).parent_path(), ec);
                 commands.push_back(cmd);
                 cmd_src_paths.push_back(src_path);
                 cmd_obj_paths.push_back(obj_path);
@@ -1076,6 +1097,7 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
                 obj_entry.name = cmd_obj_paths[i];
                 obj_entry.build_hash = cmd_build_hashes[i];
                 obj_entry.object_size = GetFileSize(cmd_obj_paths[i]);
+                obj_entry.output_hash = HashFileOrZero(cmd_obj_paths[i]);
                 manager.ObjectCache[cmd_obj_paths[i]] = obj_entry;
             }
         }
@@ -1089,12 +1111,14 @@ shared_ptr<Value> n_funs::compile(vector<shared_ptr<Value>> args, Env* env){
     writeCache<Manager::DependencyCacheEntry>(DEPS_CACHE_FILE_NAME, CacheType::DependencyCache, manager.DependencyCache);
     writeCache<Manager::ObjectCacheEntry>(OBJS_CACHE_FILE_NAME, CacheType::ObjectCache, manager.ObjectCache);
 
+    if(write_commands) manager.write_compile_commands();
+
     return result;
 }
 
 shared_ptr<Value> n_funs::link(vector<shared_ptr<Value>> args, Env* env){
     ABS_PROFILE_SCOPE("link()");
-    if(args.size() != 3){
+    if(args.size() != 3 && args.size() != 4){
         ABS_FATAL(cat::Operations, "ops.link_wrong_args");
     }
 
@@ -1108,16 +1132,39 @@ shared_ptr<Value> n_funs::link(vector<shared_ptr<Value>> args, Env* env){
         ABS_FATAL(cat::Operations, "ops.link_compiler_not_string");
     }
 
+    if(args.size() == 4 && args[3]->getType() != ValueType::String){
+        ABS_FATAL(cat::Operations, "ops.link_flags_not_string");
+    }
+
     ListValue* objects = static_cast<ListValue*>(args[0].get());
     string executable = static_cast<StringVal*>(args[1].get())->val;
     string compiler_path = static_cast<StringVal*>(args[2].get())->val;
+    string flags = (args.size() == 4) ? static_cast<StringVal*>(args[3].get())->val : "";
 
-    // Build link command: compiler obj1 obj2 ... -o executable
+    auto& manager = Manager::getInstance();
+    vector <string> inputs;
+    for(const auto& v : objects->v) inputs.push_back(static_cast<StringVal*>(v.get())->val);
+
+    // Build link command: compiler obj1 obj2 ... -o executable flags
+    // Flags go last: GNU ld only uses a library for objects that come before it
     string cmd = compiler_path;
-    for(const auto& v : objects->v){
-        cmd += " " + static_cast<StringVal*>(v.get())->val;
-    }
+    for(const string& in : inputs) cmd += " " + in;
     cmd += " -o " + executable;
+    if(!flags.empty()) cmd += " " + flags;
+
+    // Relink only when an input, a linked library, the flags or the linker changed
+    vector <string> fingerprint = inputs;
+    vector <string> flag_files = manager.flag_inputs(splitCommand(flags));
+    fingerprint.insert(fingerprint.end(), flag_files.begin(), flag_files.end());
+    uint64_t link_hash = manager.inputs_hash(fingerprint, xxh64::hash_string(cmd, manager.compiler_hash(compiler_path)));
+
+    if(manager.output_up_to_date(executable, link_hash)){
+        ABS_INFO(cat::Operations, "ops.link_up_to_date", executable);
+        return Make_String(executable);
+    }
+
+    error_code ec;
+    if(fs::path(executable).has_parent_path()) fs::create_directories(fs::path(executable).parent_path(), ec);
 
     int status = exec(cmd);
     if(status != 0){
@@ -1125,7 +1172,61 @@ shared_ptr<Value> n_funs::link(vector<shared_ptr<Value>> args, Env* env){
     }
     else ABS_INFO(cat::Operations, "ops.link_success", executable, status);
 
+    manager.record_output(executable, link_hash);
     return Make_String(executable);
+}
+
+// Bundles object files into a static library: archive(objects, "build/libcore.a", "ar").
+// MSVC's lib.exe (and llvm-lib) get /OUT:, every other archiver the ar syntax.
+shared_ptr<Value> n_funs::archive(vector<shared_ptr<Value>> args, Env* env){
+    ABS_PROFILE_SCOPE("archive()");
+    if(args.size() != 3){
+        ABS_FATAL(cat::Operations, "ops.archive_wrong_args");
+    }
+    if(args[0]->getType() != ValueType::List ||
+       (!((ListValue*)args[0].get())->v.empty() && ((ListValue*)args[0].get())->consist_of != ValueType::String)){
+        ABS_FATAL(cat::Operations, "ops.archive_not_list");
+    }
+    if(args[1]->getType() != ValueType::String || args[2]->getType() != ValueType::String){
+        ABS_FATAL(cat::Operations, "ops.archive_not_string");
+    }
+
+    ListValue* objects = static_cast<ListValue*>(args[0].get());
+    string library = static_cast<StringVal*>(args[1].get())->val;
+    string archiver = static_cast<StringVal*>(args[2].get())->val;
+
+    auto& manager = Manager::getInstance();
+    vector <string> inputs;
+    for(const auto& v : objects->v) inputs.push_back(static_cast<StringVal*>(v.get())->val);
+
+    string tool = fs::path(archiver).stem().string();
+    for(char& c : tool) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+    bool msvc = (tool == "lib" || tool == "llvm-lib");
+
+    string cmd = archiver + (msvc ? " /OUT:" + library : " rcs " + library);
+    for(const string& in : inputs) cmd += " " + in;
+
+    uint64_t archive_hash = manager.inputs_hash(inputs, xxh64::hash_string(cmd, manager.compiler_hash(archiver)));
+    if(manager.output_up_to_date(library, archive_hash)){
+        ABS_INFO(cat::Operations, "ops.archive_up_to_date", library);
+        return Make_String(library);
+    }
+
+    error_code ec;
+    if(fs::path(library).has_parent_path()) fs::create_directories(fs::path(library).parent_path(), ec);
+
+    // ar only adds or replaces members, so start from scratch, otherwise
+    // objects of deleted sources would stay inside the library
+    fs::remove(library, ec);
+
+    int status = exec(cmd);
+    if(status != 0){
+        ABS_FATAL(cat::Operations, "ops.archive_fail", library, status);
+    }
+    else ABS_INFO(cat::Operations, "ops.archive_success", library, status);
+
+    manager.record_output(library, archive_hash);
+    return Make_String(library);
 }
 
 shared_ptr<Value> n_funs::run(vector<shared_ptr<Value>> args, Env* env){
@@ -1277,6 +1378,115 @@ shared_ptr<Value> n_funs::glob(vector<shared_ptr<Value>> args, Env* env){
     result->mapTypeCounter[(int)ValueType::String] = result->v.size();
 
     return result;
+}
+
+// ---- Filesystem ----
+
+// Checks that args are `count` strings and returns them.
+static vector<string> stringArgs(const vector<shared_ptr<Value>>& args, size_t count, const char* name, const char* usage){
+    if(args.size() != count) ABS_FATAL(cat::Operations, "ops.fs_wrong_args", name, usage);
+    vector<string> out;
+    for(const auto& a : args){
+        if(a->getType() != ValueType::String) ABS_FATAL(cat::Operations, "ops.fs_not_string", name);
+        out.push_back(static_cast<StringVal*>(a.get())->val);
+    }
+    return out;
+}
+
+shared_ptr<Value> n_funs::exists(vector<shared_ptr<Value>> args, Env* env){
+    string path = stringArgs(args, 1, "exists", "(path)")[0];
+    error_code ec;
+    return Make_Bool(fs::exists(path, ec));
+}
+
+shared_ptr<Value> n_funs::mkdir(vector<shared_ptr<Value>> args, Env* env){
+    string path = stringArgs(args, 1, "mkdir", "(path)")[0];
+    error_code ec;
+    fs::create_directories(path, ec);
+    if(ec || !fs::is_directory(path)) ABS_FATAL(cat::Operations, "ops.fs_fail", "mkdir", path, ec.message());
+    return Make_String(path);
+}
+
+// Copies a file or a whole folder, overwriting what is already there.
+// Copying a file onto an existing folder puts it inside that folder.
+shared_ptr<Value> n_funs::copy(vector<shared_ptr<Value>> args, Env* env){
+    vector<string> p = stringArgs(args, 2, "copy", "(from, to)");
+    fs::path from(p[0]), to(p[1]);
+    error_code ec;
+
+    if(!fs::exists(from, ec)) ABS_FATAL(cat::Operations, "ops.fs_fail", "copy", p[0], "not found");
+
+    if(fs::is_directory(from, ec)){
+        fs::create_directories(to, ec);
+        if(!ec) fs::copy(from, to, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+    }
+    else{
+        if(fs::is_directory(to, ec)) to /= from.filename();
+        else if(to.has_parent_path()) fs::create_directories(to.parent_path(), ec);
+        if(!ec) fs::copy_file(from, to, fs::copy_options::overwrite_existing, ec);
+    }
+    if(ec) ABS_FATAL(cat::Operations, "ops.fs_fail", "copy", p[0], ec.message());
+    return Make_String(to.generic_string());
+}
+
+// Deletes a file or a folder with everything in it. Missing paths are fine.
+// Refuses the project folder, its parents and the filesystem root.
+shared_ptr<Value> n_funs::remove(vector<shared_ptr<Value>> args, Env* env){
+    string path = stringArgs(args, 1, "remove", "(path)")[0];
+    error_code ec;
+    if(!fs::exists(path, ec)) return Make_Bool(false);
+
+    fs::path target = fs::weakly_canonical(path, ec);
+    fs::path cwd = fs::weakly_canonical(fs::current_path(), ec);
+    bool protectedPath = path.empty() || target == target.root_path();
+    for(fs::path p = cwd; !protectedPath; p = p.parent_path()){
+        if(target == p) protectedPath = true;
+        if(p == p.parent_path()) break;
+    }
+    if(protectedPath) ABS_FATAL(cat::Operations, "ops.remove_refused", path);
+
+    fs::remove_all(path, ec);
+    if(ec) ABS_FATAL(cat::Operations, "ops.fs_fail", "remove", path, ec.message());
+    return Make_Bool(true);
+}
+
+shared_ptr<Value> n_funs::read_file(vector<shared_ptr<Value>> args, Env* env){
+    string path = stringArgs(args, 1, "read_file", "(path)")[0];
+    ifstream file(fs::path(path), ios::binary);
+    if(!file.is_open()) ABS_FATAL(cat::Operations, "ops.fs_fail", "read_file", path, "cannot open");
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    return Make_String(content);
+}
+
+// Writes only when the content differs, so an unchanged generated header
+// keeps its timestamp and doesn't trigger rebuilds. Returns true if written.
+shared_ptr<Value> n_funs::write_file(vector<shared_ptr<Value>> args, Env* env){
+    vector<string> p = stringArgs(args, 2, "write_file", "(path, content)");
+    fs::path path(p[0]);
+    error_code ec;
+
+    if(fs::is_regular_file(path, ec) && GetFileSize(path) == p[1].size()){
+        ifstream in(path, ios::binary);
+        string old((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
+        if(old == p[1]) return Make_Bool(false);
+    }
+
+    if(path.has_parent_path()) fs::create_directories(path.parent_path(), ec);
+    ofstream out(path, ios::binary | ios::trunc);
+    if(!out.is_open()) ABS_FATAL(cat::Operations, "ops.fs_fail", "write_file", p[0], "cannot open");
+    out << p[1];
+    return Make_Bool(true);
+}
+
+// Stops the script with an exit status (default 0). Caches are already saved by compile().
+shared_ptr<Value> n_funs::exit(vector<shared_ptr<Value>> args, Env* env){
+    int code = 0;
+    if(args.size() > 1 || (args.size() == 1 && args[0]->getType() != ValueType::Number)){
+        ABS_FATAL(cat::Operations, "ops.exit_not_number");
+    }
+    if(args.size() == 1) code = static_cast<int>(static_cast<NumberVal*>(args[0].get())->val);
+    cout.flush();
+    std::exit(code);
 }
 
 shared_ptr<Value> n_funs::load_plugin(vector<shared_ptr<Value>> args, Env* env){
